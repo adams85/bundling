@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>Karambolo.AspNetCore.Bundling.NUglify</AssemblyName>
+    <RootNamespace>Karambolo.AspNetCore.Bundling.NUglify</RootNamespace>
+  </PropertyGroup>
+
+  <Import Project="Properties\AssemblyInfo.props" />
+
+  <ItemGroup>
+    <PackageReference Include="NUglify" Version="1.5.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bundling\Bundling.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\source\Bundling.Less\Bundling.Less.csproj" />
+    <ProjectReference Include="..\..\source\Bundling.NUglify\Bundling.NUglify.csproj" />
+    <ProjectReference Include="..\..\source\Bundling.WebMarkupMin\Bundling.WebMarkupMin.csproj" />
+    <ProjectReference Include="..\..\source\Bundling\Bundling.csproj" />
+  </ItemGroup>
+
+</Project>

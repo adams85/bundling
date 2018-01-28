@@ -1,0 +1,24 @@
+﻿@model string
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Bundle Source demo</title>
+
+    <link href="~/bundles/site.css" rel="stylesheet" />
+    <link href="~/bundles/dynamic.css?c=@Model" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="frame">
+        <div></div>
+    </div>
+
+    <form method="post">
+        #<input type="text" name="model" value="@Model" />
+        <button type="submit">Set frame color</button>
+    </form>
+</body>
+</html>

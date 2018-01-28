@@ -1,0 +1,26 @@
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Karambolo.AspNetCore.Bundling
+{
+    public interface IFileBundleSourceFilterItem
+    {
+        string FilePath { get; }
+    }
+
+    public interface IFileBundleSourceFilter
+    {
+        void Filter(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context);
+        Task FilterAsync(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context);
+    }
+
+    public class FileBundleSourceFilter : IFileBundleSourceFilter
+    {
+        public virtual void Filter(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context) { }
+
+        public virtual Task FilterAsync(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context)
+        {
+            return Task.CompletedTask;
+        }
+    }
+}
