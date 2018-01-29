@@ -18,10 +18,6 @@
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Less\Properties\AssemblyInfo.props" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Package Include="$(SolutionPath)\**\Release\*.nupkg" />
-  </ItemGroup>
-  
   <Target Name="GetVersion" Condition="$(TagVersion) == '' Or $(Revision) == ''">
     <!-- checking active branch -->
     <Exec Command="&quot;$(Git)&quot; branch | find &quot;* (HEAD detached at &quot;" IgnoreExitCode="true">
@@ -63,9 +59,13 @@
 
     <!-- create nuget package -->
     <MSBuild Projects="$(Solution)" Targets="Restore;Pack" Properties="Configuration=Release;Platform=Any CPU" />
-    
+
+    <ItemGroup>
+      <Package Include="$(SolutionPath)\**\Release\*.nupkg" />
+    </ItemGroup>
+
     <!-- copy packages -->
-    <Copy SourceFiles="@(Package)" DestinationFolder="$(MSBuildProjectDirectory)" />
+    <Move SourceFiles="@(Package)" DestinationFolder="$(MSBuildProjectDirectory)" />
     
     <OnError ExecuteTargets="Cleanup" />
   </Target>
