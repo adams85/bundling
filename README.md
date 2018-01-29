@@ -191,4 +191,6 @@ If you need more fine-grained control, you can specify settings for a single bun
 - documentation (vs xml docs, settings)
 - increase unit test code coverage
 
+----------
+
 ### *Any feedback or help appreciated! ;)*

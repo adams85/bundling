@@ -142,6 +142,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         }
 
         protected virtual string MetadataFileNamePostfix => ".meta.json";
+        protected virtual string TimestampFileNamePostfix => ".meta.ts";
 
         protected virtual string GetItemsBasePath(int managerId, string path)
         {
@@ -170,25 +171,32 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             return true;
         }
 
-        protected virtual void InitializeExpiration(StoreItemMetadata metadata, string physicalItemMetadataPath)
+        string GetPhysicalItemTimestampPath(StoreItemMetadata metadata, string physicalItemsBasePath)
         {
-            if (metadata.SlidingExpiration != null)
-                TrySetSlidingExpiration(physicalItemMetadataPath, _clock.UtcNow + metadata.SlidingExpiration.Value);
+            return Path.Combine(physicalItemsBasePath, Path.ChangeExtension(metadata.ItemFileName, TimestampFileNamePostfix));
         }
 
-        protected virtual bool CheckExpiration(StoreItemMetadata metadata, string physicalItemMetadataPath, bool update)
+        protected virtual void InitializeExpiration(StoreItemMetadata metadata, string physicalItemsBasePath)
+        {
+            if (metadata.SlidingExpiration != null)
+                TrySetSlidingExpiration(GetPhysicalItemTimestampPath(metadata, physicalItemsBasePath), _clock.UtcNow + metadata.SlidingExpiration.Value);
+        }
+
+        protected virtual bool CheckExpiration(StoreItemMetadata metadata, string physicalItemsBasePath, bool update)
         {
             var utcNow = _clock.UtcNow;
 
             if (metadata.AbsoluteExpiration != null && utcNow >= metadata.AbsoluteExpiration)
                 return true;
 
-            if (metadata.SlidingExpiration != null && TryGetSlidingExpiration(physicalItemMetadataPath, out DateTimeOffset expirationTime))
+            string physicalItemTimestampPath;
+            if (metadata.SlidingExpiration != null && 
+                TryGetSlidingExpiration(physicalItemTimestampPath = GetPhysicalItemTimestampPath(metadata, physicalItemsBasePath), out DateTimeOffset expirationTime))
             {
                 if (_clock.UtcNow >= expirationTime)
                     return true;
                 else if (update)
-                    TrySetSlidingExpiration(physicalItemMetadataPath, utcNow + metadata.SlidingExpiration.Value);
+                    TrySetSlidingExpiration(physicalItemTimestampPath, utcNow + metadata.SlidingExpiration.Value);
             }
 
             return false;
@@ -224,7 +232,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 var metadata = await LoadItemMetadataAsync(physicalItemMetadataPath, token);
 
                 var fileInfo = FileProvider.GetFileInfo(Path.Combine(itemsBasePath, itemFileName));
-                return new StoreItem(fileInfo, metadata, CheckExpiration(metadata, physicalItemMetadataPath, update: true));
+                return new StoreItem(fileInfo, metadata, CheckExpiration(metadata, physicalItemsBasePath, update: true));
             }
             catch (Exception ex)
             {
@@ -279,7 +287,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                     await fs.FlushAsync(token);
                 }
 
-                InitializeExpiration(metadata, physicalItemMetadataPath);
+                if (cacheOptions.SlidingExpiration != null)
+                    using (new FileStream(GetPhysicalItemTimestampPath(metadata, physicalItemsBasePath), FileMode.Create, FileAccess.Write, FileShare.Read)) { }
+
+                InitializeExpiration(metadata, physicalItemsBasePath);
 
                 var fileInfo = itemFileName != null ? FileProvider.GetFileInfo(Path.Combine(itemsBasePath, itemFileName)) : null;
                 return new StoreItem(fileInfo, metadata, isExpired: false);
@@ -305,7 +316,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
             var lockKey = (key.ManagerId, key.Path);
 
-            using (await _acquireMonitorReadLock())
+            var monitorReleaser = await _acquireMonitorReadLock();
+            try
             {
                 var readerLockTask = _bundleLock.ReaderLockAsync(lockKey);
                 IDisposable readerReleaser = await readerLockTask;
@@ -339,30 +351,36 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                         readerReleaser = await readerLockTask;
                     }
 
-                    if (!lockFile)
+                    IDisposable fileReleaser;
+                    if (lockFile)
                     {
-                        readerReleaser.Dispose();
-                        readerReleaser = NullDisposable.Instance;
+                        // retaining both locks and leave releasing them to the caller
+                        fileReleaser = new CompositeDisposable(readerReleaser, monitorReleaser);
+                        readerReleaser = monitorReleaser = NullDisposable.Instance;
                     }
+                    else
+                        fileReleaser = NullDisposable.Instance;
 
-                    return new Item(storeItem, readerReleaser);
+                    return new Item(storeItem, fileReleaser);
                 }
-                catch (Exception ex)
-                {
-                    readerReleaser.Dispose();
-                    ExceptionDispatchInfo.Capture(ex).Throw();
-                    throw;
-                }
+                finally { readerReleaser.Dispose(); }
             }
+            finally { monitorReleaser.Dispose(); }
         }
 
-        protected virtual Task DeleteItemAsync(string physicalItemMetadataPath, string physicalItemPath, CancellationToken token)
+        protected virtual Task DeleteItemAsync(string physicalItemsBasePath, string itemFileName, CancellationToken token)
         {
+            var physicalItemPath = Path.Combine(physicalItemsBasePath, itemFileName);
+            if (File.Exists(physicalItemPath))
+                File.Delete(physicalItemPath);
+
+            var physicalItemMetadataPath = Path.Combine(physicalItemsBasePath, Path.ChangeExtension(itemFileName, MetadataFileNamePostfix));
             if (File.Exists(physicalItemMetadataPath))
                 File.Delete(physicalItemMetadataPath);
 
-            if (File.Exists(physicalItemPath))
-                File.Delete(physicalItemPath);
+            var physicalTimestampPath = Path.Combine(physicalItemsBasePath, Path.ChangeExtension(itemFileName, TimestampFileNamePostfix));
+            if (File.Exists(physicalTimestampPath))
+                File.Delete(physicalTimestampPath);
 
             return Task.CompletedTask;
         }
@@ -373,12 +391,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             var physicalItemsBasePath = Path.Combine(FileProvider.Root, itemsBasePath);
 
             var itemFileName = GetItemFileName(key);
-            var physicalItemMetadataPath = Path.Combine(physicalItemsBasePath, Path.ChangeExtension(itemFileName, MetadataFileNamePostfix));
-            var physicalItemPath = Path.Combine(physicalItemsBasePath, itemFileName);
 
             try
             {
-                await DeleteItemAsync(physicalItemMetadataPath, physicalItemPath, token);
+                await DeleteItemAsync(physicalItemsBasePath, itemFileName, token);
             }
             catch (Exception ex)
             {
@@ -459,13 +475,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 try
                 {
                     var metadata = await LoadItemMetadataAsync(physicalItemMetadataPath, token);
-                    if (CheckExpiration(metadata, physicalItemMetadataPath, update: false))
-                    {
-                        var phyisicalItemsPath = Path.GetDirectoryName(physicalItemMetadataPath);
-                        var physicalItemPath = Path.Combine(phyisicalItemsPath, metadata.ItemFileName);
-
-                        await DeleteItemAsync(physicalItemMetadataPath, physicalItemPath, token);
-                    }
+                    var phyisicalItemsBasePath = Path.GetDirectoryName(physicalItemMetadataPath);
+                    if (CheckExpiration(metadata, phyisicalItemsBasePath, update: false))
+                        await DeleteItemAsync(phyisicalItemsBasePath, metadata.ItemFileName, token);
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
