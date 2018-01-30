@@ -1,10 +1,11 @@
 ﻿using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Js;
+using Karambolo.AspNetCore.Bundling.WebMarkupMin;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
-namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ConfigurationExtensions
     {

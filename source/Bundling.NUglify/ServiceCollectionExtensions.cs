@@ -1,12 +1,13 @@
 ﻿using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Js;
+using Karambolo.AspNetCore.Bundling.NUglify;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using NUglify.Css;
 using NUglify.JavaScript;
 
-namespace Karambolo.AspNetCore.Bundling.NUglify
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ConfigurationExtensions
     {

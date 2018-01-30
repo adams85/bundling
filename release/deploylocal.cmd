@@ -11,5 +11,8 @@ IF %ERRORLEVEL% NEQ 0 goto:eof
 nuget add Karambolo.AspNetCore.Bundling.NUglify.1.0.0.nupkg -Source %1
 IF %ERRORLEVEL% NEQ 0 goto:eof
 
+nuget add Karambolo.AspNetCore.Bundling.WebMarkupMin.1.0.0.nupkg -Source %1
+IF %ERRORLEVEL% NEQ 0 goto:eof
+
 nuget add Karambolo.AspNetCore.Bundling.Less.1.0.0.nupkg -Source %1
 IF %ERRORLEVEL% NEQ 0 goto:eof
