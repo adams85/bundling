@@ -1,6 +1,5 @@
 ﻿namespace dotless.Core.Parser.Functions
 {
-    using System;
     using System.Linq;
     using dotless.Core.Exceptions;
     using Infrastructure;

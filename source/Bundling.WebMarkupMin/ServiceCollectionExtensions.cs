@@ -1,9 +1,7 @@
 ﻿using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Js;
 using Karambolo.AspNetCore.Bundling.WebMarkupMin;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

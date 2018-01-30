@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace dotless.Core.Parser.Tree
+﻿namespace dotless.Core.Parser.Tree
 {
     using Infrastructure;
     using Infrastructure.Nodes;

@@ -8,7 +8,6 @@ namespace dotless.Core.Parser
     using System.Text.RegularExpressions;
     using Exceptions;
     using Infrastructure.Nodes;
-    using Utils;
 
     [DebuggerDisplay("{Remaining}")]
     public class Tokenizer

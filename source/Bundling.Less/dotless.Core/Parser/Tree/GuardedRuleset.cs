@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using dotless.Core.Parser.Infrastructure;
+﻿using dotless.Core.Parser.Infrastructure;
 using dotless.Core.Parser.Infrastructure.Nodes;
 using dotless.Core.Plugins;
 

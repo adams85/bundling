@@ -3,8 +3,6 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using Parser.Infrastructure;
-    using Parser.Infrastructure.Nodes;
     using System;
 
     public static class StringExtensions

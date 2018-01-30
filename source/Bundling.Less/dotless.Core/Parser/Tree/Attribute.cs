@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using dotless.Core.Parser.Infrastructure;
+﻿using dotless.Core.Parser.Infrastructure;
 using dotless.Core.Parser.Infrastructure.Nodes;
 
-namespace dotless.Core.Parser.Tree {
+namespace dotless.Core.Parser.Tree
+{
     public class Attribute : Node
     {
         public Node Name { get; set; }

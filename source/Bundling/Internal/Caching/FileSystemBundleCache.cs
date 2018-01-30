@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.ExceptionServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
@@ -13,7 +9,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {

@@ -1,19 +1,11 @@
-using System.Threading;
-
 namespace dotless.Core.Parser.Functions
 {
     using System;
-    using System.Collections.Generic;
     //using System.Drawing;
     //using System.Drawing.Drawing2D;
     //using System.Drawing.Imaging;
-    using System.IO;
-    using System.Linq;
-    using Exceptions;
     using Infrastructure;
     using Infrastructure.Nodes;
-    using Tree;
-    using Utils;
     //using Color = Tree.Color;
 
     /// <summary>

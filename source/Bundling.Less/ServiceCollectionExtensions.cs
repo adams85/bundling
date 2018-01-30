@@ -1,8 +1,6 @@
 ﻿using System;
 using Karambolo.AspNetCore.Bundling;
 using Karambolo.AspNetCore.Bundling.Less;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection

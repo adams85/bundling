@@ -1,6 +1,4 @@
-﻿using Karambolo.AspNetCore.Bundling.Internal.Models;
-
-namespace Karambolo.AspNetCore.Bundling.Internal
+﻿namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public interface IBundleModelFactory
     {

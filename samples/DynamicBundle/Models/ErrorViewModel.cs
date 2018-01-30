@@ -1,5 +1,3 @@
-using System;
-
 namespace DynamicBundle.Models
 {
     public class ErrorViewModel

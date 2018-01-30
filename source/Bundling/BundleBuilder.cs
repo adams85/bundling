@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal;
-using Karambolo.AspNetCore.Bundling.Internal.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 

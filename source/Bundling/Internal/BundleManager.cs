@@ -8,7 +8,6 @@ using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Primitives;
-using Karambolo.AspNetCore.Bundling.Internal.Models;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using System.Threading;
 using Microsoft.Extensions.Logging;

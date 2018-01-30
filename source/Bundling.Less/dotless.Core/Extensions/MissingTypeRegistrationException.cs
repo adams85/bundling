@@ -1,10 +1,8 @@
 ﻿// Copyright (c) 2015 Kristian Hellang
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace dotless.Core.Extensions
 {

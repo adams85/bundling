@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
-using Newtonsoft.Json;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {

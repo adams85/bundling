@@ -6,7 +6,6 @@ namespace dotless.Core.Parser.Tree
     using Exceptions;
     using Infrastructure;
     using Infrastructure.Nodes;
-    using Utils;
 
     public class MixinDefinition : Ruleset
     {

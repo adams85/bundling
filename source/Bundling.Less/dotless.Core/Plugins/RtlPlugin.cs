@@ -2,12 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
     using dotless.Core.Parser.Infrastructure.Nodes;
     using dotless.Core.Parser.Tree;
     using System.Globalization;
-    using System.Text.RegularExpressions;
     using System.ComponentModel;
 
     [DisplayName("Rtl"), Description("Reverses some css when in rtl mode")]

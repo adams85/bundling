@@ -1,9 +1,6 @@
 ﻿namespace dotless.Core.Parser.Tree
 {
-    using System;
-    using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using dotless.Core.Parser.Infrastructure.Nodes;
     using dotless.Core.Parser.Infrastructure;
 

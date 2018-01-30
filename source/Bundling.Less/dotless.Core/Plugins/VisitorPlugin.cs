@@ -1,6 +1,5 @@
 ﻿namespace dotless.Core.Plugins
 {
-    using System;
     using Parser.Infrastructure.Nodes;
     using Parser.Tree;
     using dotless.Core.Parser.Infrastructure;
