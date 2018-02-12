@@ -23,15 +23,15 @@ This repository contains components which provide run-time bundling and minifica
 
 The *Karambolo.AspNetCore.Bundling* package contains the core components only so you need to install a package that contains an actual implementation. You can choose between *NUglify* and *WebMarkupMin* implementations currently.
 
-    Install-Package Karambolo.AspNetCore.Bundling.NUglify -IncludePrerelease
+    Install-Package Karambolo.AspNetCore.Bundling.NUglify
 
 or
 
-    Install-Package Karambolo.AspNetCore.Bundling.WebMarkupMin -IncludePrerelease
+    Install-Package Karambolo.AspNetCore.Bundling.WebMarkupMin
 
 If you want to enable Less features as well, you need to install the following package:
 
-    Install-Package Karambolo.AspNetCore.Bundling.Less -IncludePrerelease
+    Install-Package Karambolo.AspNetCore.Bundling.Less
 
 #### 2. Register bundling services
 
@@ -39,7 +39,7 @@ Add the following to the *ConfigureServices* method in your *Startup* class:
 
     services.AddBundling()
         .UseDefaults(_env)
-        .UseNUglify() // or .WebMarkupMin(), respectively
+        .UseNUglify() // or .UseWebMarkupMin(), respectively
         .AddLess(); // if you need Less support
         .EnableCacheHeader(TimeSpan.FromDays(1)); // if you want to enable client-side caching
 
