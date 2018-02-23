@@ -127,7 +127,7 @@ It's recommended to use helpers as follows:
 
 ### Advanced features
 
-Check the [DynamicBundle demo](https://github.com/adams85/bundling/tree/master/samples/DynamicBundle) to get an idea what you can use dynamic parameterized bundles for.
+Check out the [DynamicBundle demo](https://github.com/adams85/bundling/tree/master/samples/DynamicBundle) to get an idea what you can use dynamic parameterized bundles for.
 
 ### Bundling middleware settings
 
@@ -184,6 +184,7 @@ If you need more fine-grained control, you can specify settings for a single bun
 ### Planned features
 
 - css imports inlining (currently less bundles can be used as a workaround)
+- change tracking of css / less imports ?
 - html bundling ?
 
 ### TODO
