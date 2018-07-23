@@ -31,6 +31,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 
         public override int Order => -10000;
 
+        [HtmlAttributeNotBound]
         [ViewContext]
         public ViewContext ViewContext { get; set; }
 
