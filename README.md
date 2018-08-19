@@ -3,7 +3,7 @@
 
 This repository contains components which provide run-time bundling and minification features for ASP.NET Core 2 in a similar way the System.Web.Optimization library does for classic ASP.NET.
 
-[![NuGet Release](https://img.shields.io/nuget/v/Karambolo.AspNetCore.Bundling.svg)](https://www.nuget.org/packages/Karambolo.AspNetCore.Bundling/)
+[![NuGet Release](https://img.shields.io/nuget/v/Karambolo.AspNetCore.Bundling.svg)](https://www.nuget.org/packages/Karambolo.AspNetCore.Bundling/) [![Join the chat at https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby](https://badges.gitter.im/Karambolo-AspNetCore-Bundling/Lobby.svg)](https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ### Main features
 - Css and Js minification and bundling (powered by [NUglify](https://github.com/xoofx/NUglify) and [WebMarkupMin](https://github.com/Taritsyn/WebMarkupMin)).
