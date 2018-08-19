@@ -194,4 +194,5 @@ If you need more fine-grained control, you can specify settings for a single bun
 
 ----------
 
-### *Any feedback or help appreciated! ;)*
+### *Any feedback or contribution appreciated! ;)*
+Feel free to contact me at [Gitter](https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link).
