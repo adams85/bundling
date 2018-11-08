@@ -6,7 +6,7 @@ using Microsoft.Extensions.Localization;
 
 namespace JsTranslation.Infrastructure.Bundling
 {
-    // this is a crude implementation for replacing js strings with localized texts looked up through IStringLocalizer
+    // this is a crude implementation for replacing js strings with localized texts looked up through an IStringLocalizer
     // it includes basic support for escaping but tries to localize every js string indiscriminately
     public class JsTranslatorTransform : BundleItemTransform
     {

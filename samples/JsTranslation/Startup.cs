@@ -64,7 +64,7 @@ namespace JsTranslation
                     .Include("/css/*.css");
 
                 // we define a separate bundle for each of the available cultures
-                // (translations are loaded from {ContentRoot}/App_Data/Localization/)
+                // (translations are loaded from {ContentRoot}/App_Data/Localization/ by POLocalizationProvider)
                 var currentStringLocalizer = stringLocalizerFactory.Create(typeof(Program));
                 foreach (var culture in localizationProvider.AvailableCultures)
                 {
@@ -80,7 +80,7 @@ namespace JsTranslation
             app.UseStaticFiles();
 
             // enabling request localization
-            // in this demo we only allow culture to be pickup up from query string by setting RequestCultureProviders
+            // in this demo we only allow culture to be picked up from query string by setting RequestCultureProviders
             // (see also https://docs.microsoft.com/en-us/aspnet/core/fundamentals/localization?view=aspnetcore-2.1#localization-middleware)
             app.UseRequestLocalization(new RequestLocalizationOptions
             {
