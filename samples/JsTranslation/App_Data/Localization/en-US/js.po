@@ -1,0 +1,5 @@
+﻿msgid "Change language"
+msgstr "Change language"
+
+msgid "You're about to change the language. Are you sure?"
+msgstr "You're about to change the language. Are you sure?"

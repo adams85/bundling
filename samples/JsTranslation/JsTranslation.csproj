@@ -3,9 +3,11 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RuntimeFrameworkVersion>2.1.5</RuntimeFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Karambolo.PO" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.5" />
   </ItemGroup>
 
@@ -17,6 +19,11 @@
     <ProjectReference Include="..\..\source\Bundling.Less\Bundling.Less.csproj" />
     <ProjectReference Include="..\..\source\Bundling.WebMarkupMin\Bundling.WebMarkupMin.csproj" />
     <ProjectReference Include="..\..\source\Bundling\Bundling.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="App_Data\Localization\en-US\" />
+    <Folder Include="App_Data\Localization\de-DE\" />
   </ItemGroup>
 
 </Project>
