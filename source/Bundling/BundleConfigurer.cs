@@ -90,7 +90,7 @@ namespace Microsoft.AspNetCore.Builder
             return this;
         }
 
-        public BundleConfigurer UseItemTransforms(Action<List<IBundleTransform>> modification)
+        public BundleConfigurer UseTransforms(Action<List<IBundleTransform>> modification)
         {
             Bundle.Transforms = Bundle.Transforms.Modify(modification);
             return this;
