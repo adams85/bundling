@@ -15,76 +15,94 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class ConfigurationExtensions
     {
-        public static IApplicationBuilder UseBundling(this IApplicationBuilder @this, Action<BundleCollectionConfigurer> configureBundles = null)
+        public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, Action<BundleCollectionConfigurer> configureBundles = null)
         {
-            return @this.UseBundling(BundlingOptions.Default, configureBundles);
+            return builder.UseBundling(BundlingOptions.Default, configureBundles);
         }
 
-        public static IApplicationBuilder UseBundling(this IApplicationBuilder @this, BundlingOptions options, Action<BundleCollectionConfigurer> configureBundles = null)
+        public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, BundlingOptions options, Action<BundleCollectionConfigurer> configureBundles = null)
         {
+            if (builder == null)
+                throw new ArgumentNullException(nameof(builder));
+
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
 
             if (HttpContextStatic.Current == null)
-                HttpContextStatic.Initialize(@this.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
+                HttpContextStatic.Initialize(builder.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
 
             var sourceFileProvider =
                 options.SourceFileProvider ??
-                @this.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider;
+                builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider;
 
             var bundles = new BundleCollection(options.RequestPath, sourceFileProvider);
 
-            configureBundles?.Invoke(new BundleCollectionConfigurer(bundles, @this.ApplicationServices));
+            configureBundles?.Invoke(new BundleCollectionConfigurer(bundles, builder.ApplicationServices));
 
-            @this.UseMiddleware<BundlingMiddleware>(bundles, Options.Create(options));
+            builder.UseMiddleware<BundlingMiddleware>(bundles, Options.Create(options));
 
-            return @this;
+            return builder;
         }
 
-        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer @this, TextReader reader,
+        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, TextReader reader,
             ConfigFilePathMapper pathMapper = null)
         {
-            var configFileManager = @this.AppServices.GetRequiredService<IConfigFileManager>();
-            configFileManager.Load(@this.Bundles, reader, pathMapper);
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            var configFileManager = configurer.AppServices.GetRequiredService<IConfigFileManager>();
+            configFileManager.Load(configurer.Bundles, reader, pathMapper);
+
+            return configurer;
         }
 
-        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer @this, IFileInfo fileInfo,
+        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, IFileInfo fileInfo,
             ConfigFilePathMapper pathMapper = null)
         {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
             if (fileInfo == null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
             using (var stream = fileInfo.CreateReadStream())
             using (var reader = new StreamReader(stream))
-                return @this.LoadFromConfigFile(reader, pathMapper);
+                return configurer.LoadFromConfigFile(reader, pathMapper);
         }
 
-        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer @this, string path, IFileProvider fileProvider,
+        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, string path, IFileProvider fileProvider,
             ConfigFilePathMapper pathMapper = null)
         {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
             if (fileProvider == null)
                 throw new ArgumentNullException(nameof(fileProvider));
 
-            return @this.LoadFromConfigFile(fileProvider.GetFileInfo(path), pathMapper);
+            return configurer.LoadFromConfigFile(fileProvider.GetFileInfo(path), pathMapper);
         }
 
-        public static BundleConfigurer AddCss(this BundleCollectionConfigurer @this, PathString path)
+        public static BundleConfigurer AddCss(this BundleCollectionConfigurer configurer, PathString path)
         {
-            var bundle = new Bundle(path, @this.GetDefaults(CssBundleConfiguration.BundleType));
-            @this.Bundles.Add(bundle);
-            return new BundleConfigurer(bundle, @this.Bundles.SourceFileProvider, @this.AppServices);
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            var bundle = new Bundle(path, configurer.GetDefaults(CssBundleConfiguration.BundleType));
+            configurer.Bundles.Add(bundle);
+            return new BundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
         }
 
-        public static BundleConfigurer AddJs(this BundleCollectionConfigurer @this, PathString path)
+        public static BundleConfigurer AddJs(this BundleCollectionConfigurer configurer, PathString path)
         {
-            var bundle = new Bundle(path, @this.GetDefaults(JsBundleConfiguration.BundleType));
-            @this.Bundles.Add(bundle);
-            return new BundleConfigurer(bundle, @this.Bundles.SourceFileProvider, @this.AppServices);
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            var bundle = new Bundle(path, configurer.GetDefaults(JsBundleConfiguration.BundleType));
+            configurer.Bundles.Add(bundle);
+            return new BundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
         }
     }
 }

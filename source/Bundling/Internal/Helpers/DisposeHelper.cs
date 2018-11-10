@@ -44,6 +44,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public void Register(IDisposable disposable)
         {
+            if (disposable == null)
+                throw new ArgumentNullException(nameof(disposable));
+
             if (isDisposed)
                 throw new ObjectDisposedException(nameof(DefaultScopedDisposer));
 
@@ -62,11 +65,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
     public static class DisposeHelper
     {
-        public static T ScheduleDisposeForShutdown<T>(this IApplicationLifetime @this, T disposable)
+        public static T ScheduleDisposeForShutdown<T>(this IApplicationLifetime appLifetime, T disposable)
             where T : IDisposable
         {
+            if (appLifetime == null)
+                throw new ArgumentNullException(nameof(appLifetime));
+
             var registration = default(CancellationTokenRegistration);
-            registration = @this.ApplicationStopping.Register(() =>
+            registration = appLifetime.ApplicationStopping.Register(() =>
             {
                 disposable.Dispose();
                 registration.Dispose();
@@ -74,10 +80,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return disposable;
         }
 
-        public static T ScheduleDisposeForScopeEnd<T>(this IScopedDisposer @this, T disposable)
+        public static T ScheduleDisposeForScopeEnd<T>(this IScopedDisposer disposer, T disposable)
             where T : IDisposable
         {
-            @this.Register(disposable);
+            if (disposer == null)
+                throw new ArgumentNullException(nameof(disposer));
+
+            disposer.Register(disposable);
             return disposable;
         }
     }

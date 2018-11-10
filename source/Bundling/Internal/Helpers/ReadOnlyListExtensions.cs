@@ -6,20 +6,23 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
     public static class ReadOnlyListExtensions
     {
-        public static IReadOnlyList<T> Modify<T>(this IReadOnlyList<T> @this, Action<List<T>> modification)
+        public static IReadOnlyList<T> Modify<T>(this IReadOnlyList<T> list, Action<List<T>> modification)
         {
-            return @this.ModifyIf(true, modification);
+            return list.ModifyIf(true, modification);
         }
 
-        public static IReadOnlyList<T> ModifyIf<T>(this IReadOnlyList<T> @this, bool condition, Action<List<T>> modification)
+        public static IReadOnlyList<T> ModifyIf<T>(this IReadOnlyList<T> list, bool condition, Action<List<T>> modification)
         {
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+
             if (modification == null)
                 throw new ArgumentNullException(nameof(modification));
 
             if (!condition)
-                return @this;
+                return list;
 
-            var result = new List<T>(@this ?? Enumerable.Empty<T>());
+            var result = new List<T>(list ?? Enumerable.Empty<T>());
             modification(result);
             return result;
         }

@@ -32,122 +32,155 @@ namespace Microsoft.Extensions.DependencyInjection
 
     public static class ConfigurationExtensions
     {
-        public static BundlingConfigurer AddBundling(this IServiceCollection @this, Action<BundleGlobalOptions, IServiceProvider> configure = null)
+        public static BundlingConfigurer AddBundling(this IServiceCollection services, Action<BundleGlobalOptions, IServiceProvider> configure = null)
         {
-            @this.AddOptions().AddLogging();
+            if (services == null)
+                throw new ArgumentNullException(nameof(services));
 
-            @this.AddSingleton<IConfigureOptions<BundleGlobalOptions>>(sp => new BundleGlobalOptions.Configurer(configure, sp));
-            @this.TryAddScoped<IScopedDisposer, DefaultScopedDisposer>();
+            services.AddOptions().AddLogging();
 
-            @this.TryAddSingleton<ISystemClock, SystemClock>();
-            @this.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IConfigureOptions<BundleGlobalOptions>>(sp => new BundleGlobalOptions.Configurer(configure, sp));
+            services.TryAddScoped<IScopedDisposer, DefaultScopedDisposer>();
 
-            @this.TryAddSingleton<IConfigFileManager, ConfigFileManager>();
+            services.TryAddSingleton<ISystemClock, SystemClock>();
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            @this.AddSingleton<IBundleModelFactory, DefaultBundleModelFactory>();
-            @this.AddSingleton(sp => new Lazy<IEnumerable<IBundleModelFactory>>(() => sp.GetRequiredService<IEnumerable<IBundleModelFactory>>()));
+            services.TryAddSingleton<IConfigFileManager, ConfigFileManager>();
 
-            @this.TryAddSingleton<IBundleManagerFactory, BundleManagerFactory>();
-            @this.TryAddSingleton<IBundleVersionProvider>(NullBundleVersionProvider.Instance);
-            @this.TryAddSingleton<IBundleUrlHelper, DefaultBundleUrlHelper>();
+            services.AddSingleton<IBundleModelFactory, DefaultBundleModelFactory>();
+            services.AddSingleton(sp => new Lazy<IEnumerable<IBundleModelFactory>>(() => sp.GetRequiredService<IEnumerable<IBundleModelFactory>>()));
 
-            return new BundlingConfigurer(@this);
+            services.TryAddSingleton<IBundleManagerFactory, BundleManagerFactory>();
+            services.TryAddSingleton<IBundleVersionProvider>(NullBundleVersionProvider.Instance);
+            services.TryAddSingleton<IBundleUrlHelper, DefaultBundleUrlHelper>();
+
+            return new BundlingConfigurer(services);
         }
 
-        public static BundlingConfigurer UseMemoryCaching(this BundlingConfigurer @this)
+        public static BundlingConfigurer UseMemoryCaching(this BundlingConfigurer configurer)
         {
-            @this.Services.AddMemoryCache();
-            @this.Services.Replace(ServiceDescriptor.Singleton<IBundleCache, MemoryBundleCache>());
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.AddMemoryCache();
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleCache, MemoryBundleCache>());
+
+            return configurer;
         }
 
-        public static BundlingConfigurer UseFileSystemCaching(this BundlingConfigurer @this, Action<FileSystemBundleCacheOptions> configure = null)
+        public static BundlingConfigurer UseFileSystemCaching(this BundlingConfigurer configurer, Action<FileSystemBundleCacheOptions> configure = null)
         {
-            @this.Services.Replace(ServiceDescriptor.Singleton<IBundleCache>(sp => new FileSystemBundleCache(
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleCache>(sp => new FileSystemBundleCache(
                 sp.GetRequiredService<IApplicationLifetime>().ApplicationStopping, sp.GetRequiredService<IHostingEnvironment>(), sp.GetRequiredService<ILoggerFactory>(),
                 sp.GetRequiredService<ISystemClock>(), sp.GetRequiredService<IOptions<FileSystemBundleCacheOptions>>(), sp.GetRequiredService<IOptions<BundleGlobalOptions>>())));
 
             if (configure != null)
-                @this.Services.Configure(configure);
+                configurer.Services.Configure(configure);
 
-            return @this;
+            return configurer;
         }
 
-        public static BundlingConfigurer UseHashVersioning(this BundlingConfigurer @this)
+        public static BundlingConfigurer UseHashVersioning(this BundlingConfigurer configurer)
         {
-            @this.Services.Replace(ServiceDescriptor.Singleton<IBundleVersionProvider, HashBundleVersionProvider>());
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleVersionProvider, HashBundleVersionProvider>());
+
+            return configurer;
         }
 
-        public static BundlingConfigurer UseTimestampVersioning(this BundlingConfigurer @this)
+        public static BundlingConfigurer UseTimestampVersioning(this BundlingConfigurer configurer)
         {
-            @this.Services.Replace(ServiceDescriptor.Singleton<IBundleVersionProvider, TimestampBundleVersionProvider>());
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleVersionProvider, TimestampBundleVersionProvider>());
+
+            return configurer;
         }
 
-        public static BundlingConfigurer EnableMinification(this BundlingConfigurer @this)
+        public static BundlingConfigurer EnableMinification(this BundlingConfigurer configurer)
         {
-            @this.Services.Configure<BundleGlobalOptions>(o => o.EnableMinification = true);
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableMinification = true);
+
+            return configurer;
         }
 
-        public static BundlingConfigurer EnableChangeDetection(this BundlingConfigurer @this)
+        public static BundlingConfigurer EnableChangeDetection(this BundlingConfigurer configurer)
         {
-            @this.Services.Configure<BundleGlobalOptions>(o => o.EnableChangeDetection = true);
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableChangeDetection = true);
+
+            return configurer;
         }
 
-        public static BundlingConfigurer EnableCacheHeader(this BundlingConfigurer @this, TimeSpan? maxAge = null)
+        public static BundlingConfigurer EnableCacheHeader(this BundlingConfigurer configurer, TimeSpan? maxAge = null)
         {
-            @this.Services.Configure<BundleGlobalOptions>(o =>
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Configure<BundleGlobalOptions>(o =>
             {
                 o.EnableCacheHeader = true;
                 o.CacheHeaderMaxAge = maxAge;
             });
 
-            return @this;
+            return configurer;
         }
 
-        public static BundlingConfigurer AddCss(this BundlingConfigurer @this, Action<BundleDefaultsOptions, IServiceProvider> configure = null)
+        public static BundlingConfigurer AddCss(this BundlingConfigurer configurer, Action<BundleDefaultsOptions, IServiceProvider> configure = null)
         {
-            @this.Services.AddSingleton<IConfigureOptions<BundleDefaultsOptions>>(sp => new CssBundleConfiguration.Configurer(configure, sp));
-            @this.Services.AddSingleton<IConfigurationHelper, CssBundleConfiguration.Helper>();
-            @this.Services.AddSingleton<IExtensionMapper, CssBundleConfiguration.ExtensionMapper>();
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.AddSingleton<IConfigureOptions<BundleDefaultsOptions>>(sp => new CssBundleConfiguration.Configurer(configure, sp));
+            configurer.Services.AddSingleton<IConfigurationHelper, CssBundleConfiguration.Helper>();
+            configurer.Services.AddSingleton<IExtensionMapper, CssBundleConfiguration.ExtensionMapper>();
+
+            return configurer;
         }
 
-        public static BundlingConfigurer AddJs(this BundlingConfigurer @this, Action<BundleDefaultsOptions, IServiceProvider> configure = null)
+        public static BundlingConfigurer AddJs(this BundlingConfigurer configurer, Action<BundleDefaultsOptions, IServiceProvider> configure = null)
         {
-            @this.Services.AddSingleton<IConfigureOptions<BundleDefaultsOptions>>(sp => new JsBundleConfiguration.Configurer(configure, sp));
-            @this.Services.AddSingleton<IConfigurationHelper, JsBundleConfiguration.Helper>();
-            @this.Services.AddSingleton<IExtensionMapper, JsBundleConfiguration.ExtensionMapper>();
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.AddSingleton<IConfigureOptions<BundleDefaultsOptions>>(sp => new JsBundleConfiguration.Configurer(configure, sp));
+            configurer.Services.AddSingleton<IConfigurationHelper, JsBundleConfiguration.Helper>();
+            configurer.Services.AddSingleton<IExtensionMapper, JsBundleConfiguration.ExtensionMapper>();
+
+            return configurer;
         }
 
-        public static BundlingConfigurer UseDefaults(this BundlingConfigurer @this, IHostingEnvironment environment)
+        public static BundlingConfigurer UseDefaults(this BundlingConfigurer configurer, IHostingEnvironment environment)
         {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
             if (environment == null)
                 throw new ArgumentNullException(nameof(environment));
 
-            @this
+            configurer
                 .AddCss()
                 .AddJs()
                 .UseHashVersioning()
                 .UseMemoryCaching();
 
             if (!environment.IsDevelopment())
-                @this.EnableMinification();
+                configurer.EnableMinification();
             else
-                @this.EnableChangeDetection();
+                configurer.EnableChangeDetection();
 
-            return @this;
+            return configurer;
         }
     }
 }
