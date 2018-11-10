@@ -7,16 +7,19 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ConfigurationExtensions
     {
-        public static BundlingConfigurer AddLess(this BundlingConfigurer @this, Action<BundleDefaultsOptions, IServiceProvider> configureDefaults = null)
+        public static BundlingConfigurer AddLess(this BundlingConfigurer configurer, Action<BundleDefaultsOptions, IServiceProvider> configureDefaults = null)
         {
-            @this.Services.AddSingleton<IConfigureOptions<BundleDefaultsOptions>>(sp => new LessBundleConfiguration.Configurer(configureDefaults, sp));
-            @this.Services.AddSingleton<IConfigurationHelper, LessBundleConfiguration.Helper>();
-            @this.Services.AddSingleton<IExtensionMapper, LessBundleConfiguration.ExtensionMapper>();
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            @this.Services.AddSingleton<ILessEngineFactory, LessEngineFactory>();
-            @this.Services.AddSingleton<ILessCompiler, LessCompiler>();
+            configurer.Services.AddSingleton<IConfigureOptions<BundleDefaultsOptions>>(sp => new LessBundleConfiguration.Configurer(configureDefaults, sp));
+            configurer.Services.AddSingleton<IConfigurationHelper, LessBundleConfiguration.Helper>();
+            configurer.Services.AddSingleton<IExtensionMapper, LessBundleConfiguration.ExtensionMapper>();
 
-            return @this;
+            configurer.Services.AddSingleton<ILessEngineFactory, LessEngineFactory>();
+            configurer.Services.AddSingleton<ILessCompiler, LessCompiler>();
+
+            return configurer;
         }
     }
 }

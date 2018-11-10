@@ -1,4 +1,5 @@
-﻿using Karambolo.AspNetCore.Bundling.Css;
+﻿using System;
+using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Js;
 using Karambolo.AspNetCore.Bundling.NUglify;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -10,12 +11,15 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ConfigurationExtensions
     {
-        public static BundlingConfigurer UseNUglify(this BundlingConfigurer @this, CssSettings cssSettings = null, CodeSettings jsSettings = null)
+        public static BundlingConfigurer UseNUglify(this BundlingConfigurer configurer, CssSettings cssSettings = null, CodeSettings jsSettings = null)
         {
-            @this.Services.Replace(ServiceDescriptor.Singleton<ICssMinifier>(sp => new CssMinifier(cssSettings, sp.GetRequiredService<ILoggerFactory>())));
-            @this.Services.Replace(ServiceDescriptor.Singleton<IJsMinifier>(sp => new JsMinifier(jsSettings, sp.GetRequiredService<ILoggerFactory>())));
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
 
-            return @this;
+            configurer.Services.Replace(ServiceDescriptor.Singleton<ICssMinifier>(sp => new CssMinifier(cssSettings, sp.GetRequiredService<ILoggerFactory>())));
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IJsMinifier>(sp => new JsMinifier(jsSettings, sp.GetRequiredService<ILoggerFactory>())));
+
+            return configurer;
         }
     }
 }
