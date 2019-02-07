@@ -43,7 +43,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             public TimeSpan? SlidingExpiration { get; set; }
         }
 
-        protected struct StoreItem
+        protected readonly struct StoreItem
         {
             public static readonly StoreItem NotAvailable = default(StoreItem);
 

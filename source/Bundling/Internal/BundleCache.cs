@@ -6,7 +6,7 @@ using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
-    public struct BundleCacheKey : IEquatable<BundleCacheKey>
+    public readonly struct BundleCacheKey : IEquatable<BundleCacheKey>
     {
         public BundleCacheKey(int managerId, PathString path, QueryString query)
         {

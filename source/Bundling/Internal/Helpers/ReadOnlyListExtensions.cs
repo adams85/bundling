@@ -13,9 +13,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public static IReadOnlyList<T> ModifyIf<T>(this IReadOnlyList<T> list, bool condition, Action<List<T>> modification)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
             if (modification == null)
                 throw new ArgumentNullException(nameof(modification));
 

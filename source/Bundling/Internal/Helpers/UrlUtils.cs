@@ -76,7 +76,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public static string QueryToFileName(string value)
         {
-
             // query is treated case-sensitive so a case-insensitive encoding should be used
             // as the file system may be case-insensitive
 

@@ -27,17 +27,17 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
 
             if (result.Errors.Count > 0)
             {
-                var message = string.Concat($"Js minification of '{(filePath ?? "n/a")}' failed:", Environment.NewLine, "{REASON}");
-                var reason = string.Join(Environment.NewLine, result.Errors.Select(e => e.Message));
-                _logger.LogWarning(message, reason);
+                _logger.LogWarning($"Js minification of '{{FILEPATH}}' failed:{Environment.NewLine}{{REASON}}",
+                    (filePath ?? "(content)"),
+                    result.Errors.Select(e => e.Message));
 
                 return content;
             }
             else if (result.Warnings.Count > 0)
             {
-                var message = string.Concat($"Js minification of '{(filePath ?? "n/a")}' completed with warnings:", Environment.NewLine, "{REASON}");
-                var reason = string.Join(Environment.NewLine, result.Warnings.Select(e => e.Message));
-                _logger.LogWarning(message, reason);
+                _logger.LogWarning($"Js minification of '{{FILEPATH}}' completed with warnings:{Environment.NewLine}{{REASON}}",
+                    (filePath ?? "(content)"),
+                    result.Warnings.Select(e => e.Message));
             }
 
             return result.MinifiedContent;

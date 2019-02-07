@@ -2,13 +2,13 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 
-namespace Karambolo.AspNetCore.Bundling.Less
+namespace Karambolo.AspNetCore.Bundling.Sass
 {
-    public class LessCompileTransform : BundleItemTransform
+    public class SassCompileTransform : BundleItemTransform
     {
-        readonly ILessCompiler _compiler;
+        readonly ISassCompiler _compiler;
 
-        public LessCompileTransform(ILessCompiler compiler)
+        public SassCompileTransform(ISassCompiler compiler)
         {
             if (compiler == null)
                 throw new ArgumentNullException(nameof(compiler));

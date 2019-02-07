@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Karambolo.AspNetCore.Bundling.Js
+namespace Karambolo.AspNetCore.Bundling.Sass
 {
-    public static class JsBundleConfiguration
+    public static class SassBundleConfiguration
     {
-        public const string BundleType = "js";
+        public const string BundleType = "sass";
 
         internal class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
         {
@@ -24,7 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
                 options.GlobalDefaults = _serviceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
                 options.Type = BundleType;
-                options.ConcatenationToken = ";" + "\n";
+                options.ConcatenationToken = "\n";
 
                 options.ItemTransforms = helper.SetDefaultItemTransforms(options.GlobalDefaults.ItemTransforms);
                 options.Transforms = helper.SetDefaultTransforms(options.GlobalDefaults.Transforms);
@@ -36,19 +37,30 @@ namespace Karambolo.AspNetCore.Bundling.Js
         public class Helper : IConfigurationHelper
         {
             readonly BundleGlobalOptions _globalOptions;
-            readonly JsMinifyTransform _minifyTransform;
+            readonly SassCompileTransform _compileTransform;
+            readonly CssRewriteUrlTransform _rewriteUrlTransform;
+            readonly CssMinifyTransform _minifyTransform;
 
             public string Type => BundleType;
 
-            public Helper(IOptions<BundleGlobalOptions> globalOptions, IJsMinifier minifier)
+            public Helper(IOptions<BundleGlobalOptions> globalOptions, ISassCompiler compiler, ICssMinifier minifier)
             {
                 _globalOptions = globalOptions.Value;
-                _minifyTransform = new JsMinifyTransform(minifier);
+                _compileTransform = new SassCompileTransform(compiler);
+                _rewriteUrlTransform = new CssRewriteUrlTransform();
+                _minifyTransform = new CssMinifyTransform(minifier);
             }
 
             public virtual IReadOnlyList<IBundleItemTransform> SetDefaultItemTransforms(IReadOnlyList<IBundleItemTransform> itemTransforms)
             {
-                return itemTransforms;
+                return itemTransforms.ModifyIf(itemTransforms == null || !itemTransforms.Any(t => t is SassCompileTransform),
+                    l =>
+                    {
+                        l.Insert(0, _compileTransform);
+
+                        if (l.FindIndex(t => t is CssRewriteUrlTransform) < 0)
+                            l.Add(new CssRewriteUrlTransform());
+                    });
             }
 
             public virtual IReadOnlyList<IBundleTransform> SetDefaultTransforms(IReadOnlyList<IBundleTransform> transforms)
@@ -58,7 +70,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
             public virtual IReadOnlyList<IBundleTransform> EnableMinification(IReadOnlyList<IBundleTransform> transforms)
             {
-                return transforms.ModifyIf(transforms == null || !transforms.Any(t => t is JsMinifyTransform),
+                return transforms.ModifyIf(transforms == null || !transforms.Any(t => t is CssMinifyTransform),
                     l => l.Add(_minifyTransform));
             }
         }
@@ -74,12 +86,12 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
             public virtual IBundleConfiguration MapInput(string extension)
             {
-                return ".js".Equals(extension, StringComparison.OrdinalIgnoreCase) ? _options : null;
+                return ".sass".Equals(extension, StringComparison.OrdinalIgnoreCase) ? _options : null;
             }
 
             public virtual IBundleConfiguration MapOutput(string extension)
             {
-                return MapInput(extension);
+                return null;
             }
         }
     }

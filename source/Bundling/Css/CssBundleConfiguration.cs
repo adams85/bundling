@@ -24,7 +24,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
                 options.GlobalDefaults = _serviceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
                 options.Type = BundleType;
-                options.ConcatenationToken = Environment.NewLine;
+                options.ConcatenationToken = "\n";
 
                 options.ItemTransforms = helper.SetDefaultItemTransforms(options.GlobalDefaults.ItemTransforms);
                 options.Transforms = helper.SetDefaultTransforms(options.GlobalDefaults.Transforms);

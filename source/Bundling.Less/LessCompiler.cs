@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using dotless.Core;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 {
     public interface ILessCompiler
     {
-        Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider);
+        Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
     }
 
     public class LessCompiler : ILessCompiler
@@ -30,10 +31,12 @@ namespace Karambolo.AspNetCore.Bundling.Less
             _logger = loggerFactory.CreateLogger<LessCompiler>();
         }
 
-        public Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider)
+        public Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
+
+            token.ThrowIfCancellationRequested();
 
             string fileBasePath, virtualBasePath, fileName;
             if (filePath != null)
@@ -51,9 +54,8 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             if (!engine.LastTransformationSuccessful)
             {
-                var message = string.Concat($"Less compilation of '{(filePath ?? "n/a")}' failed.");
-
-                _logger.LogWarning(string.Concat(message, Environment.NewLine, "{REASON}"),
+                _logger.LogWarning($"Less compilation of '{{FILEPATH}}' failed:{Environment.NewLine}{{REASON}}",
+                    (filePath ?? "(content)"),
                     (engine is LessEngine lessEngine ? lessEngine.LastTransformationError?.Message : null) ?? "Unknown reason.");
 
                 result = string.Empty;

@@ -4,12 +4,13 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>Karambolo.AspNetCore.Bundling.Less</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.Less</RootNamespace>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="dotless.Core" Version="1.6.7" />
   </ItemGroup>
 
   <ItemGroup>

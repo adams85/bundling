@@ -4,12 +4,13 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>Karambolo.AspNetCore.Bundling.NUglify</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.NUglify</RootNamespace>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="NUglify" Version="1.5.9" />
+    <PackageReference Include="NUglify" Version="1.5.12" />
   </ItemGroup>
 
   <ItemGroup>

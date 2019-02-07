@@ -26,12 +26,14 @@ namespace Karambolo.AspNetCore.Bundling.NUglify
 
             if (result.Errors.Count > 0)
             {
-                var message = 
+                var message =
                     result.HasErrors ?
-                    $"Css minification of '{(filePath ?? "n/a")}' failed:" :
-                    $"Css minification of '{(filePath ?? "n/a")}' completed with warnings:";
+                    $"Css minification of '{{FILEPATH}}' failed:{Environment.NewLine}{{REASON}}" :
+                    $"Css minification of '{{FILEPATH}}' completed with warnings:{Environment.NewLine}{{REASON}}";
 
-                _logger.LogWarning(string.Concat(message , Environment.NewLine, "{REASON}"), string.Join(Environment.NewLine, result.Errors));
+                _logger.LogWarning(message,
+                    (filePath ?? "(content)"),
+                    string.Join(Environment.NewLine, result.Errors));
 
                 if (result.HasErrors)
                     return content;

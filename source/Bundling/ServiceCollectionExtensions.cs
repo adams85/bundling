@@ -54,6 +54,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<IBundleVersionProvider>(NullBundleVersionProvider.Instance);
             services.TryAddSingleton<IBundleUrlHelper, DefaultBundleUrlHelper>();
 
+            services.TryAddSingleton<ICssMinifier, NullCssMinifier>();
+            services.TryAddSingleton<IJsMinifier, NullJsMinifier>();
+
             return new BundlingConfigurer(services);
         }
 

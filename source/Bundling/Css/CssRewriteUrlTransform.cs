@@ -7,42 +7,35 @@ namespace Karambolo.AspNetCore.Bundling.Css
 {
     public class CssRewriteUrlTransform : BundleItemTransform
     {
-        static string RemoveQuotes(ref string value)
+        static readonly Regex rewriteUrlsRegex = new Regex(
+            @"(?<before>url\()(?<url>'[^']+'|""[^""]+""|[^)]+)(?<after>\))|" +
+            @"(?<before>@import\s+)(?<url>'[^']+'|""[^""]+"")(?<after>\s*;)",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+        protected virtual string RebaseUrl(string value, string basePath, string pathPrefix)
         {
-            if (value.StartsWith("'"))
-                if (value.EndsWith("'"))
-                {
-                    value = value.Substring(1, value.Length - 2);
-                    return "'";
-                }
-                else
-                    return null;
-
-            if (value.StartsWith("\""))
-                if (value.EndsWith("\""))
-                {
-                    value = value.Substring(1, value.Length - 2);
-                    return "\"";
-                }
-                else
-                    return null;
-
-            return string.Empty;
-        }
-
-        string RebaseUrl(string basePath, PathString pathPrefix, string value)
-        {
-            var quote = RemoveQuotes(ref value);
-
-            if (quote == null || 
-                value.StartsWith('/') ||
-                value.StartsWith("data:", StringComparison.OrdinalIgnoreCase) || 
+            if (value.StartsWith('/') ||
+                value.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
                 !Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out Uri uri) ||
                 uri.IsAbsoluteUri)
                 return value;
 
-            var url = pathPrefix.Add(basePath + value);
-            return string.Concat(quote, url, quote);
+            return new PathString(pathPrefix).Add(basePath + value);
+        }
+
+        protected virtual string RewriteUrls(string content, string basePath, string pathPrefix)
+        {
+            return rewriteUrlsRegex.Replace(content,
+                m =>
+                {
+                    var value = m.Groups["url"].Value;
+                    var quote = StringUtils.RemoveQuotes(ref value);
+
+                    return string.Concat(
+                        m.Groups["before"].Value,
+                        quote, RebaseUrl(value, basePath, pathPrefix), quote,
+                        m.Groups["after"].Value);
+                });
         }
 
         public override void Transform(IBundleItemTransformContext context)
@@ -53,8 +46,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
                 var pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
 
-                context.Content = Regex.Replace(context.Content, @"(?<before>url\()(?<url>[^)]+?)(?<after>\))|(?<before>@import\s+)(?<url>['""][^'""]*['""])", 
-                    m => string.Concat(m.Groups["before"].Value, RebaseUrl(basePath, pathPrefix, m.Groups["url"].Value), m.Groups["after"].Value));
+                context.Content = RewriteUrls(context.Content, basePath, pathPrefix);
             }
         }
     }
