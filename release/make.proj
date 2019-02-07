@@ -16,6 +16,7 @@
     <VersionPropsPath Include="$(SolutionPath)\Bundling.NUglify\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.WebMarkupMin\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Less\Properties\AssemblyInfo.props" />
+    <VersionPropsPath Include="$(SolutionPath)\Bundling.Sass\Properties\AssemblyInfo.props" />
   </ItemGroup>
 
   <Target Name="GetVersion" Condition="$(TagVersion) == '' Or $(Revision) == ''">
