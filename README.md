@@ -1,4 +1,3 @@
-
 # Karambolo.AspNetCore.Bundling
 
 This repository contains components which provide run-time bundling and minification features for ASP.NET Core 2 in a similar way the System.Web.Optimization library does for classic ASP.NET.
@@ -7,21 +6,26 @@ This repository contains components which provide run-time bundling and minifica
 
 ### Main features
 - Css and Js minification and bundling (powered by [NUglify](https://github.com/xoofx/NUglify) and [WebMarkupMin](https://github.com/Taritsyn/WebMarkupMin)).
-- Less compilation and bundling (built on [dotLess](https://github.com/dotless/dotless/blob/master/src/dotless.Core/dotless.Core.csproj)).
-- Straightforward and flexible configuration made possible by fluent API, **compatibility with *bundleconfig.json*** and multi-level settings inheritance.
-- Full control over server and client-side caching (including cache busting). Backing store is replaceable, **memory** and **file system cache** implementations are included.
+- Less compilation and bundling (based on [dotLess](https://github.com/dotless/dotless)).
+- Sass/Scss compilation and bundling (based on [LibSassHost](https://github.com/Taritsyn/LibSassHost)).
+- Straightforward and flexible configuration:
+  - Configuration through fluent API.
+  - **Compatibility with *bundleconfig.json***.
+  - Multi-level settings inheritance.
+- Full control over server and client-side caching (including cache busting). **Memory** and **file system cache** implementations are included.
+- Replaceable backing storage by leveraging [.NET Core file system abstractions](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/file-providers).
+- Change detection.
+- Razor tag helpers and the familiar, System.Web.Optimization-like API can be used as well.
+- Correct handling of URL path prefixes (app branch prefix, static files middleware prefix, etc.)
 - Fully customizable transformation pipelines.
 - **Dynamic content sources** and query string **parameterized bundles**.
-- Razor tag helpers and the familiar, System.Web.Optimization-like API can be used as well.
-- Change detection.
-- Correct handling of URL path prefixes (app branch prefix, static files middleware prefix, etc.)
-- Highly modular design leveraging DI, which provides great extensibility.
+- Modular design, great extensibility.
 
 ### Basic usage
 
-#### 1. Install NuGet package
+#### 1. Install NuGet packages
 
-The *Karambolo.AspNetCore.Bundling* package contains the core components only so you need to install a package that contains an actual implementation. You can choose between *NUglify* and *WebMarkupMin* implementations currently.
+The *Karambolo.AspNetCore.Bundling* package contains the core components only, so you need to install a package that provides an actual implementation. You can choose between *NUglify* and *WebMarkupMin* implementations currently.
 
     Install-Package Karambolo.AspNetCore.Bundling.NUglify
 
@@ -29,19 +33,28 @@ or
 
     Install-Package Karambolo.AspNetCore.Bundling.WebMarkupMin
 
-If you want to enable Less features as well, you need to install the following package:
+If you want to use CSS pre-proccessor features as well, you need to install a further package:
 
-    Install-Package Karambolo.AspNetCore.Bundling.Less
+- Less
 
+      Install-Package Karambolo.AspNetCore.Bundling.Less
+
+- Sass/Scss
+
+      Install-Package Karambolo.AspNetCore.Bundling.Sass
+
+  The current implementation uses LibSassHost under the hood, which is a wrapper around [LibSass](https://sass-lang.com/libsass), an unmanaged library written in C/C++. Therefore you need to install an additional NuGet package which contains this native dependency compiled to your target platform. E.g. on Windows x64 systems: `Install-Package LibSassHost.Native.win-x64`. For further details refer to the [documentation of LibSassHost](https://github.com/Taritsyn/LibSassHost#installation).
+  
 #### 2. Register bundling services
 
 Add the following to the *ConfigureServices* method in your *Startup* class:
 
     services.AddBundling()
-        .UseDefaults(_env)
-        .UseNUglify() // or .UseWebMarkupMin(), respectively
-        .AddLess(); // if you need Less support
-        .EnableCacheHeader(TimeSpan.FromDays(1)); // if you want to enable client-side caching
+        .UseDefaults(_env) // see below
+        .UseNUglify() // or .UseWebMarkupMin()
+        .AddLess(); // to enable Less support
+        .AddSass(); // to enable Sass/Scss support
+        .EnableCacheHeader(TimeSpan.FromDays(1)); // to enable client-side caching
 
 The *_env* field contains the current hosting environment. You can inject it in the constructor like this:
 
@@ -53,9 +66,9 @@ The *_env* field contains the current hosting environment. You can inject it in 
         _env = env;
     }
 
-*UseDefaults* adds support for Css and Js and sets the default transformations, enables hash based cache busting and memory caching (the only option currently). In case of development hosting environment, it enables change detection, otherwise enables minification.
+*UseDefaults* adds support for Css and Js and sets the default transformations, enables hash-based cache busting and memory caching. When hosting environment is set to *Development*, it enables change detection, otherwise enables minification.
 
-If you want to switch to file system-backed caching, call *UseFileSystemCaching()* on the builder (after *UseDefaults*). Besides that, there are additional settings available on the builder.
+If you want to switch to file system-backed caching, call *UseFileSystemCaching()* on the builder (after *UseDefaults*). Besides that, there are some further settings available on the builder.
 
 #### 3. Configure bundles
 
@@ -63,31 +76,37 @@ You configure your bundles in the *Configure* method of the *Startup* class in t
 
     app.UseBundling(bundles =>
     {
-        // loading bundles from the json config file
+        // loading bundles from json config file
         bundles.LoadFromConfigFile("/bundleconfig.json", _env.ContentRootFileProvider);
 
-        // building an advanced configuration in code
+        // defining a Css bundle (you can use patterns to include/exclude files)
         bundles.AddCss("/virtual-path/to/bundle.css")
             .Include("/physical-path/to/include.css")
             .Include("/another/physical-path/to/pattern*.css")
             .Exclude("/**/*.min.css");
 
+        // defining a Less bundle (you should include entry point files only)
         bundles.AddLess("/virtual-path/to/less-bundle.css")
             .Include("/physical-path/to/main.less");
+            
+        // defining a Sass bundle (you should include entry point files only)
+        bundles.AddSass("/virtual-path/to/scss-bundle.css")
+            .Include("/physical-path/to/main.scss");
 
+        // defining a Js bundle
         bundles.AddJs("/virtual-path/to/bundle.js")
             .Include("/physical-path/to/*.js");
     });
 
-*UseBundling* adds a middleware to the ASP.NET Core request pipeline. You can consider it as a static files middleware, so you need to place it after the exception handler middleware but before the MVC middleware (and probably before any authentication or authorization middlewares).
+*UseBundling* adds a middleware to the ASP.NET Core request pipeline. You can consider it as a static files middleware, so you need to place it after the exception handler middleware but before the MVC middleware (and probably before authentication or authorization middlewares).
 
 By default, the bundle URL paths will be prefixed with */bundles* (this can be changed by supplying options to the *UseBundling* method) so the bundle registered to */virtual-path/to/bundle.css* will be accessible at *~/bundles/virtual-path/to/bundle.css*. **You need to supply prefixed paths when you referencing bundles in the Razor views!** (Since even multiple bundling middlewares can be registered with different prefixes. ;)
 
-It's also important to **include the proper file extension** (which corresponds to the outputted content) in the bundle path, otherwise the file won't be served. (Or you may mess with the options and supply another *IContentTypeProvider* but I don't think it's worth it... :D)
+It's also important to **include the proper file extension** (which corresponds to the outputted content) in the bundle path, otherwise the file won't be served. (Or you may mess with the options and supply another *IContentTypeProvider* but I don't think it's worth it... :)
 
 By default, the include (and exclude) file paths are relative to the web root folder (this can be changed again by supplying another *IFileProvider* in the options). You can use the ordinary globbing patterns [supported by the .NET Core file providers](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/file-providers#globbing-patterns).
 
-Instead of inefficiently adding excludes to remove pre-minified files, you may consider to implement an *IFileBundleSourceFilter* and add it as a global file filter.
+Tip: instead of inefficiently adding excludes to remove pre-minified files, you may consider to implement an *IFileBundleSourceFilter* and add it as a global file filter.
 
 #### 4. Configure Razor views
 
@@ -139,7 +158,7 @@ The behavior of the bundling middleware can be tweaked by passing a *BundlingOpt
 |---|---|---|
 | SourceFileProvider | The provider used by file sources. | IHostingEnvironment.  WebRootFileProvider |
 | StaticFilesRequestPath | The path prefix used when doing URL rebasing of static files. | none |
-| RequestPath | The path prefix added to bundle URLs. It may be empty but not recommended as in that case identifying non-bundle requests involves some additional steps. | "/bundles" |
+| RequestPath | The path prefix added to bundle URLs. It may be empty but not recommended as in that case identifying non-bundle requests requires some additional steps. | "/bundles" |
 | ContentTypeProvider | Used to map files to content-types. | |
 | DefaultContentType | The default content type for a request if the ContentTypeProvider cannot determine one. | none |
 | ServeUnknownFileTypes| Specifies if files of unrecognized content-type should be served. | false |
@@ -173,7 +192,7 @@ If you need more fine-grained control, you can specify settings for a single bun
 | FileFilters | Objects that filters or sorts the input file list provided by file sources. | | X | X  | X |  |
 | ItemTransforms | Transformations that are applied to each input item. This can even be set on item level. | | X | X  | X | X |
 | Transforms | Transformations that are applied to the concatenated output of input item transformations. | | X | X  | X |  |
-| ConcatenationToken | The string used to concatenate the outputs of input item transformations. | |  | X  | X |  |
+| ConcatenationToken | The string used to concatenate the outputs of input item transformations. | "\n" for Css outputs<br/>";\n" for Js outputs |  | X  | X |  |
 | CacheOptions | Options for bundle output caching. | cache with no expiration |  | | X |  |
 | DependsOnParams | Declares that the query string is relevant for caching as the bundle use its parameters to provide its output. | false |  | | X |  |
 | OutputEncoding | Encoding of the output. | UTF-8 | | | X |  |
@@ -183,8 +202,8 @@ If you need more fine-grained control, you can specify settings for a single bun
 
 ### Planned features
 
-- css imports inlining (currently less bundles can be used as a workaround)
-- change tracking of css / less imports ?
+- css imports inlining (currently less or sass bundles can be used as a workaround)
+- change tracking of css / less / sass imports ?
 - html bundling ?
 
 ### TODO
@@ -194,5 +213,5 @@ If you need more fine-grained control, you can specify settings for a single bun
 
 ----------
 
-### *Any feedback or contribution appreciated! ;)*
+### *Any feedback appreciated, contributions are welcome!*
 Feel free to contact me at [Gitter](https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link).
