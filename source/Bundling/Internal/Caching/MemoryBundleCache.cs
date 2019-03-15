@@ -80,10 +80,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             {
                 return await factoryTask.Value;
             }
-            catch (Exception ex)
+            catch
             {
                 _cache.Remove(key);
-                ExceptionDispatchInfo.Capture(ex).Throw();
                 throw;
             }
         }

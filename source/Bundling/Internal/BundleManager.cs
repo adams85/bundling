@@ -164,10 +164,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 // so that the file remain unchanged until it's served
                 disposer.Register(cacheItem.FileReleaser);
             }
-            catch (Exception ex)
+            catch
             {
                 cacheItem.FileReleaser.Dispose();
-                ExceptionDispatchInfo.Capture(ex).Throw();
                 throw;
             }
 
