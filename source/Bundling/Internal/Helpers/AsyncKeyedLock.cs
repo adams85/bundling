@@ -51,7 +51,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
                 _locks[key] = lockState = new LockState
                 {
                     WaitingWriters = new Queue<TaskCompletionSource<IDisposable>>(),
-                    WaitingReader = new TaskCompletionSource<IDisposable>()
+                    WaitingReader = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously)
                 };
 
             return lockState;
@@ -106,7 +106,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
                 }
                 else
                 {
-                    var waiter = new TaskCompletionSource<IDisposable>();
+                    var waiter = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
                     @lock.WaitingWriters.Enqueue(waiter);
 
                     return waiter.Task;
@@ -169,7 +169,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
                     toWake = @lock.WaitingReader;
                     @lock.Status = @lock.WaitingReaderCount;
                     @lock.WaitingReaderCount = 0;
-                    @lock.WaitingReader = new TaskCompletionSource<IDisposable>();
+                    @lock.WaitingReader = new TaskCompletionSource<IDisposable>(TaskCreationOptions.RunContinuationsAsynchronously);
                     _locks[key] = @lock;
                 }
                 else
