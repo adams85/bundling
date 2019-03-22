@@ -5,19 +5,19 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    class NullDisposable : IDisposable
+    internal class NullDisposable : IDisposable
     {
         public static readonly NullDisposable Instance = new NullDisposable();
 
-        NullDisposable() { }
+        private NullDisposable() { }
 
         public void Dispose() { }
     }
 
-    readonly struct CompositeDisposable : IDisposable
+    internal readonly struct CompositeDisposable : IDisposable
     {
-        readonly IDisposable _disposable1;
-        readonly IDisposable _disposable2;
+        private readonly IDisposable _disposable1;
+        private readonly IDisposable _disposable2;
 
         public CompositeDisposable(IDisposable disposable1, IDisposable disposable2)
         {
@@ -39,15 +39,15 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
     public class DefaultScopedDisposer : IScopedDisposer
     {
-        bool isDisposed;
-        List<IDisposable> _disposables = new List<IDisposable>();
+        private bool _isDisposed;
+        private List<IDisposable> _disposables = new List<IDisposable>();
 
         public void Register(IDisposable disposable)
         {
             if (disposable == null)
                 throw new ArgumentNullException(nameof(disposable));
 
-            if (isDisposed)
+            if (_isDisposed)
                 throw new ObjectDisposedException(nameof(DefaultScopedDisposer));
 
             _disposables.Add(disposable);
@@ -55,10 +55,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public void Dispose()
         {
-            if (!isDisposed)
+            if (!_isDisposed)
             {
                 _disposables.ForEach(d => d.Dispose());
-                isDisposed = true;
+                _isDisposed = true;
             }
         }
     }

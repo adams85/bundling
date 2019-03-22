@@ -14,18 +14,16 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
     public class BundleManagerFactory : IBundleManagerFactory
     {
-        readonly IEnumerable<IBundleModelFactory> _modelFactories;
-        readonly IBundleCache _cache;
-        readonly IBundleVersionProvider _versionProvider;
-        readonly IBundleUrlHelper _urlHelper;
+        private readonly IEnumerable<IBundleModelFactory> _modelFactories;
+        private readonly IBundleCache _cache;
+        private readonly IBundleVersionProvider _versionProvider;
+        private readonly IBundleUrlHelper _urlHelper;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ISystemClock _clock;
+        private readonly List<IBundleManager> _instances;
+        private readonly CancellationToken _shutdownToken;
 
-        readonly ILoggerFactory _loggerFactory;
-        readonly ISystemClock _clock;
-
-        readonly List<IBundleManager> _instances;
-        readonly CancellationToken _shutdownToken;
-
-        public BundleManagerFactory(IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper, 
+        public BundleManagerFactory(IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper,
             ILoggerFactory loggerFactory, ISystemClock clock, IApplicationLifetime applicationLifetime)
         {
             _modelFactories = modelFactories;

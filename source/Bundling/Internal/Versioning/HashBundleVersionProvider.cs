@@ -8,7 +8,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Versioning
         public void Provide(IBundleVersionProviderContext context)
         {
             byte[] hash;
-            using (var sha256 = CryptographyAlgorithms.CreateSHA256())
+            using (System.Security.Cryptography.SHA256 sha256 = CryptographyAlgorithms.CreateSHA256())
                 hash = sha256.ComputeHash(context.Content);
 
             context.Result = WebEncoders.Base64UrlEncode(hash);

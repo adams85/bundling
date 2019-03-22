@@ -6,13 +6,13 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 {
     public sealed class SassCompilationContext : IDisposable
     {
-        static readonly NullFileProvider nullFileProvider = new NullFileProvider();
+        private static readonly NullFileProvider s_nullFileProvider = new NullFileProvider();
 
         internal SassCompilationContext(ISassCompiler compiler, string rootPath, IFileProvider fileProvider, CancellationToken cancellationToken)
         {
             Compiler = compiler;
             RootPath = rootPath;
-            FileProvider = fileProvider ?? nullFileProvider;
+            FileProvider = fileProvider ?? s_nullFileProvider;
             CancellationToken = cancellationToken;
 
             FileProviderFileManager.SetCompilationContext(this);

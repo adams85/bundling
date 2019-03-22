@@ -9,9 +9,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class DefaultBundleModelFactory : IBundleModelFactory
     {
-        readonly Lazy<IEnumerable<IBundleModelFactory>> _modelFactories;
-        readonly IApplicationLifetime _appLifetime;
-        readonly bool _enableChangeDetection;
+        private readonly Lazy<IEnumerable<IBundleModelFactory>> _modelFactories;
+        private readonly IApplicationLifetime _appLifetime;
+        private readonly bool _enableChangeDetection;
 
         public DefaultBundleModelFactory(Lazy<IEnumerable<IBundleModelFactory>> modelFactories, IApplicationLifetime appLifetime, IOptions<BundleGlobalOptions> globalOptions)
         {

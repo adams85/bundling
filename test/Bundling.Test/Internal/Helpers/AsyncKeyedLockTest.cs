@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Test.Helpers;
 using Xunit;
@@ -46,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         {
             var @lock = new AsyncKeyedLock<int>();
             await @lock.WriterLockAsync(0);
-            var task = @lock.WriterLockAsync(0);
+            Task<IDisposable> task = @lock.WriterLockAsync(0);
             await AsyncHelper.NeverCompletesAsync(task);
         }
 
@@ -55,7 +54,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         {
             var @lock = new AsyncKeyedLock<int>();
             await @lock.WriterLockAsync(0);
-            var task = @lock.ReaderLockAsync(0);
+            Task<IDisposable> task = @lock.ReaderLockAsync(0);
             await AsyncHelper.NeverCompletesAsync(task);
         }
 
@@ -74,7 +73,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
                 }
             });
             await firstWriteLockTaken.Task;
-            var lockTask = @lock.WriterLockAsync(0);
+            Task<IDisposable> lockTask = @lock.WriterLockAsync(0);
             Assert.False(lockTask.IsCompleted);
             releaseFirstWriteLock.SetResult(null);
             await lockTask;
@@ -85,7 +84,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         {
             var @lock = new AsyncKeyedLock<int>();
             await @lock.ReaderLockAsync(0);
-            var task = @lock.WriterLockAsync(0);
+            Task<IDisposable> task = @lock.WriterLockAsync(0);
             await AsyncHelper.NeverCompletesAsync(task);
         }
 
@@ -136,12 +135,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
             await Task.Delay(1000);
 
-            foreach (var readReleaser in readReleasers)
+            foreach (IDisposable readReleaser in readReleasers)
                 readReleaser.Dispose();
 
             await writeTask;
 
-            foreach (var readTask in readTasks)
+            foreach (Task readTask in readTasks)
                 await readTask;
         }
     }

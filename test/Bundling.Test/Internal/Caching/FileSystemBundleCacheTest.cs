@@ -1,30 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
-using Xunit;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
     public class FileSystemBundleCacheTest : BundleCacheTest
     {
-        static int counter;
-
-        string _basePath;
-
-        FileSystemBundleCache _cache;
+        private static int s_counter;
+        private string _basePath;
+        private FileSystemBundleCache _cache;
         protected override IBundleCache Cache => _cache;
 
         protected override bool ProvidesPhysicalFiles => true;
 
-        void Cleanup(string basePath)
+        private void Cleanup(string basePath)
         {
             _cache.Reset();
         }
@@ -41,11 +33,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                     EnableExpirationScanning = expirationScanFrequency.HasValue,
                     ExpirationScanFrequency = expirationScanFrequency ?? default(TimeSpan),
                     AutoResetOnCreate = true,
-                    BasePath = "Cache" + Interlocked.Increment(ref counter).ToString()
-                }), 
+                    BasePath = "Cache" + Interlocked.Increment(ref s_counter).ToString()
+                }),
                 Options.Create(new BundleGlobalOptions
                 {
-                    EnableChangeDetection = true                    
+                    EnableChangeDetection = true
                 }));
 
             _cache = cache;

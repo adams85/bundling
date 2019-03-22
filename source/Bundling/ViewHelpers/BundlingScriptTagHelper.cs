@@ -1,21 +1,21 @@
-using Microsoft.AspNetCore.Razor.TagHelpers;
-using Karambolo.AspNetCore.Bundling.Internal;
+﻿using Karambolo.AspNetCore.Bundling.Internal;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 {
-    [HtmlTargetElement("script", Attributes = urlAttributeName)]
+    [HtmlTargetElement("script", Attributes = UrlAttributeNameConst)]
     public class BundlingScriptTagHelper : BundlingTagHelperBase
     {
-        const string urlAttributeName = "src";
+        private const string UrlAttributeNameConst = "src";
 
         public BundlingScriptTagHelper(IBundleManagerFactory bundleManagerFactory, IUrlHelperFactory urlHelperFactory)
             : base(bundleManagerFactory, urlHelperFactory) { }
 
-        [HtmlAttributeName(urlAttributeName)]
+        [HtmlAttributeName(UrlAttributeNameConst)]
         public string Src { get; set; }
 
-        protected override string UrlAttributeName => urlAttributeName;
+        protected override string UrlAttributeName => UrlAttributeNameConst;
         protected override string Url => Src;
     }
 }

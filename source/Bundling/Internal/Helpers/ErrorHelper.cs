@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    static class ErrorHelper
+    internal static class ErrorHelper
     {
         public static ArgumentException ArrayCannotContainNull(string paramName)
         {

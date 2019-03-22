@@ -20,7 +20,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
             protected override void SetDefaults(BundleDefaultsOptions options)
             {
-                var helper = _serviceProvider.GetRequiredService<IEnumerable<IConfigurationHelper>>().First(h => h.Type == BundleType);
+                IConfigurationHelper helper = _serviceProvider.GetRequiredService<IEnumerable<IConfigurationHelper>>().First(h => h.Type == BundleType);
 
                 options.GlobalDefaults = _serviceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
                 options.Type = BundleType;
@@ -35,8 +35,8 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
         public class Helper : IConfigurationHelper
         {
-            readonly BundleGlobalOptions _globalOptions;
-            readonly JsMinifyTransform _minifyTransform;
+            private readonly BundleGlobalOptions _globalOptions;
+            private readonly JsMinifyTransform _minifyTransform;
 
             public string Type => BundleType;
 
@@ -65,7 +65,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
         public class ExtensionMapper : IExtensionMapper
         {
-            readonly BundleDefaultsOptions _options;
+            private readonly BundleDefaultsOptions _options;
 
             public ExtensionMapper(IOptionsMonitor<BundleDefaultsOptions> options)
             {

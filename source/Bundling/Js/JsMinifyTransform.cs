@@ -4,7 +4,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
 {
     public class JsMinifyTransform : BundleTransform
     {
-        readonly IJsMinifier _minifier;
+        private readonly IJsMinifier _minifier;
 
         public JsMinifyTransform(IJsMinifier minifier)
         {

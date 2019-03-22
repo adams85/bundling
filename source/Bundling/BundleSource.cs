@@ -15,7 +15,7 @@ namespace Karambolo.AspNetCore.Bundling
 
         public Bundle Bundle { get; }
 
-        IReadOnlyList<IBundleItemTransform> _itemTransforms;
+        private IReadOnlyList<IBundleItemTransform> _itemTransforms;
         public IReadOnlyList<IBundleItemTransform> ItemTransforms
         {
             get => _itemTransforms ?? Bundle.ItemTransforms;

@@ -53,7 +53,7 @@
   <Target Name="RunTests" Condition="@(TestProject) != ''">
     <Exec Command="&quot;$(DotNet)&quot; test &quot;%(TestProject.Identity)&quot;" />
   </Target>
-  
+
   <Target Name="Make" DependsOnTargets="RunTests;GetVersion">
     <!-- setting version -->
     <UpdateVersion TagVersion="$(TagVersion)" Revision="$(Revision)" VersionPropsPath="%(VersionPropsPath.Identity)" />
@@ -67,7 +67,7 @@
 
     <!-- copy packages -->
     <Move SourceFiles="@(Package)" DestinationFolder="$(MSBuildProjectDirectory)" />
-    
+
     <OnError ExecuteTargets="Cleanup" />
   </Target>
 
@@ -84,9 +84,9 @@
     <Task>
       <!--<Reference Include="" />-->
       <Using Namespace="System.IO" />
-      <Using Namespace="System.Text.RegularExpressions" />      
+      <Using Namespace="System.Text.RegularExpressions" />
       <Code Type="Fragment" Language="cs">
-<![CDATA[
+        <![CDATA[
 // building version
 
 var match = Regex.Match(TagVersion, @"^(\d+)\.(\d+).(\d+)(-\w+)?-(\d+)-\w+$");
@@ -144,7 +144,7 @@ update(VersionPropsPath,
     <Task>
       <Using Namespace="System.IO" />
       <Code Type="Fragment" Language="cs">
-<![CDATA[
+        <![CDATA[
 Action<string> restore = path =>
 {
     var backupPath = path + ".bak";
@@ -158,5 +158,5 @@ restore(VersionPropsPath);
 ]]>
       </Code>
     </Task>
-  </UsingTask>  
+  </UsingTask>
 </Project>

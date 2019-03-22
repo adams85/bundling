@@ -8,8 +8,8 @@ namespace Karambolo.AspNetCore.Bundling.NUglify
 {
     public class JsMinifier : IJsMinifier
     {
-        readonly CodeSettings _settings;
-        readonly ILogger _logger;
+        private readonly CodeSettings _settings;
+        private readonly ILogger _logger;
 
         public JsMinifier(CodeSettings settings, ILoggerFactory loggerFactory)
         {
@@ -22,7 +22,7 @@ namespace Karambolo.AspNetCore.Bundling.NUglify
 
         public string Process(string content, string filePath)
         {
-            var result = Uglify.Js(content, _settings);
+            UglifyResult result = Uglify.Js(content, _settings);
 
             if (result.Errors.Count > 0)
             {

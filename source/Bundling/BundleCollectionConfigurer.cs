@@ -7,7 +7,7 @@ namespace Microsoft.AspNetCore.Builder
 {
     public class BundleCollectionConfigurer
     {
-        readonly IOptionsMonitor<BundleDefaultsOptions> _defaultsOptions;
+        private readonly IOptionsMonitor<BundleDefaultsOptions> _defaultsOptions;
 
         public BundleCollectionConfigurer(BundleCollection bundles, IServiceProvider appServices)
         {

@@ -4,7 +4,7 @@
     {
         public static readonly NullBundleVersionProvider Instance = new NullBundleVersionProvider();
 
-        NullBundleVersionProvider() { }
+        private NullBundleVersionProvider() { }
 
         public void Provide(IBundleVersionProviderContext context) { }
     }

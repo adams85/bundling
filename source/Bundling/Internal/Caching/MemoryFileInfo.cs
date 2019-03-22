@@ -6,7 +6,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
     public class MemoryFileInfo : IFileInfo
     {
-        readonly byte[] _content;
+        private readonly byte[] _content;
 
         public MemoryFileInfo(string name, byte[] content, DateTimeOffset timestamp)
         {

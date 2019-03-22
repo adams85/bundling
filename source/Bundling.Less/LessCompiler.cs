@@ -16,8 +16,8 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
     public class LessCompiler : ILessCompiler
     {
-        readonly ILessEngineFactory _engineFactory;
-        readonly ILogger _logger;
+        private readonly ILessEngineFactory _engineFactory;
+        private readonly ILogger _logger;
 
         public LessCompiler(ILessEngineFactory engineFactory, ILoggerFactory loggerFactory)
         {
@@ -48,7 +48,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
             else
                 fileBasePath = virtualBasePath = fileName = null;
 
-            var engine = _engineFactory.Create(fileBasePath ?? string.Empty, virtualBasePath ?? string.Empty, fileProvider);
+            ILessEngine engine = _engineFactory.Create(fileBasePath ?? string.Empty, virtualBasePath ?? string.Empty, fileProvider);
 
             var result = engine.TransformToCss(content, fileName);
 

@@ -2,15 +2,15 @@
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    static class HttpContextStatic
+    internal static class HttpContextStatic
     {
-        static IHttpContextAccessor accessor;
+        private static IHttpContextAccessor s_accessor;
 
-        public static HttpContext Current => accessor?.HttpContext;
+        public static HttpContext Current => s_accessor?.HttpContext;
 
         public static void Initialize(IHttpContextAccessor httpContextAccessor)
         {
-            accessor = httpContextAccessor;
+            s_accessor = httpContextAccessor;
         }
     }
 }

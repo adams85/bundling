@@ -12,9 +12,9 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public class BundlingMiddleware
     {
-        readonly RequestDelegate _next;
-        readonly IBundleManager _bundleManager;
-        readonly StaticFileMiddleware _staticFileMiddleware;
+        private readonly RequestDelegate _next;
+        private readonly IBundleManager _bundleManager;
+        private readonly StaticFileMiddleware _staticFileMiddleware;
 
         public BundlingMiddleware(RequestDelegate next, IHostingEnvironment env, ILoggerFactory loggerFactory, IHttpContextAccessor httpContextAccessor,
             IOptions<BundleGlobalOptions> globalOptions, IBundleManagerFactory bundleManagerFactory, BundleCollection bundles, IOptions<BundlingOptions> options)
@@ -45,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling
 
             _next = next;
 
-            var optionsUnwrapped = options.Value;
+            BundlingOptions optionsUnwrapped = options.Value;
 
             _bundleManager = optionsUnwrapped.BundleManager ?? bundleManagerFactory.Create(bundles, new BundlingContext
             {
@@ -55,13 +55,13 @@ namespace Karambolo.AspNetCore.Bundling
 
             optionsUnwrapped.FileProvider = optionsUnwrapped.FileProvider ?? new BundleFileProvider(_bundleManager, httpContextAccessor);
 
-            var globalOptionsUnwrapped = globalOptions.Value;
+            BundleGlobalOptions globalOptionsUnwrapped = globalOptions.Value;
             if (globalOptionsUnwrapped.EnableCacheHeader)
             {
-                var originalPrepareResponse = optionsUnwrapped.OnPrepareResponse;
+                Action<StaticFileResponseContext> originalPrepareResponse = optionsUnwrapped.OnPrepareResponse;
                 optionsUnwrapped.OnPrepareResponse = ctx =>
                 {
-                    var headers = ctx.Context.Response.GetTypedHeaders();
+                    Microsoft.AspNetCore.Http.Headers.ResponseHeaders headers = ctx.Context.Response.GetTypedHeaders();
                     headers.CacheControl = new CacheControlHeaderValue { MaxAge = globalOptionsUnwrapped.CacheHeaderMaxAge };
                     originalPrepareResponse?.Invoke(ctx);
                 };

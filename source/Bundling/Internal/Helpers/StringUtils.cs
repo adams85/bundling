@@ -1,6 +1,6 @@
 ﻿namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    static class StringUtils
+    internal static class StringUtils
     {
         public static string RemoveQuotes(ref string value)
         {

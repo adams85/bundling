@@ -15,7 +15,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
     {
         protected class Include : ChangeTokenObserver
         {
-            readonly Action _changeCallback;
+            private readonly Action _changeCallback;
 
             public Include(FileBundleSourceItem item, string[] _excludePatterns, Func<IChangeToken> changeTokenFactory, Action changeCallback)
             {
@@ -59,10 +59,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             public IReadOnlyList<IBundleItemTransform> ItemTransforms => Include.ItemTransforms;
         }
 
-        readonly IFileProvider _fileProvider;
-        readonly StringComparison _pathComparisonType;
-        readonly IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
-        readonly Include[] _includes;
+        private readonly IFileProvider _fileProvider;
+        private readonly StringComparison _pathComparisonType;
+        private readonly IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
+        private readonly Include[] _includes;
 
         public FileBundleSourceModel(FileBundleSource bundleSource, bool enableChangeDetection)
         {
@@ -74,7 +74,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
             _fileFilters = bundleSource.FileFilters;
 
-            var lookup = bundleSource.Items.ToLookup(it => it.Exclude);
+            ILookup<bool, FileBundleSourceItem> lookup = bundleSource.Items.ToLookup(it => it.Exclude);
 
             var excludePatterns = lookup[true].Select(bsi => bsi.Pattern).ToArray();
 
@@ -124,9 +124,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                var include = _includes[i];
+                Include include = _includes[i];
 
-                var matchingResult = include.Matcher.Execute(directoryInfo);
+                PatternMatchingResult matchingResult = include.Matcher.Execute(directoryInfo);
                 if (matchingResult.HasMatches)
                     fileList.AddRange(matchingResult.Files.Select(m => CreateBuildItem(include, UrlUtils.NormalizePath(m.Path), context)));
             }
@@ -139,7 +139,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             var n = _fileFilters.Count;
             for (var i = 0; i < n; i++)
             {
-                var filter = _fileFilters[i];
+                IFileBundleSourceFilter filter = _fileFilters[i];
                 await filter.FilterAsync(fileList, context);
                 filter.Filter(fileList, context);
             }
@@ -156,7 +156,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
                 item.FileProvider = _fileProvider;
                 item.FileInfo = _fileProvider.GetFileInfo(item.FilePath);
 
-                using (var stream = item.FileInfo.CreateReadStream())
+                using (Stream stream = item.FileInfo.CreateReadStream())
                 using (var reader = new StreamReader(stream, item.Include.Encoding, item.Include.AutoDetectEncoding))
                     item.Content = await reader.ReadToEndAsync();
 

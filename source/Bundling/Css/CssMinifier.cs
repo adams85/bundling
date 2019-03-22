@@ -11,8 +11,8 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
     public class NullCssMinifier : ICssMinifier
     {
-        readonly ILogger _logger;
-        int _hasLoggedWarningFlag;
+        private readonly ILogger _logger;
+        private int _hasLoggedWarningFlag;
 
         public NullCssMinifier(ILoggerFactory loggerFactory)
         {

@@ -14,14 +14,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 {
-    static class ViewHelper
+    internal static class ViewHelper
     {
-        static readonly RouteData dummyRouteData = new RouteData();
-        static readonly ActionDescriptor dummyActionDescriptor = new ActionDescriptor();
+        private static readonly RouteData s_dummyRouteData = new RouteData();
+        private static readonly ActionDescriptor s_dummyActionDescriptor = new ActionDescriptor();
 
-        static async Task<string> GenerateUrlCoreAsync(string pathString, IBundleManagerFactory bundleManagerFactory, HttpContext httpContext)
+        private static async Task<string> GenerateUrlCoreAsync(string pathString, IBundleManagerFactory bundleManagerFactory, HttpContext httpContext)
         {
-            var actionContext = new ActionContext(httpContext, dummyRouteData, dummyActionDescriptor);
+            var actionContext = new ActionContext(httpContext, s_dummyRouteData, s_dummyActionDescriptor);
             var urlHelper = new UrlHelper(actionContext);
             UrlUtils.FromRelative(urlHelper.Content(pathString), out PathString path, out QueryString query, out FragmentString fragment);
 
@@ -39,11 +39,11 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            var httpContext = HttpContextStatic.Current;
+            HttpContext httpContext = HttpContextStatic.Current;
             if (httpContext == null)
                 throw ErrorHelper.HttpContextNotAvailable();
 
-            var bundleManagerFactory = httpContext.RequestServices.GetRequiredService<IBundleManagerFactory>();
+            IBundleManagerFactory bundleManagerFactory = httpContext.RequestServices.GetRequiredService<IBundleManagerFactory>();
 
             var result = await GenerateUrlCoreAsync(path, bundleManagerFactory, httpContext);
             return new HtmlString(result);
@@ -57,11 +57,11 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             if (Array.FindIndex(paths, p => p == null) >= 0)
                 throw ErrorHelper.ArrayCannotContainNull(nameof(paths));
 
-            var httpContext = HttpContextStatic.Current;
+            HttpContext httpContext = HttpContextStatic.Current;
             if (httpContext == null)
                 throw ErrorHelper.HttpContextNotAvailable();
 
-            var bundleManagerFactory = httpContext.RequestServices.GetRequiredService<IBundleManagerFactory>();
+            IBundleManagerFactory bundleManagerFactory = httpContext.RequestServices.GetRequiredService<IBundleManagerFactory>();
 
             var generateTasks = new List<Task<string>>();
             foreach (var path in paths)

@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
-using System.Runtime.ExceptionServices;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Internal;
-using Microsoft.Extensions.Primitives;
-using Karambolo.AspNetCore.Bundling.Internal.Helpers;
-using System.Threading;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Karambolo.AspNetCore.Bundling.Internal.Helpers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
@@ -24,20 +23,17 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
     public class BundleManager : IBundleManager
     {
-        static readonly object httpContextItemKey = new object();
-
-        readonly int _id;
-        readonly IBundlingContext _bundlingContext;
-        readonly Dictionary<PathString, IBundleModel> _bundles;
-        readonly CancellationToken _shutdownToken;
-
-        readonly IEnumerable<IBundleModelFactory> _modelFactories;
-        readonly IBundleCache _cache;
-        readonly IBundleVersionProvider _versionProvider;
-        readonly IBundleUrlHelper _urlHelper;
-
-        readonly ILogger _logger;
-        readonly ISystemClock _clock;
+        private static readonly object s_httpContextItemKey = new object();
+        private readonly int _id;
+        private readonly IBundlingContext _bundlingContext;
+        private readonly Dictionary<PathString, IBundleModel> _bundles;
+        private readonly CancellationToken _shutdownToken;
+        private readonly IEnumerable<IBundleModelFactory> _modelFactories;
+        private readonly IBundleCache _cache;
+        private readonly IBundleVersionProvider _versionProvider;
+        private readonly IBundleUrlHelper _urlHelper;
+        private readonly ILogger _logger;
+        private readonly ISystemClock _clock;
 
         public BundleManager(int id, BundleCollection bundles, IBundlingContext bundlingContext, CancellationToken shutdownToken,
             IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper,
@@ -60,7 +56,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         protected virtual IBundleModel CreateModel(Bundle bundle)
         {
-            var result =
+            IBundleModel result =
                 _modelFactories.Select(f => f.Create(bundle)).FirstOrDefault(m => m != null) ??
                 throw ErrorHelper.ModelFactoryNotAvailable(bundle.GetType());
 
@@ -88,7 +84,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             await bundle.Builder.BuildAsync(builderContext);
 
             var content = bundle.OutputEncoding.GetBytes(builderContext.Result);
-            var timestamp = _clock.UtcNow;
+            DateTimeOffset timestamp = _clock.UtcNow;
 
             var versionProviderContext = new BundleVersionProviderContext
             {
@@ -117,7 +113,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public async Task<string> TryGenerateUrlAsync(PathString path, QueryString query, HttpContext httpContext)
         {
-            var pathPrefix = httpContext.Request.PathBase + _bundlingContext.BundlesPathPrefix;
+            PathString pathPrefix = httpContext.Request.PathBase + _bundlingContext.BundlesPathPrefix;
 
             if (!path.StartsWithSegments(pathPrefix, out PathString bundlePath) ||
                 !_bundles.TryGetValue(bundlePath, out IBundleModel bundle))
@@ -128,7 +124,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 query = QueryString.Empty;
 
             var cacheKey = new BundleCacheKey(_id, bundlePath, query);
-            var cacheItem = await _cache.GetOrAddAsync(cacheKey, ct => BuildBundleAsync(bundle, query, @params, httpContext),
+            IBundleCacheItem cacheItem = await _cache.GetOrAddAsync(cacheKey, ct => BuildBundleAsync(bundle, query, @params, httpContext),
                 httpContext.RequestAborted, bundle.CacheOptions);
 
             _urlHelper.AddVersion(cacheItem.Version, ref bundlePath, ref query);
@@ -138,24 +134,24 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public async Task<bool> TryEnsureUrlAsync(HttpContext httpContext)
         {
-            var branchPath = httpContext.Request.Path;
+            PathString branchPath = httpContext.Request.Path;
             if (!branchPath.StartsWithSegments(_bundlingContext.BundlesPathPrefix, out PathString bundlePath))
                 return false;
 
-            var query = httpContext.Request.QueryString;
+            QueryString query = httpContext.Request.QueryString;
             _urlHelper.RemoveVersion(ref bundlePath, ref query);
 
             if (!_bundles.TryGetValue(bundlePath, out IBundleModel bundle))
                 return false;
 
-            var disposer = httpContext.RequestServices.GetRequiredService<IScopedDisposer>();
+            IScopedDisposer disposer = httpContext.RequestServices.GetRequiredService<IScopedDisposer>();
 
             query = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> @params);
             if (!bundle.DependsOnParams)
                 query = QueryString.Empty;
 
             var cacheKey = new BundleCacheKey(_id, bundlePath, query);
-            var cacheItem = await _cache.GetOrAddAsync(cacheKey, ct => BuildBundleAsync(bundle, query, @params, httpContext),
+            IBundleCacheItem cacheItem = await _cache.GetOrAddAsync(cacheKey, ct => BuildBundleAsync(bundle, query, @params, httpContext),
                 httpContext.RequestAborted, bundle.CacheOptions, lockFile: true);
 
             try
@@ -171,7 +167,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             }
 
             // passing file info to GetFileInfo(), which is called later in the request (see BundlingMiddleware and BundleFileProvider)
-            httpContext.Items.Add(httpContextItemKey, cacheItem.FileInfo);
+            httpContext.Items.Add(s_httpContextItemKey, cacheItem.FileInfo);
 
             return true;
         }
@@ -179,7 +175,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         public IFileInfo GetFileInfo(HttpContext httpContext)
         {
             return
-                httpContext.Items.TryGetValue(httpContextItemKey, out object fileInfo) ?
+                httpContext.Items.TryGetValue(s_httpContextItemKey, out object fileInfo) ?
                 (IFileInfo)fileInfo :
                 throw ErrorHelper.BundleInfoNotAvailable(httpContext.Request.Path, httpContext.Request.QueryString);
         }

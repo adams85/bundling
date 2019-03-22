@@ -6,8 +6,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class BundleFileProvider : IFileProvider
     {
-        readonly IBundleManager _bundleManager;
-        readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IBundleManager _bundleManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public BundleFileProvider(IBundleManager bundleManager, IHttpContextAccessor httpContextAccessor)
         {
@@ -22,7 +22,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public IFileInfo GetFileInfo(string subpath)
         {
-            var httpContext = _httpContextAccessor.HttpContext;
+            HttpContext httpContext = _httpContextAccessor.HttpContext;
             return httpContext != null ? _bundleManager.GetFileInfo(httpContext) : new NotFoundFileInfo(subpath);
         }
 

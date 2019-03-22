@@ -1,28 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
-using Xunit;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
     public class MemoryBundleCacheTest : BundleCacheTest
     {
-        MemoryBundleCache _cache;
+        private MemoryBundleCache _cache;
         protected override IBundleCache Cache => _cache;
 
         protected override bool ProvidesPhysicalFiles => false;
 
         protected override void Setup(TimeSpan? expirationScanFrequency)
         {
-            var options = Options.Create(new FileSystemBundleCacheOptions
+            IOptions<FileSystemBundleCacheOptions> options = Options.Create(new FileSystemBundleCacheOptions
             {
                 FileProvider = new PhysicalFileProvider(Environment.CurrentDirectory)
             });

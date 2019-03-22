@@ -31,7 +31,7 @@ namespace Microsoft.AspNetCore.Builder
             if (HttpContextStatic.Current == null)
                 HttpContextStatic.Initialize(builder.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
 
-            var sourceFileProvider =
+            IFileProvider sourceFileProvider =
                 options.SourceFileProvider ??
                 builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider;
 
@@ -50,7 +50,7 @@ namespace Microsoft.AspNetCore.Builder
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            var configFileManager = configurer.AppServices.GetRequiredService<IConfigFileManager>();
+            IConfigFileManager configFileManager = configurer.AppServices.GetRequiredService<IConfigFileManager>();
             configFileManager.Load(configurer.Bundles, reader, pathMapper);
 
             return configurer;
@@ -65,7 +65,7 @@ namespace Microsoft.AspNetCore.Builder
             if (fileInfo == null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
-            using (var stream = fileInfo.CreateReadStream())
+            using (Stream stream = fileInfo.CreateReadStream())
             using (var reader = new StreamReader(stream))
                 return configurer.LoadFromConfigFile(reader, pathMapper);
         }

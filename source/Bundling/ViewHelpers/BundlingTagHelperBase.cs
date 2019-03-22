@@ -13,8 +13,8 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 {
     public abstract class BundlingTagHelperBase : TagHelper
     {
-        readonly IBundleManagerFactory _bundleManagerFactory;
-        readonly IUrlHelperFactory _urlHelperFactory;
+        private readonly IBundleManagerFactory _bundleManagerFactory;
+        private readonly IUrlHelperFactory _urlHelperFactory;
 
         public BundlingTagHelperBase(IBundleManagerFactory bundleManagerFactory, IUrlHelperFactory urlHelperFactory)
         {
@@ -45,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 
             output.CopyHtmlAttribute(UrlAttributeName, context);
 
-            var urlHelper = _urlHelperFactory.GetUrlHelper(ViewContext);
+            Microsoft.AspNetCore.Mvc.IUrlHelper urlHelper = _urlHelperFactory.GetUrlHelper(ViewContext);
             UrlUtils.FromRelative(urlHelper.Content(Url), out PathString path, out QueryString query, out FragmentString fragment);
 
             string url = null;
@@ -57,7 +57,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             if (url != null)
             {
                 var index = output.Attributes.IndexOfName(UrlAttributeName);
-                var existingAttribute = output.Attributes[index];
+                TagHelperAttribute existingAttribute = output.Attributes[index];
                 output.Attributes[index] = new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle);
             }
         }

@@ -6,8 +6,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
     public abstract class ChangeTokenObserver : IDisposable
     {
-        Func<IChangeToken> _changeTokenFactory;
-        IDisposable _changeTokenReleaser;
+        private Func<IChangeToken> _changeTokenFactory;
+        private IDisposable _changeTokenReleaser;
 
         protected virtual void DisposeCore() { }
 
@@ -25,23 +25,23 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             AcquireChangeToken();
         }
 
-        IDisposable AcquireChangeToken()
+        private IDisposable AcquireChangeToken()
         {
-            var changeToken = _changeTokenFactory();
-            var result = Interlocked.CompareExchange(ref _changeTokenReleaser, changeToken.RegisterChangeCallback(OnChanged, null), NullDisposable.Instance);
+            IChangeToken changeToken = _changeTokenFactory();
+            IDisposable result = Interlocked.CompareExchange(ref _changeTokenReleaser, changeToken.RegisterChangeCallback(OnChanged, null), NullDisposable.Instance);
             if (result == null)
                 _changeTokenReleaser.Dispose();
             return result;
         }
 
-        IDisposable ReleaseChangeToken(bool dispose)
+        private IDisposable ReleaseChangeToken(bool dispose)
         {
-            var result = Interlocked.Exchange(ref _changeTokenReleaser, dispose ? null : NullDisposable.Instance);
+            IDisposable result = Interlocked.Exchange(ref _changeTokenReleaser, dispose ? null : NullDisposable.Instance);
             result?.Dispose();
             return result;
         }
 
-        void OnChanged(object state)
+        private void OnChanged(object state)
         {
             ReleaseChangeToken(dispose: false);
             if (AcquireChangeToken() != null)

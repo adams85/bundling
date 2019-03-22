@@ -7,11 +7,11 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    class GlobbingDirectoryInfo : DirectoryInfoBase
+    internal class GlobbingDirectoryInfo : DirectoryInfoBase
     {
-        readonly IFileProvider _fileProvider;
-        readonly string _path, _name;
-        readonly bool _isParentPath;
+        private readonly IFileProvider _fileProvider;
+        private readonly string _path, _name;
+        private readonly bool _isParentPath;
 
         public GlobbingDirectoryInfo(IFileProvider fileProvider, string fullPath)
             : this(fileProvider, !string.IsNullOrEmpty(fullPath) ? Path.GetDirectoryName(fullPath) : null, Path.GetFileName(fullPath)) { }
@@ -23,7 +23,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             _name = name;
         }
 
-        GlobbingDirectoryInfo(IFileProvider fileProvider, string fullPath, bool isParentPath)
+        private GlobbingDirectoryInfo(IFileProvider fileProvider, string fullPath, bool isParentPath)
             : this(fileProvider, fullPath)
         {
             _isParentPath = isParentPath;
@@ -31,9 +31,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
-            var contents = _fileProvider.GetDirectoryContents(FullName);
+            IDirectoryContents contents = _fileProvider.GetDirectoryContents(FullName);
             if (contents.Exists)
-                foreach (var item in contents)
+                foreach (IFileInfo item in contents)
                     if (item.IsDirectory)
                         yield return new GlobbingDirectoryInfo(_fileProvider, FullName, item.Name);
                     else
@@ -45,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             var isParentPath = name == "..";
             if (!isParentPath)
             {
-                var contents = _fileProvider.GetDirectoryContents(FullName);
+                IDirectoryContents contents = _fileProvider.GetDirectoryContents(FullName);
                 IFileInfo item;
                 return
                     // string comparison should depend on environment or some kind of setting,
@@ -70,10 +70,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         public override DirectoryInfoBase ParentDirectory => new GlobbingDirectoryInfo(_fileProvider, _path);
     }
 
-    class GlobbingFileInfo : FileInfoBase
+    internal class GlobbingFileInfo : FileInfoBase
     {
-        readonly IFileProvider _fileProvider;
-        readonly string _path, _name;
+        private readonly IFileProvider _fileProvider;
+        private readonly string _path, _name;
 
         public GlobbingFileInfo(IFileProvider fileProvider, string fullPath)
             : this(fileProvider, Path.GetDirectoryName(fullPath), Path.GetFileName(fullPath)) { }

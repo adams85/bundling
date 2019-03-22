@@ -16,12 +16,11 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
     public class SassCompiler : ISassCompiler
     {
-        static readonly Regex rewriteUrlsRegex = new Regex(
+        private static readonly Regex s_rewriteUrlsRegex = new Regex(
                 @"(?<before>url\()(?<url>'\.{1,2}/[^']+'|""\.{1,2}/[^""]+""|\.{1,2}/[^)]+)(?<after>\))|" +
                 @"(?<before>@import\s+)(?<url>'\.{1,2}/[^']+\.css'|""\.{1,2}/[^""]+\.css"")(?<after>\s*;)",
                 RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-
-        readonly ILogger _logger;
+        private readonly ILogger _logger;
 
         public SassCompiler(ILoggerFactory loggerFactory)
         {
@@ -50,7 +49,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             // 2) urls ending with '.css' must be rebased as they are not included
             // https://stackoverflow.com/questions/7111610/import-regular-css-file-in-scss-file
 
-            return rewriteUrlsRegex.Replace(content,
+            return s_rewriteUrlsRegex.Replace(content,
                 m =>
                 {
                     var value = m.Groups["url"].Value;

@@ -6,7 +6,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 {
     public class SassCompileTransform : BundleItemTransform
     {
-        readonly ISassCompiler _compiler;
+        private readonly ISassCompiler _compiler;
 
         public SassCompileTransform(ISassCompiler compiler)
         {
@@ -32,7 +32,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 fileProvider = null;
             }
 
-            var pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+            Microsoft.AspNetCore.Http.PathString pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
 
             context.Content = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, context.BuildContext.CancellationToken);
         }

@@ -11,8 +11,8 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
     public class NullJsMinifier : IJsMinifier
     {
-        readonly ILogger _logger;
-        int _hasLoggedWarningFlag;
+        private readonly ILogger _logger;
+        private int _hasLoggedWarningFlag;
 
         public NullJsMinifier(ILoggerFactory loggerFactory)
         {

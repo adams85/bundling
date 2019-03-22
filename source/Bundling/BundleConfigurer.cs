@@ -10,7 +10,7 @@ namespace Microsoft.AspNetCore.Builder
 {
     public class BundleConfigurer
     {
-        readonly Lazy<FileBundleSource> _bundleSource;
+        private readonly Lazy<FileBundleSource> _bundleSource;
 
         public BundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, IServiceProvider appServices)
         {
@@ -122,7 +122,7 @@ namespace Microsoft.AspNetCore.Builder
 
         public BundleConfigurer EnableMinification()
         {
-            var helper =
+            IConfigurationHelper helper =
                 Bundle.ConfigurationHelper ??
                 throw ErrorHelper.PropertyNotSpecifed(nameof(Karambolo.AspNetCore.Bundling.Bundle), nameof(Karambolo.AspNetCore.Bundling.Bundle.ConfigurationHelper));
 
@@ -133,9 +133,7 @@ namespace Microsoft.AspNetCore.Builder
 
         public BundleConfigurer DisableCaching()
         {
-            var cacheOptions = new BundleCacheOptions(Bundle.CacheOptions);
-            cacheOptions.NoCache = true;
-            Bundle.CacheOptions = cacheOptions;
+            Bundle.CacheOptions = new BundleCacheOptions(Bundle.CacheOptions) { NoCache = true };
 
             return this;
         }

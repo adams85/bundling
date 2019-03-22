@@ -7,7 +7,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class DefaultBundleUrlHelper : IBundleUrlHelper
     {
-        const string versionPrefix = ".v";
+        private const string versionPrefix = ".v";
 
         public void AddVersion(string version, ref PathString path, ref QueryString query)
         {

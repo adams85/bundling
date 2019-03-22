@@ -45,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected readonly struct StoreItem
         {
-            public static readonly StoreItem NotAvailable = default(StoreItem);
+            public static readonly StoreItem NotAvailable = default;
 
             public StoreItem(IFileInfo fileInfo, StoreItemMetadata metadata, bool isExpired)
             {
@@ -71,9 +71,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             public bool IsExpired { get; }
         }
 
-        class Item : IBundleCacheItem
+        private class Item : IBundleCacheItem
         {
-            readonly StoreItem _storeItem;
+            private readonly StoreItem _storeItem;
 
             public Item(StoreItem storeItem, IDisposable fileReleaser)
             {
@@ -87,19 +87,19 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             public IDisposable FileReleaser { get; }
         }
 
-        const int copyBufferSize = 1024;
+        private const int CopyBufferSize = 1024;
 
-        readonly TimeSpan _monitorScanFrequency;
-        readonly CancellationToken _shutdownToken;
-        readonly bool _changeDetectionEnabled;
-        readonly ISystemClock _clock;
-        readonly ILogger _logger;
-        readonly AsyncKeyedLock<(int, PathString)> _bundleLock;
+        private readonly TimeSpan _monitorScanFrequency;
+        private readonly CancellationToken _shutdownToken;
+        private readonly bool _changeDetectionEnabled;
+        private readonly ISystemClock _clock;
+        private readonly ILogger _logger;
+        private readonly AsyncKeyedLock<(int, PathString)> _bundleLock;
 
         public FileSystemBundleCache(CancellationToken shutdownToken, IHostingEnvironment env, ILoggerFactory loggerFactory, ISystemClock clock,
             IOptions<FileSystemBundleCacheOptions> options, IOptions<BundleGlobalOptions> globalOptions)
         {
-            var optionsUnwrapped = options.Value;
+            FileSystemBundleCacheOptions optionsUnwrapped = options.Value;
             FileProvider = optionsUnwrapped.FileProvider ?? env.ContentRootFileProvider as PhysicalFileProvider ?? throw ErrorHelper.ContentRootNotPhysical(nameof(options));
             BasePath = optionsUnwrapped.BasePath ?? @"App_Data\Bundles";
 
@@ -149,7 +149,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             return UrlUtils.QueryToFileName(key.Query.HasValue ? key.Query.ToString() : "?") + Path.GetExtension(key.Path);
         }
 
-        static bool TryGetSlidingExpiration(string filePath, out DateTimeOffset expirationTime)
+        private static bool TryGetSlidingExpiration(string filePath, out DateTimeOffset expirationTime)
         {
 
             try { expirationTime = File.GetLastWriteTimeUtc(filePath); }
@@ -158,7 +158,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             return true;
         }
 
-        static bool TrySetSlidingExpiration(string filePath, DateTimeOffset expirationTime)
+        private static bool TrySetSlidingExpiration(string filePath, DateTimeOffset expirationTime)
         {
             try { File.SetLastWriteTimeUtc(filePath, expirationTime.DateTime); }
             catch { return false; }
@@ -166,7 +166,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             return true;
         }
 
-        string GetPhysicalItemTimestampPath(StoreItemMetadata metadata, string physicalItemsBasePath)
+        private string GetPhysicalItemTimestampPath(StoreItemMetadata metadata, string physicalItemsBasePath)
         {
             return Path.Combine(physicalItemsBasePath, Path.ChangeExtension(metadata.ItemFileName, TimestampFileNamePostfix));
         }
@@ -179,13 +179,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected virtual bool CheckExpiration(StoreItemMetadata metadata, string physicalItemsBasePath, bool update)
         {
-            var utcNow = _clock.UtcNow;
+            DateTimeOffset utcNow = _clock.UtcNow;
 
             if (metadata.AbsoluteExpiration != null && utcNow >= metadata.AbsoluteExpiration)
                 return true;
 
             string physicalItemTimestampPath;
-            if (metadata.SlidingExpiration != null && 
+            if (metadata.SlidingExpiration != null &&
                 TryGetSlidingExpiration(physicalItemTimestampPath = GetPhysicalItemTimestampPath(metadata, physicalItemsBasePath), out DateTimeOffset expirationTime))
             {
                 if (_clock.UtcNow >= expirationTime)
@@ -202,7 +202,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             using (var ms = new MemoryStream())
             {
                 using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    await fs.CopyToAsync(ms, copyBufferSize, token);
+                    await fs.CopyToAsync(ms, CopyBufferSize, token);
 
                 ms.Position = 0;
                 return SerializationHelper.Deserialize<StoreItemMetadata>(new StreamReader(ms));
@@ -224,9 +224,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 if (!File.Exists(physicalItemMetadataPath) || !File.Exists(physicalItemPath))
                     return StoreItem.NotAvailable;
 
-                var metadata = await LoadItemMetadataAsync(physicalItemMetadataPath, token);
+                StoreItemMetadata metadata = await LoadItemMetadataAsync(physicalItemMetadataPath, token);
 
-                var fileInfo = FileProvider.GetFileInfo(Path.Combine(itemsBasePath, itemFileName));
+                IFileInfo fileInfo = FileProvider.GetFileInfo(Path.Combine(itemsBasePath, itemFileName));
                 return new StoreItem(fileInfo, metadata, CheckExpiration(metadata, physicalItemsBasePath, update: true));
             }
             catch (Exception ex)
@@ -247,7 +247,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 ms.Position = 0;
                 using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Create, FileAccess.Write, FileShare.Read))
                 {
-                    await ms.CopyToAsync(fs, copyBufferSize, token);
+                    await ms.CopyToAsync(fs, CopyBufferSize, token);
                     await fs.FlushAsync(token);
                 }
             }
@@ -266,7 +266,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             try
             {
                 if (File.Exists(physicalItemMetadataPath) || File.Exists(physicalItemPath))
-                    _logger.LogWarning("Bundle instance [{MANAGER_ID}]:{PATH}{QUERY} exists unexpectedly in the cache. Trying to overwrite it.", 
+                    _logger.LogWarning("Bundle instance [{MANAGER_ID}]:{PATH}{QUERY} exists unexpectedly in the cache. Trying to overwrite it.",
                         key.ManagerId, key.Path, key.Query);
 
                 if (!Directory.Exists(physicalItemsBasePath))
@@ -287,7 +287,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                 InitializeExpiration(metadata, physicalItemsBasePath);
 
-                var fileInfo = itemFileName != null ? FileProvider.GetFileInfo(Path.Combine(itemsBasePath, itemFileName)) : null;
+                IFileInfo fileInfo = itemFileName != null ? FileProvider.GetFileInfo(Path.Combine(itemsBasePath, itemFileName)) : null;
                 return new StoreItem(fileInfo, metadata, isExpired: false);
             }
             catch (Exception ex)
@@ -309,19 +309,19 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             if (cacheOptions.NoCache)
                 return CreateMemoryCacheItem(key, await factory(token));
 
-            var lockKey = (key.ManagerId, key.Path);
+            (int ManagerId, PathString Path) lockKey = (key.ManagerId, key.Path);
 
-            var monitorReleaser = await _acquireMonitorReadLock();
+            IDisposable monitorReleaser = await _acquireMonitorReadLock();
             try
             {
-                var readerLockTask = _bundleLock.ReaderLockAsync(lockKey);
+                Task<IDisposable> readerLockTask = _bundleLock.ReaderLockAsync(lockKey);
                 IDisposable readerReleaser = await readerLockTask;
                 try
                 {
-                    var storeItem = await RetrieveItemAsync(key, token);
+                    StoreItem storeItem = await RetrieveItemAsync(key, token);
                     if (!storeItem.IsAvailable || storeItem.IsExpired)
                     {
-                        var writerLockTask = _bundleLock.WriterLockAsync(lockKey);
+                        Task<IDisposable> writerLockTask = _bundleLock.WriterLockAsync(lockKey);
                         readerReleaser.Dispose();
 
                         using (await writerLockTask)
@@ -331,7 +331,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                             if (!storeItem.IsAvailable)
                             {
-                                var data = await factory(token);
+                                BundleCacheData data = await factory(token);
 
                                 storeItem = await StoreItemAsync(key, data, cacheOptions, token);
 
@@ -399,7 +399,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         public async Task RemoveAsync(BundleCacheKey key, CancellationToken token)
         {
-            var lockKey = (key.ManagerId, key.Path);
+            (int ManagerId, PathString Path) lockKey = (key.ManagerId, key.Path);
 
             using (await _acquireMonitorReadLock())
             using (await _bundleLock.WriterLockAsync(lockKey))
@@ -426,7 +426,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         public async Task RemoveAllAsync(int managerId, PathString bundlePath, CancellationToken token)
         {
-            var lockKey = (managerId, bundlePath);
+            (int managerId, PathString bundlePath) lockKey = (managerId, bundlePath);
 
             using (await _acquireMonitorReadLock())
             using (await _bundleLock.WriterLockAsync(lockKey))
@@ -435,11 +435,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         #region Expiration scanning
 
-        readonly AsyncKeyedLock<object> _monitorLock;
-        readonly Func<Task<IDisposable>> _acquireMonitorWriteLock;
-        readonly Func<Task<IDisposable>> _acquireMonitorReadLock;
+        private readonly AsyncKeyedLock<object> _monitorLock;
+        private readonly Func<Task<IDisposable>> _acquireMonitorWriteLock;
+        private readonly Func<Task<IDisposable>> _acquireMonitorReadLock;
 
-        async Task MonitorAsync()
+        private async Task MonitorAsync()
         {
             while (true)
                 try
@@ -469,7 +469,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                 try
                 {
-                    var metadata = await LoadItemMetadataAsync(physicalItemMetadataPath, token);
+                    StoreItemMetadata metadata = await LoadItemMetadataAsync(physicalItemMetadataPath, token);
                     var phyisicalItemsBasePath = Path.GetDirectoryName(physicalItemMetadataPath);
                     if (CheckExpiration(metadata, phyisicalItemsBasePath, update: false))
                         await DeleteItemAsync(phyisicalItemsBasePath, metadata.ItemFileName, token);

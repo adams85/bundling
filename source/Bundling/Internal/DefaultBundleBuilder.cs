@@ -31,7 +31,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 {
                     context.BuildContext.CancellationToken.ThrowIfCancellationRequested();
 
-                    var transform = transforms[i];
+                    IBundleItemTransform transform = transforms[i];
                     await transform.TransformAsync(context);
                     transform.Transform(context);
                 }
@@ -49,7 +49,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 {
                     context.BuildContext.CancellationToken.ThrowIfCancellationRequested();
 
-                    var transform = transforms[i];
+                    IBundleTransform transform = transforms[i];
                     await transform.TransformAsync(context);
                     transform.Transform(context);
                 }
@@ -79,7 +79,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 return sb.ToString();
             };
 
-            var consumeTask = ConsumeAsync();
+            Task<string> consumeTask = ConsumeAsync();
 
             // procuder
             var n = context.Bundle.Sources.Length;
@@ -87,7 +87,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                var source = context.Bundle.Sources[i];
+                IBundleSourceModel source = context.Bundle.Sources[i];
                 await source.ProvideBuildItemsAsync(context, it => input.Post(it));
             }
             input.Complete();

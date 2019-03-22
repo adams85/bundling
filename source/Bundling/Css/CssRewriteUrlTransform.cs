@@ -7,7 +7,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
 {
     public class CssRewriteUrlTransform : BundleItemTransform
     {
-        static readonly Regex rewriteUrlsRegex = new Regex(
+        private static readonly Regex s_rewriteUrlsRegex = new Regex(
             @"(?<before>url\()(?<url>'[^']+'|""[^""]+""|[^)]+)(?<after>\))|" +
             @"(?<before>@import\s+)(?<url>'[^']+'|""[^""]+"")(?<after>\s*;)",
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
@@ -25,7 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
         protected virtual string RewriteUrls(string content, string basePath, string pathPrefix)
         {
-            return rewriteUrlsRegex.Replace(content,
+            return s_rewriteUrlsRegex.Replace(content,
                 m =>
                 {
                     var value = m.Groups["url"].Value;
@@ -44,7 +44,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
             {
                 UrlUtils.GetFileName(fileItemContext.FilePath, out string basePath);
 
-                var pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+                PathString pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
 
                 context.Content = RewriteUrls(context.Content, basePath, pathPrefix);
             }

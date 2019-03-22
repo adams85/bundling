@@ -6,9 +6,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
     /// Based on <see cref="https://blogs.msdn.microsoft.com/pfxteam/2012/02/12/building-async-coordination-primitives-part-7-asyncreaderwriterlock/"/>
     /// TODO: support cancellation?
-    class AsyncKeyedLock<TKey>
+    internal class AsyncKeyedLock<TKey>
     {
-        class LockState
+        private class LockState
         {
             public Queue<TaskCompletionSource<IDisposable>> WaitingWriters;
             public TaskCompletionSource<IDisposable> WaitingReader;
@@ -16,11 +16,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             public int Status;
         }
 
-        struct Releaser : IDisposable
+        private struct Releaser : IDisposable
         {
-            AsyncKeyedLock<TKey> _owner;
-            readonly TKey _key;
-            readonly bool _isWriter;
+            private AsyncKeyedLock<TKey> _owner;
+            private readonly TKey _key;
+            private readonly bool _isWriter;
 
             public Releaser(AsyncKeyedLock<TKey> owner, TKey key, bool isWriter)
             {
@@ -43,9 +43,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             }
         }
 
-        readonly Dictionary<TKey, LockState> _locks = new Dictionary<TKey, LockState>();
+        private readonly Dictionary<TKey, LockState> _locks = new Dictionary<TKey, LockState>();
 
-        LockState GetOrCreate(TKey key)
+        private LockState GetOrCreate(TKey key)
         {
             if (!_locks.TryGetValue(key, out LockState lockState))
                 _locks[key] = lockState = new LockState
@@ -57,7 +57,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return lockState;
         }
 
-        void Remove(TKey key)
+        private void Remove(TKey key)
         {
             _locks.Remove(key);
         }
@@ -66,7 +66,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         {
             lock (_locks)
             {
-                var @lock = GetOrCreate(key);
+                LockState @lock = GetOrCreate(key);
 
                 if (@lock.Status >= 0 && @lock.WaitingWriters.Count == 0)
                 {
@@ -95,7 +95,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         {
             lock (_locks)
             {
-                var @lock = GetOrCreate(key);
+                LockState @lock = GetOrCreate(key);
 
                 if (@lock.Status == 0)
                 {
@@ -119,13 +119,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return WriterLockAsync(key).GetAwaiter().GetResult();
         }
 
-        void ReaderRelease(TKey key)
+        private void ReaderRelease(TKey key)
         {
             TaskCompletionSource<IDisposable> toWake;
 
             lock (_locks)
             {
-                var @lock = GetOrCreate(key);
+                LockState @lock = GetOrCreate(key);
 
                 --@lock.Status;
                 if (@lock.Status != 0)
@@ -150,14 +150,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             toWake.SetResult(new Releaser(this, key, isWriter: true));
         }
 
-        void WriterRelease(TKey key)
+        private void WriterRelease(TKey key)
         {
             TaskCompletionSource<IDisposable> toWake;
             var toWakeIsWriter = false;
 
             lock (_locks)
             {
-                var @lock = GetOrCreate(key);
+                LockState @lock = GetOrCreate(key);
 
                 if (@lock.WaitingWriters.Count > 0)
                 {

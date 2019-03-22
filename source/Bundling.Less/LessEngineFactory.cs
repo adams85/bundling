@@ -15,8 +15,8 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
     public class LessEngineFactory : ILessEngineFactory
     {
-        static readonly IStylizer stylizer = new PlainStylizer();
-        static readonly ILogger logger = NullLogger.Instance;
+        private static readonly IStylizer s_stylizer = new PlainStylizer();
+        private static readonly ILogger s_logger = NullLogger.Instance;
 
         public ILessEngine Create(string fileBasePath, string virtualBasePath, IFileProvider fileProvider)
         {
@@ -29,13 +29,13 @@ namespace Karambolo.AspNetCore.Bundling.Less
             if (!virtualBasePath.EndsWith('/'))
                 virtualBasePath += '/';
 
-            var fileReader = fileProvider != null ? new FileProviderFileReader(fileProvider) : FileProviderFileReader.Null;
+            FileProviderFileReader fileReader = fileProvider != null ? new FileProviderFileReader(fileProvider) : FileProviderFileReader.Null;
 
             var importer = new Importer(fileReader, disableUrlReWriting: false, rootPath: virtualBasePath, inlineCssFiles: true, importAllFilesAsLess: true);
 
-            var parser = new Parser(stylizer, importer);
+            var parser = new Parser(s_stylizer, importer);
 
-            return new LessEngine(parser, logger, compress: false, debug: false) { CurrentDirectory = fileBasePath };
+            return new LessEngine(parser, s_logger, compress: false, debug: false) { CurrentDirectory = fileBasePath };
         }
     }
 }

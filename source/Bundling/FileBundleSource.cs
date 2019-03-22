@@ -9,7 +9,7 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public class FileBundleSource : BundleSource
     {
-        static readonly StringComparison defaultPathComparisonType =
+        private static readonly StringComparison s_defaultPathComparisonType =
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
             StringComparison.OrdinalIgnoreCase :
             StringComparison.Ordinal;
@@ -21,7 +21,7 @@ namespace Karambolo.AspNetCore.Bundling
                 throw new ArgumentNullException(nameof(fileProvider));
 
             FileProvider = fileProvider;
-            PathComparisonType = defaultPathComparisonType;
+            PathComparisonType = s_defaultPathComparisonType;
 
             Items = new List<FileBundleSourceItem>();
         }
@@ -30,7 +30,7 @@ namespace Karambolo.AspNetCore.Bundling
 
         public StringComparison PathComparisonType { get; set; }
 
-        IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
+        private IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
         public IReadOnlyList<IFileBundleSourceFilter> FileFilters
         {
             get => _fileFilters ?? Bundle.FileFilters;
@@ -62,7 +62,7 @@ namespace Karambolo.AspNetCore.Bundling
 
         public Encoding InputEncoding { get; set; }
 
-        IReadOnlyList<IBundleItemTransform> _itemTransforms;
+        private IReadOnlyList<IBundleItemTransform> _itemTransforms;
         public IReadOnlyList<IBundleItemTransform> ItemTransforms
         {
             get => _itemTransforms ?? BundleSource.ItemTransforms;

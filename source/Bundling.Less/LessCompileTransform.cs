@@ -6,7 +6,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 {
     public class LessCompileTransform : BundleItemTransform
     {
-        readonly ILessCompiler _compiler;
+        private readonly ILessCompiler _compiler;
 
         public LessCompileTransform(ILessCompiler compiler)
         {
@@ -32,7 +32,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
                 fileProvider = null;
             }
 
-            var pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+            Microsoft.AspNetCore.Http.PathString pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
 
             context.Content = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, context.BuildContext.CancellationToken);
         }

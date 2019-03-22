@@ -8,8 +8,8 @@ namespace Karambolo.AspNetCore.Bundling.NUglify
 {
     public class CssMinifier : ICssMinifier
     {
-        readonly CssSettings _settings;
-        readonly ILogger _logger;
+        private readonly CssSettings _settings;
+        private readonly ILogger _logger;
 
         public CssMinifier(CssSettings settings, ILoggerFactory loggerFactory)
         {
@@ -22,7 +22,7 @@ namespace Karambolo.AspNetCore.Bundling.NUglify
 
         public string Process(string content, string filePath)
         {
-            var result = Uglify.Css(content, _settings);
+            UglifyResult result = Uglify.Css(content, _settings);
 
             if (result.Errors.Count > 0)
             {

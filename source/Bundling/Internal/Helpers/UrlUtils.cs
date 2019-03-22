@@ -10,17 +10,16 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    static class UrlUtils
+    internal static class UrlUtils
     {
-        const string hexChars = "0123456789abcdef";
+        private const string HexChars = "0123456789abcdef";
 
-        static readonly char[] illegalFileNameChars = Path.GetInvalidPathChars().Concat(Path.GetInvalidFileNameChars()).ToArray();
-
-        readonly static Uri dummyBaseUri = new Uri("http://host");
+        private static readonly char[] s_illegalFileNameChars = Path.GetInvalidPathChars().Concat(Path.GetInvalidFileNameChars()).ToArray();
+        private static readonly Uri s_dummyBaseUri = new Uri("http://host");
 
         public static void FromRelative(string url, out PathString path, out QueryString query, out FragmentString fragment)
         {
-            var uri = new Uri(dummyBaseUri, url);
+            var uri = new Uri(s_dummyBaseUri, url);
             UriHelper.FromAbsolute(uri.ToString(), out string scheme, out HostString host, out path, out query, out fragment);
         }
 
@@ -32,10 +31,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
                 return query;
             }
 
-            var parsed = QueryHelpers.ParseQuery(query.ToString());
+            Dictionary<string, StringValues> parsed = QueryHelpers.ParseQuery(query.ToString());
 
             var builder = new QueryBuilder();
-            foreach (var kvp in parsed.OrderBy(kvp => kvp.Key))
+            foreach (KeyValuePair<string, StringValues> kvp in parsed.OrderBy(kvp => kvp.Key))
             {
                 var n = kvp.Value.Count;
                 for (var i = 0; i < n; i++)
@@ -69,7 +68,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             char c;
             var n = chars.Length;
             for (var i = 0; i < n; i++)
-                chars[i] = Array.IndexOf(illegalFileNameChars, c = chars[i]) < 0 ? char.ToLowerInvariant(c) : '_';
+                chars[i] = Array.IndexOf(s_illegalFileNameChars, c = chars[i]) < 0 ? char.ToLowerInvariant(c) : '_';
 
             return new string(chars);
         }
@@ -86,8 +85,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             var j = 0;
             for (var i = 0; i < n; i++)
             {
-                chars[j++] = hexChars[bytes[i] >> 4 & 0xF];
-                chars[j++] = hexChars[bytes[i] & 0xF];
+                chars[j++] = HexChars[bytes[i] >> 4 & 0xF];
+                chars[j++] = HexChars[bytes[i] & 0xF];
             }
 
             return new string(chars);

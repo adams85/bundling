@@ -9,8 +9,8 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
 {
     public class JsMinifier : IJsMinifier
     {
-        readonly ILogger _logger;
-        readonly CrockfordJsMinifier _minifier;
+        private readonly ILogger _logger;
+        private readonly CrockfordJsMinifier _minifier;
 
         public JsMinifier(ILoggerFactory loggerFactory)
         {
@@ -23,7 +23,7 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
 
         public string Process(string content, string filePath)
         {
-            var result = _minifier.Minify(content, isInlineCode: false);
+            global::WebMarkupMin.Core.CodeMinificationResult result = _minifier.Minify(content, isInlineCode: false);
 
             if (result.Errors.Count > 0)
             {

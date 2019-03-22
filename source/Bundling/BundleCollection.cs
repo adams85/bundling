@@ -8,7 +8,7 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public class BundleCollection : ICollection<Bundle>
     {
-        readonly Dictionary<string, Bundle> _bundles;
+        private readonly Dictionary<string, Bundle> _bundles;
 
         public BundleCollection() : this(PathString.Empty, null) { }
 

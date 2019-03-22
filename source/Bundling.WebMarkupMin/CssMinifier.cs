@@ -9,8 +9,8 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
 {
     public class CssMinifier : ICssMinifier
     {
-        readonly ILogger _logger;
-        readonly KristensenCssMinifier _minifier;
+        private readonly ILogger _logger;
+        private readonly KristensenCssMinifier _minifier;
 
         public CssMinifier(ILoggerFactory loggerFactory)
         {
@@ -23,7 +23,7 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
 
         public string Process(string content, string filePath)
         {
-            var result = _minifier.Minify(content, isInlineCode: false);
+            global::WebMarkupMin.Core.CodeMinificationResult result = _minifier.Minify(content, isInlineCode: false);
 
             if (result.Errors.Count > 0)
             {

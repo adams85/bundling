@@ -8,8 +8,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 {
     public class DynamicBundleSourceModel : ChangeTokenObserver, IBundleSourceModel
     {
-        readonly BuildItemsProvider _itemsProvider;
-        readonly IReadOnlyList<IBundleItemTransform> _itemTransforms;
+        private readonly BuildItemsProvider _itemsProvider;
+        private readonly IReadOnlyList<IBundleItemTransform> _itemTransforms;
 
         public DynamicBundleSourceModel(DynamicBundleSource bundleSource, bool enableChangeDetection)
         {
@@ -19,7 +19,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
                 bundleSource.ItemsProvider ??
                 throw ErrorHelper.PropertyNotSpecifed(nameof(DynamicBundleSource), nameof(DynamicBundleSource.ItemsProvider));
 
-            var changeTokenFactory =
+            Func<Microsoft.Extensions.Primitives.IChangeToken> changeTokenFactory =
                 enableChangeDetection && bundleSource.ChangeTokenFactory != null ?
                 bundleSource.ChangeTokenFactory :
                 () => NullChangeToken.Singleton;

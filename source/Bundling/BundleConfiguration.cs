@@ -1,6 +1,6 @@
 ﻿using System;
-using Microsoft.Extensions.Options;
 using System.Collections.Generic;
+using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling
 {
@@ -41,7 +41,7 @@ namespace Karambolo.AspNetCore.Bundling
     public abstract class BundleDefaultsConfigurerBase<TDefaults> : IConfigureNamedOptions<TDefaults>
         where TDefaults : BundleGlobalDefaultsOptions
     {
-        readonly Action<TDefaults, IServiceProvider> _action;
+        private readonly Action<TDefaults, IServiceProvider> _action;
         protected readonly IServiceProvider _serviceProvider;
 
         protected BundleDefaultsConfigurerBase(Action<TDefaults, IServiceProvider> action, IServiceProvider serviceProvider)

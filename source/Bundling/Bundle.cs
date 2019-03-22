@@ -32,35 +32,35 @@ namespace Karambolo.AspNetCore.Bundling
 
         public IList<BundleSource> Sources { get; }
 
-        IBundleBuilder _builder;
+        private IBundleBuilder _builder;
         public IBundleBuilder Builder
         {
             get => _builder ?? Defaults.Builder ?? Defaults.GlobalDefaults.Builder;
             set => _builder = value;
         }
 
-        IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
+        private IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
         public IReadOnlyList<IFileBundleSourceFilter> FileFilters
         {
             get => _fileFilters ?? Defaults.FileFilters ?? Defaults.GlobalDefaults.FileFilters;
             set => _fileFilters = value;
         }
 
-        IReadOnlyList<IBundleItemTransform> _itemTransforms;
+        private IReadOnlyList<IBundleItemTransform> _itemTransforms;
         public IReadOnlyList<IBundleItemTransform> ItemTransforms
         {
             get => _itemTransforms ?? Defaults.ItemTransforms ?? Defaults.GlobalDefaults.ItemTransforms;
             set => _itemTransforms = value;
         }
 
-        IReadOnlyList<IBundleTransform> _transforms;
+        private IReadOnlyList<IBundleTransform> _transforms;
         public IReadOnlyList<IBundleTransform> Transforms
         {
             get => _transforms ?? Defaults.Transforms ?? Defaults.GlobalDefaults.Transforms;
             set => _transforms = value;
         }
 
-        string _concatenationToken;
+        private string _concatenationToken;
         public string ConcatenationToken
         {
             get => _concatenationToken ?? Defaults.ConcatenationToken;

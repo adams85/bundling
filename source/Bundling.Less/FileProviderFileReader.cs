@@ -8,8 +8,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
     public class FileProviderFileReader : IFileReader
     {
         public static readonly FileProviderFileReader Null = new FileProviderFileReader(new NullFileProvider());
-
-        readonly IFileProvider _fileProvider;
+        private readonly IFileProvider _fileProvider;
 
         public FileProviderFileReader(IFileProvider fileProvider)
         {
@@ -28,7 +27,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
         public byte[] GetBinaryFileContents(string fileName)
         {
-            using (var stream = _fileProvider.GetFileInfo(fileName).CreateReadStream())
+            using (Stream stream = _fileProvider.GetFileInfo(fileName).CreateReadStream())
             using (var ms = new MemoryStream())
             {
                 stream.CopyTo(ms);
@@ -38,7 +37,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
         public string GetFileContents(string fileName)
         {
-            using (var stream = _fileProvider.GetFileInfo(fileName).CreateReadStream())
+            using (Stream stream = _fileProvider.GetFileInfo(fileName).CreateReadStream())
             using (var reader = new StreamReader(stream))
                 return reader.ReadToEnd();
         }

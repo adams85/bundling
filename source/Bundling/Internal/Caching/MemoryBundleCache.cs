@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
@@ -15,7 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
     public class MemoryBundleCache : IBundleCache, IDisposable
     {
-        class Item : IBundleCacheItem
+        private class Item : IBundleCacheItem
         {
             public Item(IFileInfo fileInfo, BundleCacheData metadata)
             {
@@ -29,8 +28,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             public IDisposable FileReleaser => NullDisposable.Instance;
         }
 
-        readonly ConcurrentDictionary<(int, PathString), CancellationTokenSource> _changeTokenSources;
-        readonly IMemoryCache _cache;
+        private readonly ConcurrentDictionary<(int, PathString), CancellationTokenSource> _changeTokenSources;
+        private readonly IMemoryCache _cache;
 
         public MemoryBundleCache(IMemoryCache cache, IOptions<BundleGlobalOptions> globalOptions)
         {
@@ -43,11 +42,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         public void Dispose()
         {
             if (_changeTokenSources != null)
-                foreach (var cts in _changeTokenSources.Values)
+                foreach (CancellationTokenSource cts in _changeTokenSources.Values)
                     cts.Dispose();
         }
 
-        Item CreateCacheItem(BundleCacheKey key, BundleCacheData data)
+        private Item CreateCacheItem(BundleCacheKey key, BundleCacheData data)
         {
             var fileInfo = new MemoryFileInfo(Path.GetFileName(key.Path), data.Content, data.Timestamp);
             return new Item(fileInfo, data);
@@ -61,11 +60,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             if (cacheOptions.NoCache)
                 return CreateCacheItem(key, await factory(token));
 
-            var factoryTask = _cache.GetOrCreate(key, ce =>
+            Lazy<Task<Item>> factoryTask = _cache.GetOrCreate(key, ce =>
             {
                 if (_changeTokenSources != null)
                 {
-                    var cts = _changeTokenSources.GetOrAdd((key.ManagerId, key.Path), p => new CancellationTokenSource());
+                    CancellationTokenSource cts = _changeTokenSources.GetOrAdd((key.ManagerId, key.Path), p => new CancellationTokenSource());
                     ce.AddExpirationToken(new CancellationChangeToken(cts.Token));
                 }
 

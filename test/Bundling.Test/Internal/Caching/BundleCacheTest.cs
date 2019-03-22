@@ -35,7 +35,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                 var key = new BundleCacheKey(0, "/test.css", QueryString.Empty);
                 var factoryRun = false;
-                var addItem = await Cache.GetOrAddAsync(key, ct =>
+                IBundleCacheItem addItem = await Cache.GetOrAddAsync(key, ct =>
                 {
                     factoryRun = true;
                     return Task.FromResult(data);
@@ -48,7 +48,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                     // file is not released so the next call must block (using a parametrized key will force acquiring a writer lock)
 
                     var key2 = new BundleCacheKey(key.ManagerId, key.Path, new QueryString("?q"));
-                    var getItemTask = Cache.GetOrAddAsync(key2, ct => throw new ApplicationException(), CancellationToken.None, BundleCacheOptions.Default, lockFile: false);
+                    Task<IBundleCacheItem> getItemTask = Cache.GetOrAddAsync(key2, ct => throw new ApplicationException(), CancellationToken.None, BundleCacheOptions.Default, lockFile: false);
 
                     await AsyncHelper.NeverCompletesAsync(getItemTask);
 
@@ -62,7 +62,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 // re-checking
 
                 factoryRun = false;
-                var getItem = await Cache.GetOrAddAsync(key, ct =>
+                IBundleCacheItem getItem = await Cache.GetOrAddAsync(key, ct =>
                 {
                     factoryRun = true;
                     return Task.FromResult(new BundleCacheData());
@@ -107,7 +107,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                 var key = new BundleCacheKey(0, "/test.css", QueryString.Empty);
                 var factoryRun = false;
-                var addItem = await Cache.GetOrAddAsync(key, ct =>
+                IBundleCacheItem addItem = await Cache.GetOrAddAsync(key, ct =>
                 {
                     factoryRun = true;
                     return Task.FromResult(data);
@@ -119,7 +119,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 {
                     // file is not released so the next call must block (remove should acquire a writer lock)
 
-                    var removeItemTask = Cache.RemoveAsync(key, CancellationToken.None);
+                    Task removeItemTask = Cache.RemoveAsync(key, CancellationToken.None);
 
                     await AsyncHelper.NeverCompletesAsync(removeItemTask);
 
@@ -165,7 +165,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 var key1 = new BundleCacheKey(0, "/test.css", QueryString.Empty);
 
                 var factoryRun = false;
-                var addItem1 = await Cache.GetOrAddAsync(key1, ct =>
+                IBundleCacheItem addItem1 = await Cache.GetOrAddAsync(key1, ct =>
                 {
                     factoryRun = true;
                     return Task.FromResult(data);
@@ -179,7 +179,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 {
                     // file1 is not released so the next call must block (remove should acquire a writer lock)
 
-                    var removeAllItemTask = Cache.RemoveAllAsync(key1.ManagerId, key1.Path, CancellationToken.None);
+                    Task removeAllItemTask = Cache.RemoveAllAsync(key1.ManagerId, key1.Path, CancellationToken.None);
 
                     await AsyncHelper.NeverCompletesAsync(removeAllItemTask);
 

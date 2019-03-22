@@ -17,7 +17,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 
     public class ConfigFileManager : IConfigFileManager
     {
-        readonly IEnumerable<IExtensionMapper> _extensionMappers;
+        private readonly IEnumerable<IExtensionMapper> _extensionMappers;
 
         public ConfigFileManager(IEnumerable<IExtensionMapper> extensionMappers)
         {
@@ -29,7 +29,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 
         public const string DefaultPathPrefix = "/wwwroot";
 
-        static PathString DefaultMapPath(string filePath, PathString pathPrefix, bool output)
+        private static PathString DefaultMapPath(string filePath, PathString pathPrefix, bool output)
         {
             PathString result = filePath;
 
@@ -54,17 +54,17 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                 pathMapper = DefaultMapPath;
 
             var serializer = JsonSerializer.CreateDefault();
-            var items = SerializationHelper.Deserialize<BundleData[]>(reader);
+            BundleData[] items = SerializationHelper.Deserialize<BundleData[]>(reader);
 
             var n = items.Length;
             for (var i = 0; i < n; i++)
             {
-                var item = items[i];
+                BundleData item = items[i];
 
-                var outputPath = pathMapper(UrlUtils.NormalizePath(item.OutputFileName), bundles.PathPrefix, output: true);
+                PathString outputPath = pathMapper(UrlUtils.NormalizePath(item.OutputFileName), bundles.PathPrefix, output: true);
                 var extension = Path.GetExtension(outputPath);
 
-                var outputConfig = _extensionMappers.Select(em => em.MapOutput(extension)).FirstOrDefault(cfg => cfg != null);
+                IBundleConfiguration outputConfig = _extensionMappers.Select(em => em.MapOutput(extension)).FirstOrDefault(cfg => cfg != null);
                 if (outputConfig == null)
                     throw ErrorHelper.ExtensionNotRecognized(extension);
 
@@ -81,10 +81,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                 {
                     var inputFile = item.InputFiles[j];
 
-                    var inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
+                    PathString inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
                     extension = Path.GetExtension(inputPath);
 
-                    var inputConfig = _extensionMappers.Select(em => em.MapInput(extension)).FirstOrDefault(cfg => cfg != null);
+                    IBundleConfiguration inputConfig = _extensionMappers.Select(em => em.MapInput(extension)).FirstOrDefault(cfg => cfg != null);
                     if (inputConfig == null)
                         throw ErrorHelper.ExtensionNotRecognized(extension);
 

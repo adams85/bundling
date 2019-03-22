@@ -8,17 +8,16 @@ namespace Karambolo.AspNetCore.Bundling.Sass
     public sealed class FileProviderFileManager : IFileManager
     {
         public static readonly FileProviderFileManager Instance = new FileProviderFileManager();
-
-        static AsyncLocal<SassCompilationContext> compilationContext = new AsyncLocal<SassCompilationContext>();
+        private static AsyncLocal<SassCompilationContext> s_compilationContext = new AsyncLocal<SassCompilationContext>();
 
         internal static void SetCompilationContext(SassCompilationContext context)
         {
-            compilationContext.Value = context;
+            s_compilationContext.Value = context;
         }
 
-        FileProviderFileManager() { }
+        private FileProviderFileManager() { }
 
-        SassCompilationContext Context => compilationContext.Value ?? throw new InvalidOperationException("No ambient compilation context is accessible currently.");
+        private SassCompilationContext Context => s_compilationContext.Value ?? throw new InvalidOperationException("No ambient compilation context is accessible currently.");
 
         public bool SupportsConversionToAbsolutePath => false;
 
@@ -32,11 +31,11 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            var context = Context;
+            SassCompilationContext context = Context;
 
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            var fileInfo = context.FileProvider.GetFileInfo(path);
+            Microsoft.Extensions.FileProviders.IFileInfo fileInfo = context.FileProvider.GetFileInfo(path);
             return fileInfo.Exists && !fileInfo.IsDirectory;
         }
 
@@ -53,9 +52,9 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             throw new NotSupportedException();
         }
 
-        string RewriteUrls(string content, string path)
+        private string RewriteUrls(string content, string path)
         {
-            var context = Context;
+            SassCompilationContext context = Context;
 
             var compiler = (SassCompiler)context.Compiler;
             path = compiler.GetBasePath(path, context.RootPath);
@@ -68,12 +67,12 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            var context = Context;
+            SassCompilationContext context = Context;
 
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            var fileInfo = context.FileProvider.GetFileInfo(path);
-            using (var stream = fileInfo.CreateReadStream())
+            Microsoft.Extensions.FileProviders.IFileInfo fileInfo = context.FileProvider.GetFileInfo(path);
+            using (Stream stream = fileInfo.CreateReadStream())
             using (var reader = new StreamReader(stream))
                 return RewriteUrls(reader.ReadToEnd(), path);
         }

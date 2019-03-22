@@ -9,7 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 {
     public class DefaultBundleModel : IBundleModel
     {
-        readonly IEnumerable<IBundleModelFactory> _modelFactories;
+        private readonly IEnumerable<IBundleModelFactory> _modelFactories;
 
         public DefaultBundleModel(Bundle bundle, IEnumerable<IBundleModelFactory> modelFactories)
         {
@@ -20,14 +20,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
             DependsOnParams = bundle.DependsOnParams;
 
-            ConcatenationToken = 
-                bundle.ConcatenationToken ?? 
+            ConcatenationToken =
+                bundle.ConcatenationToken ??
                 throw ErrorHelper.PropertyNotSpecifed(nameof(Bundle), nameof(Bundle.ConcatenationToken));
 
             OutputEncoding = bundle.OutputEncoding ?? Encoding.UTF8;
 
-            Builder = 
-                bundle.Builder ?? 
+            Builder =
+                bundle.Builder ??
                 throw ErrorHelper.PropertyNotSpecifed(nameof(Bundle), nameof(Bundle.Builder));
 
             Transforms = bundle.Transforms;
@@ -39,7 +39,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
         protected virtual IBundleSourceModel CreateSourceModel(BundleSource bundleSource)
         {
-            var result = 
+            IBundleSourceModel result =
                 _modelFactories.Select(f => f.CreateSource(bundleSource)).FirstOrDefault(m => m != null) ??
                 throw ErrorHelper.ModelFactoryNotAvailable(bundleSource.GetType());
 
