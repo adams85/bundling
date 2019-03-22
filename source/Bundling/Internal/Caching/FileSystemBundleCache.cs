@@ -151,9 +151,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         private static bool TryGetSlidingExpiration(string filePath, out DateTimeOffset expirationTime)
         {
-
             try { expirationTime = File.GetLastWriteTimeUtc(filePath); }
-            catch { return false; }
+            catch
+            {
+                expirationTime = default;
+                return false;
+            }
 
             return true;
         }

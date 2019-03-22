@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.TagHelpers.Internal;
+﻿using Microsoft.AspNetCore.Antiforgery.Internal;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Versioning
