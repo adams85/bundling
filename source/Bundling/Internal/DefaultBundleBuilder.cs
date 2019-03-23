@@ -81,7 +81,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             Task<string> consumeTask = ConsumeAsync();
 
-            // procuder
+            // producer
             var n = context.Bundle.Sources.Length;
             for (var i = 0; i < n; i++)
             {
