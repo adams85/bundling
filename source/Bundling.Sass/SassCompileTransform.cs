@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling.Sass
@@ -20,8 +22,9 @@ namespace Karambolo.AspNetCore.Bundling.Sass
         {
             string filePath;
             IFileProvider fileProvider;
+            var fileItemContext = context as IFileBundleItemTransformContext;
 
-            if (context is IFileBundleItemTransformContext fileItemContext)
+            if (fileItemContext != null)
             {
                 filePath = fileItemContext.FilePath;
                 fileProvider = fileItemContext.FileProvider;
@@ -32,9 +35,13 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 fileProvider = null;
             }
 
-            Microsoft.AspNetCore.Http.PathString pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+            PathString pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
 
-            context.Content = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, context.BuildContext.CancellationToken);
+            SassCompilationResult result = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, context.BuildContext.CancellationToken);
+
+            context.Content = result.Content ?? string.Empty;
+            if (result.Imports != null)
+                (fileItemContext.AdditionalSourceFilePaths ?? (fileItemContext.AdditionalSourceFilePaths = new HashSet<string>())).UnionWith(result.Imports);
         }
     }
 }

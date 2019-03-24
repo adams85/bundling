@@ -114,12 +114,6 @@ namespace Microsoft.AspNetCore.Builder
             return this;
         }
 
-        public BundleConfigurer UsePathComparisonType(StringComparison comparisonType)
-        {
-            _bundleSource.Value.PathComparisonType = comparisonType;
-            return this;
-        }
-
         public BundleConfigurer EnableMinification()
         {
             IConfigurationHelper helper =

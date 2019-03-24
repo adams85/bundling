@@ -1,12 +1,14 @@
-﻿using Microsoft.Extensions.FileProviders;
+﻿using System.Collections.Generic;
+using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling
 {
     public interface IFileBundleItemTransformContext : IBundleItemTransformContext
     {
-        string FilePath { get; }
         IFileProvider FileProvider { get; }
+        string FilePath { get; }
         IFileInfo FileInfo { get; }
+        ISet<string> AdditionalSourceFilePaths { get; set; }
     }
 
     public class FileBundleItemTransformContext : BundleItemTransformContext, IFileBundleItemTransformContext
@@ -14,8 +16,9 @@ namespace Karambolo.AspNetCore.Bundling
         public FileBundleItemTransformContext(IBundleBuildContext buildContext)
             : base(buildContext) { }
 
-        public string FilePath { get; set; }
         public IFileProvider FileProvider { get; set; }
+        public string FilePath { get; set; }
         public IFileInfo FileInfo { get; set; }
+        public ISet<string> AdditionalSourceFilePaths { get; set; }
     }
 }

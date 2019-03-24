@@ -64,9 +64,15 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             return result;
         }
 
+        private async void InvalidateBundleCache(IBundleModel bundle)
+        {
+            try { await _cache.RemoveAllAsync(_id, bundle.Path, _shutdownToken).ConfigureAwait(false); }
+            catch (Exception ex) { _logger.LogError(ex, "Unexpected error occurred during updating cache."); }
+        }
+
         protected virtual void BundleChanged(object sender, EventArgs e)
         {
-            _cache.RemoveAllAsync(_id, ((IBundleModel)sender).Path, _shutdownToken).GetAwaiter().GetResult();
+            InvalidateBundleCache((IBundleModel)sender);
         }
 
         protected virtual async Task<BundleCacheData> BuildBundleAsync(IBundleModel bundle, QueryString query, IDictionary<string, StringValues> @params, HttpContext httpContext)

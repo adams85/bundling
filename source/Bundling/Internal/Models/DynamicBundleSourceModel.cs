@@ -1,40 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
-using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Models
 {
-    public class DynamicBundleSourceModel : ChangeTokenObserver, IBundleSourceModel
+    public class DynamicBundleSourceModel : BundleSourceModelBase
     {
         private readonly BuildItemsProvider _itemsProvider;
         private readonly IReadOnlyList<IBundleItemTransform> _itemTransforms;
+        private readonly Func<IChangeToken> _changeTokenFactory;
 
         public DynamicBundleSourceModel(DynamicBundleSource bundleSource, bool enableChangeDetection)
+            : base(enableChangeDetection)
         {
-            _itemTransforms = bundleSource.ItemTransforms;
-
             _itemsProvider =
                 bundleSource.ItemsProvider ??
                 throw ErrorHelper.PropertyNotSpecifed(nameof(DynamicBundleSource), nameof(DynamicBundleSource.ItemsProvider));
 
-            Func<Microsoft.Extensions.Primitives.IChangeToken> changeTokenFactory =
-                enableChangeDetection && bundleSource.ChangeTokenFactory != null ?
-                bundleSource.ChangeTokenFactory :
-                () => NullChangeToken.Singleton;
+            _itemTransforms = bundleSource.ItemTransforms;
 
-            Initialize(changeTokenFactory);
+            if (enableChangeDetection)
+                _changeTokenFactory = bundleSource.ChangeTokenFactory;
         }
 
-        public event EventHandler Changed;
-
-        protected override void OnChanged()
+        protected override IEnumerable<IChangeToken> GetChangeTokens(IBundleItemTransformContext context, List<string> filesToWatch)
         {
-            Changed?.Invoke(this, EventArgs.Empty);
+            IEnumerable<IChangeToken> changeTokens = base.GetChangeTokens(context, filesToWatch);
+
+            if (_changeTokenFactory != null)
+                changeTokens = changeTokens.Append(_changeTokenFactory());
+
+            return changeTokens;
         }
 
-        public Task ProvideBuildItemsAsync(IBundleBuildContext context, Action<IBundleSourceBuildItem> processor)
+        protected override Task ProvideBuildItemsCoreAsync(IBundleBuildContext context, Action<IBundleSourceBuildItem> processor, List<string> filesToWatch)
         {
             return _itemsProvider(context, _itemTransforms, processor);
         }

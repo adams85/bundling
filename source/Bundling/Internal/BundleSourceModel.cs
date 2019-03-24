@@ -8,5 +8,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         event EventHandler Changed;
 
         Task ProvideBuildItemsAsync(IBundleBuildContext context, Action<IBundleSourceBuildItem> processor);
+
+        void OnProcessed(IBundleItemTransformContext context);
     }
 }

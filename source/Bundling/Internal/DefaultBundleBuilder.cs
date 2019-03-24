@@ -7,9 +7,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class DefaultBundleBuilder : IBundleBuilder
     {
-        protected virtual void CreateItemTransformPipeline(IBundleBuilderContext context, out ITargetBlock<IBundleSourceBuildItem> input, out ISourceBlock<string> output)
+        protected virtual void CreateItemTransformPipeline(IBundleBuilderContext context, 
+            out ITargetBlock<(IBundleSourceBuildItem, IBundleSourceModel)> input, 
+            out ISourceBlock<string> output)
         {
-            var transformBlock = new TransformBlock<IBundleSourceBuildItem, string>(it => ApplyItemTransformsAsync(it.ItemTransformContext, it.ItemTransforms),
+            var transformBlock = new TransformBlock<(IBundleSourceBuildItem BuildItem, IBundleSourceModel BundleSource), string>(
+                it => ApplyItemTransformsAsync(it.BuildItem.ItemTransformContext, it.BuildItem.ItemTransforms, it.BundleSource),
                 new ExecutionDataflowBlockOptions
                 {
                     CancellationToken = context.CancellationToken,
@@ -22,7 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             output = transformBlock;
         }
 
-        protected virtual async Task<string> ApplyItemTransformsAsync(IBundleItemTransformContext context, IReadOnlyList<IBundleItemTransform> transforms)
+        protected virtual async Task<string> ApplyItemTransformsAsync(IBundleItemTransformContext context, IReadOnlyList<IBundleItemTransform> transforms, IBundleSourceModel source)
         {
             if (transforms != null)
             {
@@ -36,6 +39,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                     transform.Transform(context);
                 }
             }
+
+            source.OnProcessed(context);
 
             return context.Content;
         }
@@ -60,7 +65,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public virtual async Task BuildAsync(IBundleBuilderContext context)
         {
-            CreateItemTransformPipeline(context, out ITargetBlock<IBundleSourceBuildItem> input, out ISourceBlock<string> output);
+            CreateItemTransformPipeline(context, 
+                out ITargetBlock<(IBundleSourceBuildItem, IBundleSourceModel)> input,
+                out ISourceBlock<string> output);
 
             // consumer
             async Task<string> ConsumeAsync()
@@ -88,7 +95,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 IBundleSourceModel source = context.Bundle.Sources[i];
-                await source.ProvideBuildItemsAsync(context, it => input.Post(it));
+                await source.ProvideBuildItemsAsync(context, it => input.Post((it, source)));
             }
             input.Complete();
 

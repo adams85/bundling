@@ -1,51 +1,70 @@
 ﻿using System;
-using System.Threading;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
     public abstract class ChangeTokenObserver : IDisposable
     {
+        private readonly object _gate = new object();
         private Func<IChangeToken> _changeTokenFactory;
         private IDisposable _changeTokenReleaser;
+        private bool _isDisposed;
 
         protected virtual void DisposeCore() { }
 
         public void Dispose()
         {
-            ReleaseChangeToken(dispose: true);
+            lock (_gate)
+            {
+                if (_isDisposed)
+                    return;
+
+                _isDisposed = true;
+                _changeTokenFactory = null;
+                ResetChangeSourceCore();
+            }
+
             DisposeCore();
         }
 
-        protected void Initialize(Func<IChangeToken> changeTokenFactory)
+        private void ResetChangeSourceCore()
         {
-            _changeTokenFactory = changeTokenFactory;
-            _changeTokenReleaser = NullDisposable.Instance;
-
-            AcquireChangeToken();
-        }
-
-        private IDisposable AcquireChangeToken()
-        {
-            IChangeToken changeToken = _changeTokenFactory();
-            IDisposable result = Interlocked.CompareExchange(ref _changeTokenReleaser, changeToken.RegisterChangeCallback(OnChanged, null), NullDisposable.Instance);
-            if (result == null)
+            if (_changeTokenReleaser != null)
+            {
                 _changeTokenReleaser.Dispose();
-            return result;
+                _changeTokenReleaser = null;
+            }
+
+            if (_changeTokenFactory != null)
+            {
+                IChangeToken changeToken = _changeTokenFactory();
+                _changeTokenReleaser = changeToken.RegisterChangeCallback(OnChanged, null);
+            }
         }
 
-        private IDisposable ReleaseChangeToken(bool dispose)
+        protected void ResetChangeSource(Func<IChangeToken> changeTokenFactory)
         {
-            IDisposable result = Interlocked.Exchange(ref _changeTokenReleaser, dispose ? null : NullDisposable.Instance);
-            result?.Dispose();
-            return result;
+            if (changeTokenFactory == null)
+                throw new ArgumentNullException(nameof(changeTokenFactory));
+
+            lock (_gate)
+            {
+                _changeTokenFactory = changeTokenFactory;
+                ResetChangeSourceCore();
+            }
         }
 
         private void OnChanged(object state)
         {
-            ReleaseChangeToken(dispose: false);
-            if (AcquireChangeToken() != null)
-                OnChanged();
+            lock (_gate)
+            {
+                if (_isDisposed)
+                    return;
+
+                ResetChangeSourceCore();
+            }
+
+            OnChanged();
         }
 
         protected abstract void OnChanged();

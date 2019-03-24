@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 {
     public interface ISassCompiler
     {
-        Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
+        Task<SassCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
     }
 
     public class SassCompiler : ISassCompiler
@@ -62,7 +63,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 });
         }
 
-        public Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
+        public Task<SassCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
@@ -97,7 +98,10 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 }
             }
 
-            return Task.FromResult(compilationResult?.CompiledContent ?? string.Empty);
+            return Task.FromResult(
+                compilationResult != null ? 
+                new SassCompilationResult(compilationResult.CompiledContent, compilationResult.IncludedFilePaths) :
+                default);
         }
     }
 }

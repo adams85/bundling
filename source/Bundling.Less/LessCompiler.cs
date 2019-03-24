@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using dotless.Core;
@@ -11,7 +12,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 {
     public interface ILessCompiler
     {
-        Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
+        Task<LessCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
     }
 
     public class LessCompiler : ILessCompiler
@@ -31,7 +32,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
             _logger = loggerFactory.CreateLogger<LessCompiler>();
         }
 
-        public Task<string> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
+        public Task<LessCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
@@ -50,7 +51,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             ILessEngine engine = _engineFactory.Create(fileBasePath ?? string.Empty, virtualBasePath ?? string.Empty, fileProvider);
 
-            var result = engine.TransformToCss(content, fileName);
+            content = engine.TransformToCss(content, fileName);
 
             if (!engine.LastTransformationSuccessful)
             {
@@ -58,10 +59,13 @@ namespace Karambolo.AspNetCore.Bundling.Less
                     (filePath ?? "(content)"),
                     (engine is LessEngine lessEngine ? lessEngine.LastTransformationError?.Message : null) ?? "Unknown reason.");
 
-                result = string.Empty;
+                content = null;
             }
 
-            return Task.FromResult(result);
+            return Task.FromResult(
+                content != null ?
+                new LessCompilationResult(content, engine.GetImports().ToArray()) :
+                default);
         }
     }
 }

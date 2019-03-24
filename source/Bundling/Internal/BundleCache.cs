@@ -52,6 +52,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
     public interface IBundleCache
     {
+        /// <remarks>
+        /// Implementations shall guarantee that factory is not called concurrently!
+        /// </remarks>
         Task<IBundleCacheItem> GetOrAddAsync(BundleCacheKey key, Func<CancellationToken, Task<BundleCacheData>> factory, CancellationToken token,
             IBundleCacheOptions cacheOptions, bool lockFile = false);
         Task RemoveAsync(BundleCacheKey key, CancellationToken token);

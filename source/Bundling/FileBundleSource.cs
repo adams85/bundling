@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.FileProviders;
@@ -9,11 +8,6 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public class FileBundleSource : BundleSource
     {
-        private static readonly StringComparison s_defaultPathComparisonType =
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-            StringComparison.OrdinalIgnoreCase :
-            StringComparison.Ordinal;
-
         public FileBundleSource(IFileProvider fileProvider, Bundle bundle)
             : base(bundle)
         {
@@ -21,7 +15,6 @@ namespace Karambolo.AspNetCore.Bundling
                 throw new ArgumentNullException(nameof(fileProvider));
 
             FileProvider = fileProvider;
-            PathComparisonType = s_defaultPathComparisonType;
 
             Items = new List<FileBundleSourceItem>();
         }
