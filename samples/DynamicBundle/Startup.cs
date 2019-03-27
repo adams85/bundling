@@ -22,19 +22,21 @@ namespace DynamicBundle
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<DynamicSourceInvalidator>();
+
             services.AddBundling()
                 .UseDefaults(_env)
                 .UseWebMarkupMin()
                 .AddLess();
 
             services.AddMvc()
-                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_2_1);
+                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_2_2);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, DynamicSourceInvalidator invalidator)
         {
-            if (env.IsDevelopment())
+            if (_env.IsDevelopment())
             {
                 app.UseBrowserLink();
                 app.UseDeveloperExceptionPage();
@@ -51,18 +53,20 @@ namespace DynamicBundle
                 new BundlingOptions
                 {
                     StaticFilesRequestPath = "/static"
-                }, 
+                },
                 bundles =>
                 {
                     bundles.AddCss("/site.css")
                         .Include("/css/*.css");
 
-                    // we are adding a less bundle whose input is generated dynamically based on the query string
-                    var dynamicSource = new DynamicSource(bundles.Bundles.SourceFileProvider);
+                    // first we create the dynamic bundle content source (with dependencies resolved from the IoC container)
+                    var dynamicSource = ActivatorUtilities.CreateInstance<DynamicSource>(app.ApplicationServices, bundles.Bundles.SourceFileProvider);
+
+                    // then we add a less bundle whose input is generated dynamically based on the query string
                     bundles.AddLess("/dynamic.css")
-                        .AddDynamicSource(dynamicSource.ProvideItems, dynamicSource.ChangeTokenFactory)
+                        .AddDynamicSource(dynamicSource.ProvideItems, invalidator.CreateChangeToken)
                         .DependsOnParams()
-                        .UseCacheOptions(new BundleCacheOptions { SlidingExpiration = TimeSpan.FromMinutes(10) });
+                        .UseCacheOptions(new BundleCacheOptions { SlidingExpiration = TimeSpan.FromSeconds(30) });
                 });
 
             app.UseStaticFiles(new StaticFileOptions { RequestPath = "/static" });

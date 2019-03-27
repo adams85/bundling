@@ -20,5 +20,10 @@
         #<input type="text" name="model" value="@Model" />
         <button type="submit">Set frame color</button>
     </form>
+
+    <form method="post" asp-action="Invalidate">
+        <input type="hidden" name="model" value="@Model" />
+        <button type="submit">Signal change of the dynamic source (forces re-evaluation in development mode)</button>
+    </form>
 </body>
 </html>
