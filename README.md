@@ -6,15 +6,15 @@ This repository contains components which provide run-time bundling and minifica
 
 ### Main features
 - Css and Js minification and bundling (powered by [NUglify](https://github.com/xoofx/NUglify) and [WebMarkupMin](https://github.com/Taritsyn/WebMarkupMin)).
-- Less compilation and bundling (based on [dotLess](https://github.com/dotless/dotless)).
-- Sass/Scss compilation and bundling (based on [LibSassHost](https://github.com/Taritsyn/LibSassHost)).
+- Less compilation and bundling (built on [dotLess](https://github.com/dotless/dotless)).
+- Sass/Scss compilation and bundling (built on [LibSassHost](https://github.com/Taritsyn/LibSassHost)).
 - Straightforward and flexible configuration:
   - Configuration through fluent API.
   - **Compatibility with *bundleconfig.json***.
   - Multi-level settings inheritance.
 - Full control over server and client-side caching (including cache busting). **Memory** and **file system cache** implementations are included.
 - Replaceable backing storage by leveraging [.NET Core file system abstractions](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/file-providers).
-- Change detection.
+- Automatic refresh when input files change. As of version 1.3, **Less/Sass/Scss imports are tracked, as well.**
 - Razor tag helpers and the familiar, System.Web.Optimization-like API can be used as well.
 - Correct handling of URL path prefixes (app branch prefix, static files middleware prefix, etc.)
 - Fully customizable transformation pipelines.
@@ -72,7 +72,7 @@ If you want to switch to file system-backed caching, call *UseFileSystemCaching(
 
 #### 3. Configure bundles
 
-You configure your bundles in the *Configure* method of the *Startup* class in the following manner:
+Bundles are defined in the *Configure* method of the *Startup* class in the following manner:
 
     app.UseBundling(bundles =>
     {
