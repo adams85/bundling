@@ -4,7 +4,7 @@
     <Version>1.0.0</Version>
     <Authors>Adam Simon</Authors>
     <Company>Karambolo</Company>
-    <Product>Karambolo.AspNetCore.Bundling.NUglify</Product>
+    <Product>Karambolo.AspNetCore.Bundling</Product>
     <Description>Minification components built on NUglify for the Karambolo.AspNetCore.Bundling library.</Description>
     <Copyright>© 2019 Adam Simon</Copyright>
     <AssemblyVersion>1.0</AssemblyVersion>
