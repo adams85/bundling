@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>Karambolo.AspNetCore.Bundling.WebMarkupMin</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.WebMarkupMin</RootNamespace>
     <LangVersion>7.3</LangVersion>

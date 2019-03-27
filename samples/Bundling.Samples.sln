@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bundling.WebMarkupMin", "..
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsTranslation", "JsTranslation\JsTranslation.csproj", "{B3D111D5-58B6-49C0-BEE2-75153D409815}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "References", "References", "{D021D24D-BE2D-4047-B139-35A694DAF345}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4AC804B1-F5CF-4A05-BFB3-72EC86A64ED9} = {D021D24D-BE2D-4047-B139-35A694DAF345}
+		{EB41945A-9CBE-41B1-8373-8919AC7B66C1} = {D021D24D-BE2D-4047-B139-35A694DAF345}
+		{F04F90FF-752E-4C2C-9440-73D879EEC8BD} = {D021D24D-BE2D-4047-B139-35A694DAF345}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E0DF6703-2CA6-4055-8550-46EF6CC8CF7B}

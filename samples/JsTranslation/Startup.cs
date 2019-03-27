@@ -40,14 +40,13 @@ namespace JsTranslation
                 .UseDefaults(_env)
                 .UseWebMarkupMin();
 
-            services.AddMvc()
-                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_2_1);
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILocalizationProvider localizationProvider, IStringLocalizerFactory stringLocalizerFactory)
+        public void Configure(IApplicationBuilder app, ILocalizationProvider localizationProvider, IStringLocalizerFactory stringLocalizerFactory)
         {
-            if (env.IsDevelopment())
+            if (_env.IsDevelopment())
             {
                 app.UseBrowserLink();
                 app.UseDeveloperExceptionPage();
