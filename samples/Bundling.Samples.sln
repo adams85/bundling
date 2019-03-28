@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bundling.EcmaScript", "..\s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TypeScriptDemo", "TypeScriptDemo\TypeScriptDemo.csproj", "{C1A1C576-DF2C-4534-8DFA-733528F16D16}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VueDemo", "VueDemo\VueDemo.csproj", "{370B1858-9F69-47C7-9631-51F25C80EEEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{C1A1C576-DF2C-4534-8DFA-733528F16D16}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1A1C576-DF2C-4534-8DFA-733528F16D16}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1A1C576-DF2C-4534-8DFA-733528F16D16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{370B1858-9F69-47C7-9631-51F25C80EEEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{370B1858-9F69-47C7-9631-51F25C80EEEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{370B1858-9F69-47C7-9631-51F25C80EEEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{370B1858-9F69-47C7-9631-51F25C80EEEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,12 +1,11 @@
-﻿using System;
-using Karambolo.AspNetCore.Bundling;
+﻿using Karambolo.AspNetCore.Bundling;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace TypeScriptDemo
+namespace VueDemo
 {
     public class Startup
     {
@@ -26,10 +25,7 @@ namespace TypeScriptDemo
             services.AddBundling()
                 .UseDefaults(_env)
                 .UseWebMarkupMin()
-                // for the sake of demonstration we enable file system caching
-                .UseFileSystemCaching(options => options.AutoResetOnCreate = true)
-                // you need to add this if you need the ES6 module bundling feature
-                .AddEcmaScript();
+                .AddLess();
 
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
@@ -49,18 +45,23 @@ namespace TypeScriptDemo
             }
 
             app.UseBundling(
+                // as we rebased the static files to /static (see UseStaticFiles()),
+                // we need to pass this information to the bundling middleware as well,
+                // otherwise urls would be rewrited incorrectly
+                new BundlingOptions
+                {
+                    StaticFilesRequestPath = "/static"
+                },
                 bundles =>
                 {
-                    bundles.AddCss("/site.css")
-                        .Include("/css/*.css");
+                    // we use LESS in this demo
+                    bundles.AddLess("/site.css")
+                        .Include("/less/site.less");
 
-                    bundles.AddJs("/main.js")
-                        .Include("/ts/main.js")
-                        // this enables included files to be treated as ES6 modules and bundled accordingly:
-                        // include the root file(s) only and the imports will be automatically discovered,
-                        // moreover all the involved files will be watched and the bundle will be automatically
-                        // rebuilt when any change detected (as long as running in development environment)
-                        .EnableEs6ModuleBundling();
+                    // defines a Javascript bundle containing your Vue application and components
+                    bundles.AddJs("/app.js")
+                        .Include("/js/components/*.js")
+                        .Include("/js/app.js");
                 });
 
             app.UseStaticFiles();
