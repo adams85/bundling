@@ -5,6 +5,7 @@ namespace Karambolo.AspNetCore.Bundling
     public interface IFileBundleItemTransformContext : IBundleItemTransformContext
     {
         IFileProvider FileProvider { get; }
+        bool CaseSensitiveFilePaths { get; }
         string FilePath { get; }
         IFileInfo FileInfo { get; }
     }
@@ -15,6 +16,7 @@ namespace Karambolo.AspNetCore.Bundling
             : base(buildContext) { }
 
         public IFileProvider FileProvider { get; set; }
+        public bool CaseSensitiveFilePaths { get; set; }
         public string FilePath { get; set; }
         public IFileInfo FileInfo { get; set; }
     }

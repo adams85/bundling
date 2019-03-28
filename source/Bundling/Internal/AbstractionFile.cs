@@ -8,16 +8,16 @@ namespace Karambolo.AspNetCore.Bundling.Internal
     {
         public static readonly NullFileProvider NullFileProvider = new NullFileProvider();
 
-        public AbstractionFile(IFileProvider fileProvider, string filePath, bool caseSensitivePaths = true)
+        public AbstractionFile(IFileProvider fileProvider, string filePath, bool caseSensitiveFilePaths = true)
         {
             FileProvider = fileProvider ?? NullFileProvider;
             FilePath = filePath;
-            PathComparer = caseSensitivePaths ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+            PathComparer = caseSensitiveFilePaths ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
         }
 
         public IFileProvider FileProvider { get; }
         public string FilePath { get; }
-        public bool CaseSensitivePaths => PathComparer == StringComparer.Ordinal;
+        public bool CaseSensitiveFilePaths => PathComparer == StringComparer.Ordinal;
         public StringComparer PathComparer { get; }
 
         public IFileInfo GetFileInfo()

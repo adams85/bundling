@@ -69,7 +69,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                     throw ErrorHelper.ExtensionNotRecognized(extension);
 
                 var bundle = new Bundle(outputPath, outputConfig);
-                var bundleSource = new FileBundleSource(bundles.SourceFileProvider, bundle);
+                var bundleSource = new FileBundleSource(bundles.SourceFileProvider, bundles.CaseSensitiveSourceFilePaths, bundle);
 
                 bundle.Transforms = outputConfig.ConfigurationHelper.SetDefaultTransforms(bundle.Transforms);
 

@@ -10,18 +10,24 @@ namespace Karambolo.AspNetCore.Bundling
     {
         private readonly Dictionary<string, Bundle> _bundles;
 
-        public BundleCollection() : this(PathString.Empty, null) { }
+        public BundleCollection()
+            : this(PathString.Empty, null) { }
 
         public BundleCollection(PathString pathPrefix, IFileProvider sourceFileProvider)
+            : this(pathPrefix, sourceFileProvider, true) { }
+
+        public BundleCollection(PathString pathPrefix, IFileProvider sourceFileProvider, bool caseSensitiveSourceFilePaths)
         {
             PathPrefix = pathPrefix;
             SourceFileProvider = sourceFileProvider;
+            CaseSensitiveSourceFilePaths = caseSensitiveSourceFilePaths;
 
             _bundles = new Dictionary<string, Bundle>(StringComparer.OrdinalIgnoreCase);
         }
 
         public PathString PathPrefix { get; }
         public IFileProvider SourceFileProvider { get; }
+        public bool CaseSensitiveSourceFilePaths { get; }
 
         public int Count => _bundles.Count;
 

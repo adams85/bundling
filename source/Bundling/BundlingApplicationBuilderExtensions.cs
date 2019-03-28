@@ -35,7 +35,7 @@ namespace Microsoft.AspNetCore.Builder
                 options.SourceFileProvider ??
                 builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider;
 
-            var bundles = new BundleCollection(options.RequestPath, sourceFileProvider);
+            var bundles = new BundleCollection(options.RequestPath, sourceFileProvider, options.CaseSensitiveSourceFilePaths);
 
             configureBundles?.Invoke(new BundleCollectionConfigurer(bundles, builder.ApplicationServices));
 
@@ -92,7 +92,7 @@ namespace Microsoft.AspNetCore.Builder
 
             var bundle = new Bundle(path, configurer.GetDefaults(CssBundleConfiguration.BundleType));
             configurer.Bundles.Add(bundle);
-            return new CssBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
+            return new CssBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.Bundles.CaseSensitiveSourceFilePaths, configurer.AppServices);
         }
 
         public static JsBundleConfigurer AddJs(this BundleCollectionConfigurer configurer, PathString path)
@@ -102,7 +102,7 @@ namespace Microsoft.AspNetCore.Builder
 
             var bundle = new Bundle(path, configurer.GetDefaults(JsBundleConfiguration.BundleType));
             configurer.Bundles.Add(bundle);
-            return new JsBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
+            return new JsBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.Bundles.CaseSensitiveSourceFilePaths, configurer.AppServices);
         }
     }
 }

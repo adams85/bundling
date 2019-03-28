@@ -8,18 +8,20 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public class FileBundleSource : BundleSource
     {
-        public FileBundleSource(IFileProvider fileProvider, Bundle bundle)
+        public FileBundleSource(IFileProvider fileProvider, bool caseSensitiveFilePaths, Bundle bundle)
             : base(bundle)
         {
             if (fileProvider == null)
                 throw new ArgumentNullException(nameof(fileProvider));
 
             FileProvider = fileProvider;
+            CaseSensitiveFilePaths = caseSensitiveFilePaths;
 
             Items = new List<FileBundleSourceItem>();
         }
 
         public IFileProvider FileProvider { get; }
+        public bool CaseSensitiveFilePaths { get; }
 
         public StringComparison PathComparisonType { get; set; }
 

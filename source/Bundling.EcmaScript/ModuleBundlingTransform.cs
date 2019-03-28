@@ -25,7 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript
             ModuleFile[] rootFiles = context.TransformedItemContexts
                 .Select((itemContext, i) =>
                     itemContext is IFileBundleItemTransformContext fileItemContext ?
-                    new ModuleFile(fileItemContext.FileProvider, fileItemContext.FilePath, _options.CaseSensitivePaths) { Content = fileItemContext.Content } :
+                    new ModuleFile(fileItemContext.FileProvider, fileItemContext.FilePath, fileItemContext.CaseSensitiveFilePaths) { Content = fileItemContext.Content } :
                     new ModuleFile() { Content = itemContext.Content })
                 .ToArray();
 

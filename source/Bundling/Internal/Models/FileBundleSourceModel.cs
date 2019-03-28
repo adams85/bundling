@@ -38,6 +38,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             public Include Include { get; set; }
 
             public IFileProvider FileProvider { get; set; }
+            public bool CaseSensitiveFilePaths { get; set; }
             public string FilePath { get; set; }
             public IFileInfo FileInfo { get; set; }
 
@@ -46,6 +47,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
         }
 
         private readonly IFileProvider _fileProvider;
+        private readonly bool _caseSensitiveFilePaths;
         private readonly IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
         private readonly Include[] _includes;
 
@@ -54,6 +56,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             _fileProvider =
                 bundleSource.FileProvider ??
                 throw ErrorHelper.PropertyNotSpecifed(nameof(FileBundleSource), nameof(FileBundleSource.FileProvider));
+            _caseSensitiveFilePaths = bundleSource.CaseSensitiveFilePaths;
 
             _fileFilters = bundleSource.FileFilters;
 
@@ -117,6 +120,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
                 var item = (BuildItem)fileList[i];
                 item.FileProvider = _fileProvider;
+                item.CaseSensitiveFilePaths = _caseSensitiveFilePaths;
                 item.FileInfo = _fileProvider.GetFileInfo(item.FilePath);
 
                 using (Stream stream = item.FileInfo.CreateReadStream())

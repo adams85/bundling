@@ -6,7 +6,7 @@ namespace Microsoft.AspNetCore.Builder
 {
     public class JsBundleConfigurer : BundleConfigurer<JsBundleConfigurer>
     {
-        public JsBundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, IServiceProvider appServices)
-            : base(bundle, sourceFileProvider, appServices) { }
+        public JsBundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, bool caseSensitiveSourceFilePaths, IServiceProvider appServices)
+            : base(bundle, sourceFileProvider, caseSensitiveSourceFilePaths, appServices) { }
     }
 }

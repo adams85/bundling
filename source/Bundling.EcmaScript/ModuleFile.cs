@@ -8,10 +8,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript
         public ModuleFile()
             : this(NullFileProvider, null) { }
 
-        public ModuleFile(IFileProvider fileProvider, string filePath, bool caseSensitivePaths = true)
-            : base(fileProvider, filePath, caseSensitivePaths) { }
+        public ModuleFile(IFileProvider fileProvider, string filePath, bool caseSensitiveFilePaths = true)
+            : base(fileProvider, filePath, caseSensitiveFilePaths) { }
 
-        public ModuleFile(ModuleFile other, string filePath) : this(other.FileProvider, filePath, other.CaseSensitivePaths) { }
+        public ModuleFile(ModuleFile other, string filePath) : this(other.FileProvider, filePath, other.CaseSensitiveFilePaths) { }
 
         /// <remarks>
         /// This property is not included in the equality check. It can be safely changed even when the instance is used a dictionary key.

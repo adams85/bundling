@@ -13,7 +13,7 @@ namespace Microsoft.AspNetCore.Builder
     {
         private readonly Lazy<FileBundleSource> _bundleSource;
 
-        public BundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, IServiceProvider appServices)
+        public BundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, bool caseSensitiveSourceFilePaths, IServiceProvider appServices)
         {
             if (bundle == null)
                 throw new ArgumentNullException(nameof(bundle));
@@ -27,10 +27,11 @@ namespace Microsoft.AspNetCore.Builder
             Bundle = bundle;
             AppServices = appServices;
             SourceFileProvider = sourceFileProvider;
+            CaseSensitiveSourceFilePaths = caseSensitiveSourceFilePaths;
 
             _bundleSource = new Lazy<FileBundleSource>(() =>
             {
-                var result = new FileBundleSource(SourceFileProvider, bundle);
+                var result = new FileBundleSource(SourceFileProvider, CaseSensitiveSourceFilePaths, bundle);
                 AddSource(result);
                 return result;
             }, isThreadSafe: false);
@@ -39,6 +40,7 @@ namespace Microsoft.AspNetCore.Builder
         public Bundle Bundle { get; }
         public IServiceProvider AppServices { get; }
         public IFileProvider SourceFileProvider { get; }
+        public bool CaseSensitiveSourceFilePaths { get; }
 
         public TConfigurer AddSource(BundleSource source)
         {

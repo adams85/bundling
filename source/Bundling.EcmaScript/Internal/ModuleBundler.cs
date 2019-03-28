@@ -143,7 +143,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     rootFiles[i] = moduleFile = new ModuleFile(
                         moduleFile.FileProvider,
                         moduleFile.FilePath != null ? NormalizePath(moduleFile.FilePath) : "<>" + i,
-                        moduleFile.CaseSensitivePaths);
+                        moduleFile.CaseSensitiveFilePaths);
 
                     if (!_fileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
                         _fileProviderPrefixes.Add(moduleFile.FileProvider, fileProviderId++.ToString() + ':');

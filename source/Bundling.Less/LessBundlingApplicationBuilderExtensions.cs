@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.Builder
 
             var bundle = new Bundle(path, configurer.GetDefaults(LessBundleConfiguration.BundleType));
             configurer.Bundles.Add(bundle);
-            return new LessBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
+            return new LessBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.Bundles.CaseSensitiveSourceFilePaths, configurer.AppServices);
         }
     }
 }
