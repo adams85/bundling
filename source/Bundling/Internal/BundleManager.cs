@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
@@ -34,10 +35,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         private readonly IBundleUrlHelper _urlHelper;
         private readonly ILogger _logger;
         private readonly ISystemClock _clock;
+        private readonly bool _enableChangeDetection;
 
         public BundleManager(int id, BundleCollection bundles, IBundlingContext bundlingContext, CancellationToken shutdownToken,
             IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper,
-            ILoggerFactory loggerFactory, ISystemClock clock)
+            ILoggerFactory loggerFactory, ISystemClock clock, IOptions<BundleGlobalOptions> globalOptions)
         {
             _id = id;
             _bundlingContext = bundlingContext;
@@ -50,6 +52,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             _logger = loggerFactory.CreateLogger<BundleManager>();
             _clock = clock;
+
+            _enableChangeDetection = globalOptions.Value.EnableChangeDetection;
 
             _bundles = bundles.ToDictionary(b => b.Path, CreateModel);
         }
@@ -85,7 +89,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 HttpContext = httpContext,
                 Params = @params,
                 Bundle = bundle,
+                ChangeSources = _enableChangeDetection ? new HashSet<IChangeSource>() : null
             };
+
+            bundle.OnBuilding(builderContext);
 
             await bundle.Builder.BuildAsync(builderContext);
 
@@ -100,6 +107,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             };
 
             _versionProvider.Provide(versionProviderContext);
+
+            bundle.OnBuilt(builderContext);
 
             var endTicks = Stopwatch.GetTimestamp();
 

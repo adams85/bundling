@@ -14,6 +14,7 @@ namespace Karambolo.AspNetCore.Bundling
         IDictionary<string, StringValues> Params { get; }
         IBundleModel Bundle { get; }
         CancellationToken CancellationToken { get; }
+        ISet<IChangeSource> ChangeSources { get; }
     }
 
     public interface IBundleBuilderContext : IBundleBuildContext

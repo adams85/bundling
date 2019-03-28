@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Models
 {
-    public class DefaultBundleModel : IBundleModel
+    public class DefaultBundleModel : ChangeObserver, IBundleModel
     {
         private readonly IEnumerable<IBundleModelFactory> _modelFactories;
 
@@ -39,23 +41,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
         protected virtual IBundleSourceModel CreateSourceModel(BundleSource bundleSource)
         {
-            IBundleSourceModel result =
+            return
                 _modelFactories.Select(f => f.CreateSource(bundleSource)).FirstOrDefault(m => m != null) ??
                 throw ErrorHelper.ModelFactoryNotAvailable(bundleSource.GetType());
-
-            result.Changed += SourceChanged;
-
-            return result;
-        }
-
-        protected virtual void SourceChanged(object sender, EventArgs e)
-        {
-            OnChanged();
-        }
-
-        protected virtual void OnChanged()
-        {
-            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public string Type { get; }
@@ -69,5 +57,37 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
         public IBundleCacheOptions CacheOptions { get; }
 
         public event EventHandler Changed;
+
+        protected override void OnChanged()
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ResetChangeDetection(ISet<IChangeSource> changeSources)
+        {
+            if (changeSources != null)
+                ResetChangeSource(() =>
+                {
+                    IChangeToken[] changeTokens = changeSources.Select(changeSource => changeSource.CreateChangeToken()).ToArray();
+                    return
+                        changeTokens.Length > 1 ? new CompositeChangeToken(changeTokens) :
+                        changeTokens.Length == 1 ? changeTokens[0] :
+                        NullChangeToken.Singleton;
+                });
+            else
+                ResetChangeSource(() => NullChangeToken.Singleton);
+        }
+
+        public void OnBuilding(IBundleBuilderContext context)
+        {
+            if (context.ChangeSources != null)
+                ResetChangeDetection(null);
+        }
+
+        public void OnBuilt(IBundleBuilderContext context)
+        {
+            if (context.ChangeSources != null)
+                ResetChangeDetection(context.ChangeSources);
+        }
     }
 }

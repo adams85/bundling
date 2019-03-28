@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -99,9 +98,9 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             }
 
             return Task.FromResult(
-                compilationResult != null ? 
+                compilationResult != null ?
                 new SassCompilationResult(compilationResult.CompiledContent, compilationResult.IncludedFilePaths) :
-                default);
+                SassCompilationResult.Failure);
         }
     }
 }

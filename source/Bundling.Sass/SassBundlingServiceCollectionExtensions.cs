@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class ConfigurationExtensions
+    public static class SassBundlingServiceCollectionExtensions
     {
         public static BundlingConfigurer AddSass(this BundlingConfigurer configurer, Action<BundleDefaultsOptions, IServiceProvider> configureDefaults = null)
         {

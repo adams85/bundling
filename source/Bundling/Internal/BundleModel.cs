@@ -18,5 +18,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         IBundleCacheOptions CacheOptions { get; }
 
         event EventHandler Changed;
+
+        void OnBuilding(IBundleBuilderContext context);
+        void OnBuilt(IBundleBuilderContext context);
     }
 }

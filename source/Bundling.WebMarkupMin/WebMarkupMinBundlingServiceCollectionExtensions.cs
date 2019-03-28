@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class ConfigurationExtensions
+    public static class WebMarkupMinBundlingServiceCollectionExtensions
     {
         public static BundlingConfigurer UseWebMarkupMin(this BundlingConfigurer configurer)
         {

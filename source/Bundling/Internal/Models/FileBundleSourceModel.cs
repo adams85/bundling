@@ -10,13 +10,12 @@ using Microsoft.Extensions.FileSystemGlobbing;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Models
 {
-    public class FileBundleSourceModel : BundleSourceModelBase
+    public class FileBundleSourceModel : IBundleSourceModel
     {
         protected class Include
         {
             public Include(FileBundleSourceItem item, string[] _excludePatterns)
             {
-                Pattern = item.Pattern;
                 AutoDetectEncoding = item.InputEncoding == null;
                 Encoding = item.InputEncoding ?? Encoding.UTF8;
                 ItemTransforms = item.ItemTransforms;
@@ -25,7 +24,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
                 Array.ForEach(_excludePatterns, p => Matcher.AddExclude(p));
             }
 
-            public string Pattern { get; }
             public bool AutoDetectEncoding { get; }
             public Encoding Encoding { get; }
             public IReadOnlyList<IBundleItemTransform> ItemTransforms { get; }
@@ -42,7 +40,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             public IFileProvider FileProvider { get; set; }
             public string FilePath { get; set; }
             public IFileInfo FileInfo { get; set; }
-            public ISet<string> AdditionalSourceFilePaths { get; set; }
 
             public IBundleItemTransformContext ItemTransformContext => this;
             public IReadOnlyList<IBundleItemTransform> ItemTransforms => Include.ItemTransforms;
@@ -52,7 +49,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
         private readonly IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
         private readonly Include[] _includes;
 
-        public FileBundleSourceModel(FileBundleSource bundleSource, bool enableChangeDetection) : base(enableChangeDetection)
+        public FileBundleSourceModel(FileBundleSource bundleSource)
         {
             _fileProvider =
                 bundleSource.FileProvider ??
@@ -130,7 +127,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             }
         }
 
-        protected override async Task ProvideBuildItemsCoreAsync(IBundleBuildContext context, Action<IBundleSourceBuildItem> processor, List<string> filesToWatch)
+        public async Task ProvideBuildItemsAsync(IBundleBuildContext context, Action<IBundleSourceBuildItem> processor)
         {
             var fileList = new List<IFileBundleSourceFilterItem>();
 
@@ -139,8 +136,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             if (_fileFilters != null)
                 await ExecuteFiltersAsync(fileList, context);
 
-            if (filesToWatch != null)
-                filesToWatch.AddRange(fileList.Cast<BuildItem>().Select(bi => bi.FilePath));
+            context.ChangeSources?.UnionWith(fileList.Cast<BuildItem>().Select(bi => new AbstractionFile(bi.FileProvider, bi.FilePath)));
 
             await PostItemsAsync(fileList, context, processor);
         }

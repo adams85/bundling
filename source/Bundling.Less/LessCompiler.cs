@@ -65,7 +65,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
             return Task.FromResult(
                 content != null ?
                 new LessCompilationResult(content, engine.GetImports().ToArray()) :
-                default);
+                LessCompilationResult.Failure);
         }
     }
 }

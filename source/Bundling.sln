@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bundling.WebMarkupMin", "Bu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bundling.Sass", "Bundling.Sass\Bundling.Sass.csproj", "{A52E9BBF-6A03-4067-9D5C-8124B0C276C1}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bundling.EcmaScript", "Bundling.EcmaScript\Bundling.EcmaScript.csproj", "{561505B6-AB53-462A-9599-BEF2F4AF6629}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{A52E9BBF-6A03-4067-9D5C-8124B0C276C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A52E9BBF-6A03-4067-9D5C-8124B0C276C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A52E9BBF-6A03-4067-9D5C-8124B0C276C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{561505B6-AB53-462A-9599-BEF2F4AF6629}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{561505B6-AB53-462A-9599-BEF2F4AF6629}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{561505B6-AB53-462A-9599-BEF2F4AF6629}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{561505B6-AB53-462A-9599-BEF2F4AF6629}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,10 +5,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public interface IBundleSourceModel
     {
-        event EventHandler Changed;
-
         Task ProvideBuildItemsAsync(IBundleBuildContext context, Action<IBundleSourceBuildItem> processor);
-
-        void OnProcessed(IBundleItemTransformContext context);
     }
 }

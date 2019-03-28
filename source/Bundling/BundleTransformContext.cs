@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Karambolo.AspNetCore.Bundling
 {
     public interface IBundleTransformContext
     {
         IBundleBuildContext BuildContext { get; }
+        IReadOnlyList<IBundleItemTransformContext> TransformedItemContexts { get; }
         string Content { get; set; }
     }
 
@@ -19,6 +21,7 @@ namespace Karambolo.AspNetCore.Bundling
         }
 
         public IBundleBuildContext BuildContext { get; }
+        public IReadOnlyList<IBundleItemTransformContext> TransformedItemContexts { get; set; }
         public string Content { get; set; }
     }
 }

@@ -1,9 +1,9 @@
 ﻿using System;
 using Microsoft.Extensions.Primitives;
 
-namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
+namespace Karambolo.AspNetCore.Bundling.Internal
 {
-    public abstract class ChangeTokenObserver : IDisposable
+    public abstract class ChangeObserver : IDisposable
     {
         private readonly object _gate = new object();
         private Func<IChangeToken> _changeTokenFactory;

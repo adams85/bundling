@@ -17,20 +17,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public class BundlingConfigurer
-    {
-        public BundlingConfigurer(IServiceCollection services)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            Services = services;
-        }
-
-        public IServiceCollection Services { get; }
-    }
-
-    public static class ConfigurationExtensions
+    public static class BundlingServiceCollectionExtensions
     {
         public static BundlingConfigurer AddBundling(this IServiceCollection services, Action<BundleGlobalOptions, IServiceProvider> configure = null)
         {

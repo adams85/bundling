@@ -13,6 +13,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         public IBundleModel Bundle { get; set; }
         public CancellationToken CancellationToken => HttpContext.RequestAborted;
 
+        /// <remarks>
+        /// Not null when change detection is enabled, otherwise null.
+        /// </remarks>
+        public ISet<IChangeSource> ChangeSources { get; set; }
+
         public string Result { get; set; }
     }
 }

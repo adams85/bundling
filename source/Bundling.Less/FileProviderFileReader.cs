@@ -1,13 +1,14 @@
 ﻿using System;
 using System.IO;
 using dotless.Core.Input;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling.Less
 {
     public class FileProviderFileReader : IFileReader
     {
-        public static readonly FileProviderFileReader Null = new FileProviderFileReader(new NullFileProvider());
+        public static readonly FileProviderFileReader Null = new FileProviderFileReader(AbstractionFile.NullFileProvider);
         private readonly IFileProvider _fileProvider;
 
         public FileProviderFileReader(IFileProvider fileProvider)

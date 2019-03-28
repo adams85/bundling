@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
@@ -10,12 +11,28 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
+    internal enum PathNormalization
+    {
+        None,
+        ExcludeSlash,
+        IncludeSlash,
+    }
+
     internal static class UrlUtils
     {
         private const string HexChars = "0123456789abcdef";
 
         private static readonly char[] s_illegalFileNameChars = Path.GetInvalidPathChars().Concat(Path.GetInvalidFileNameChars()).ToArray();
         private static readonly Uri s_dummyBaseUri = new Uri("http://host");
+
+        private static readonly Lazy<Func<string, string>> s_getCanonicalPath = new Lazy<Func<string, string>>(() =>
+        {
+            var uriUtilsType = Type.GetType("Karambolo.Common.UriUtils, Karambolo.Common", throwOnError: false, ignoreCase: false);
+            System.Reflection.MethodInfo getCanonicalNameMethod = uriUtilsType?.GetMethod("GetCanonicalPath", new[] { typeof(string) });
+            return getCanonicalNameMethod != null ?
+                (Func<string, string>)Delegate.CreateDelegate(typeof(Func<string, string>), getCanonicalNameMethod) :
+                path => new UriBuilder { Path = path }.Uri.LocalPath; // fallback
+        }, LazyThreadSafetyMode.PublicationOnly);
 
         public static void FromRelative(string url, out PathString path, out QueryString query, out FragmentString fragment)
         {
@@ -48,9 +65,38 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return builder.ToQueryString();
         }
 
-        public static string NormalizePath(string path)
+        public static string NormalizePath(string path,
+            PathNormalization leadingNormalization = PathNormalization.IncludeSlash,
+            PathNormalization trailingNormalization = PathNormalization.None,
+            bool canonicalize = false)
         {
-            return path.StartsWith("/") ? path : '/' + path;
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            if (canonicalize)
+                path = s_getCanonicalPath.Value(path);
+
+            switch (leadingNormalization)
+            {
+                case PathNormalization.IncludeSlash:
+                    path = path.StartsWith("/") ? path : '/' + path;
+                    break;
+                case PathNormalization.ExcludeSlash:
+                    path = path.StartsWith("/") ? path.Substring(1) : path;
+                    break;
+            }
+
+            switch (trailingNormalization)
+            {
+                case PathNormalization.IncludeSlash:
+                    path = path.EndsWith("/") ? path : path + '/';
+                    break;
+                case PathNormalization.ExcludeSlash:
+                    path = path.EndsWith("/") ? path.Substring(0, path.Length - 1) : path;
+                    break;
+            }
+
+            return path;
         }
 
         public static string GetFileName(string path, out string basePath)

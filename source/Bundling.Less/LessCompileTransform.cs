@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 
@@ -22,9 +23,8 @@ namespace Karambolo.AspNetCore.Bundling.Less
         {
             string filePath;
             IFileProvider fileProvider;
-            var fileItemContext = context as IFileBundleItemTransformContext;
 
-            if (fileItemContext != null)
+            if (context is IFileBundleItemTransformContext fileItemContext)
             {
                 filePath = fileItemContext.FilePath;
                 fileProvider = fileItemContext.FileProvider;
@@ -40,8 +40,8 @@ namespace Karambolo.AspNetCore.Bundling.Less
             LessCompilationResult result = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, context.BuildContext.CancellationToken);
 
             context.Content = result.Content ?? string.Empty;
-            if (fileItemContext != null && result.Imports != null)
-                (fileItemContext.AdditionalSourceFilePaths ?? (fileItemContext.AdditionalSourceFilePaths = new HashSet<string>())).UnionWith(result.Imports);
+            if (result.Imports != null && result.Imports.Count > 0)
+                context.BuildContext.ChangeSources?.UnionWith(result.Imports.Select(import => new AbstractionFile(fileProvider, import)));
         }
     }
 }

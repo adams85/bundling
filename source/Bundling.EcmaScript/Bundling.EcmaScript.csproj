@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>Karambolo.AspNetCore.Bundling.EcmaScript</AssemblyName>
+    <RootNamespace>Karambolo.AspNetCore.Bundling.EcmaScript</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+
+  <Import Project="Properties\AssemblyInfo.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Esprima" Version="1.0.0-beta-1186" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bundling\Bundling.csproj" />
+  </ItemGroup>
+
+</Project>

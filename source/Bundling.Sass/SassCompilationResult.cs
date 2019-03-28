@@ -5,6 +5,8 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 {
     public readonly struct SassCompilationResult
     {
+        public static readonly SassCompilationResult Failure = default;
+
         public SassCompilationResult(string content, IList<string> imports)
         {
             if (content == null)

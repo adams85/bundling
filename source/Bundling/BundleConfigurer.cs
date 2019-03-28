@@ -8,7 +8,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.AspNetCore.Builder
 {
-    public class BundleConfigurer
+    public class BundleConfigurer<TConfigurer>
+        where TConfigurer : BundleConfigurer<TConfigurer>
     {
         private readonly Lazy<FileBundleSource> _bundleSource;
 
@@ -25,10 +26,11 @@ namespace Microsoft.AspNetCore.Builder
 
             Bundle = bundle;
             AppServices = appServices;
+            SourceFileProvider = sourceFileProvider;
 
             _bundleSource = new Lazy<FileBundleSource>(() =>
             {
-                var result = new FileBundleSource(sourceFileProvider, bundle);
+                var result = new FileBundleSource(SourceFileProvider, bundle);
                 AddSource(result);
                 return result;
             }, isThreadSafe: false);
@@ -36,17 +38,18 @@ namespace Microsoft.AspNetCore.Builder
 
         public Bundle Bundle { get; }
         public IServiceProvider AppServices { get; }
+        public IFileProvider SourceFileProvider { get; }
 
-        public BundleConfigurer AddSource(BundleSource source)
+        public TConfigurer AddSource(BundleSource source)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
             Bundle.Sources.Add(source);
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer AddDynamicSource(BuildItemsProvider itemsProvider, Func<IChangeToken> changeTokenFactory = null,
+        public TConfigurer AddDynamicSource(BuildItemsProvider itemsProvider, Func<IChangeToken> changeTokenFactory = null,
             Action<List<IBundleItemTransform>> itemTransformsModification = null)
         {
             if (itemsProvider == null)
@@ -63,58 +66,58 @@ namespace Microsoft.AspNetCore.Builder
 
             Bundle.Sources.Add(bundleSource);
 
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer DependsOnParams()
+        public TConfigurer DependsOnParams()
         {
             Bundle.DependsOnParams = true;
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseBuilder(IBundleBuilder builder)
+        public TConfigurer UseBuilder(IBundleBuilder builder)
         {
             Bundle.Builder = builder;
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseFileFilters(Action<List<IFileBundleSourceFilter>> modification)
+        public TConfigurer UseFileFilters(Action<List<IFileBundleSourceFilter>> modification)
         {
             _bundleSource.Value.FileFilters = _bundleSource.Value.FileFilters.Modify(modification);
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseItemTransforms(Action<List<IBundleItemTransform>> modification)
+        public TConfigurer UseItemTransforms(Action<List<IBundleItemTransform>> modification)
         {
             _bundleSource.Value.ItemTransforms = _bundleSource.Value.ItemTransforms.Modify(modification);
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseTransforms(Action<List<IBundleTransform>> modification)
+        public TConfigurer UseTransforms(Action<List<IBundleTransform>> modification)
         {
             Bundle.Transforms = Bundle.Transforms.Modify(modification);
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseConcatenationToken(string token)
+        public TConfigurer UseConcatenationToken(string token)
         {
             Bundle.ConcatenationToken = token;
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseOutputEncoding(Encoding encoding)
+        public TConfigurer UseOutputEncoding(Encoding encoding)
         {
             Bundle.OutputEncoding = encoding;
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer UseCacheOptions(IBundleCacheOptions cacheOptions)
+        public TConfigurer UseCacheOptions(IBundleCacheOptions cacheOptions)
         {
             Bundle.CacheOptions = cacheOptions;
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer EnableMinification()
+        public TConfigurer EnableMinification()
         {
             IConfigurationHelper helper =
                 Bundle.ConfigurationHelper ??
@@ -122,17 +125,17 @@ namespace Microsoft.AspNetCore.Builder
 
             Bundle.Transforms = helper.EnableMinification(Bundle.Transforms);
 
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer DisableCaching()
+        public TConfigurer DisableCaching()
         {
             Bundle.CacheOptions = new BundleCacheOptions(Bundle.CacheOptions) { NoCache = true };
 
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer Include(string pattern, Action<List<IBundleItemTransform>> transformsModification = null, Encoding inputEncoding = null)
+        public TConfigurer Include(string pattern, Action<List<IBundleItemTransform>> transformsModification = null, Encoding inputEncoding = null)
         {
             var item = new FileBundleSourceItem(pattern, _bundleSource.Value) { InputEncoding = inputEncoding };
 
@@ -141,13 +144,13 @@ namespace Microsoft.AspNetCore.Builder
 
             _bundleSource.Value.Items.Add(item);
 
-            return this;
+            return (TConfigurer)this;
         }
 
-        public BundleConfigurer Exclude(string pattern)
+        public TConfigurer Exclude(string pattern)
         {
             _bundleSource.Value.Items.Add(new FileBundleSourceItem(pattern, _bundleSource.Value) { Exclude = true });
-            return this;
+            return (TConfigurer)this;
         }
     }
 }

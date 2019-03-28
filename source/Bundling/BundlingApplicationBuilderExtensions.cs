@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Builder
 {
-    public static class ConfigurationExtensions
+    public static class BundlingApplicationBuilderExtensions
     {
         public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, Action<BundleCollectionConfigurer> configureBundles = null)
         {
@@ -85,24 +85,24 @@ namespace Microsoft.AspNetCore.Builder
             return configurer.LoadFromConfigFile(fileProvider.GetFileInfo(path), pathMapper);
         }
 
-        public static BundleConfigurer AddCss(this BundleCollectionConfigurer configurer, PathString path)
+        public static CssBundleConfigurer AddCss(this BundleCollectionConfigurer configurer, PathString path)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
             var bundle = new Bundle(path, configurer.GetDefaults(CssBundleConfiguration.BundleType));
             configurer.Bundles.Add(bundle);
-            return new BundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
+            return new CssBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
         }
 
-        public static BundleConfigurer AddJs(this BundleCollectionConfigurer configurer, PathString path)
+        public static JsBundleConfigurer AddJs(this BundleCollectionConfigurer configurer, PathString path)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
             var bundle = new Bundle(path, configurer.GetDefaults(JsBundleConfiguration.BundleType));
             configurer.Bundles.Add(bundle);
-            return new BundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
+            return new JsBundleConfigurer(bundle, configurer.Bundles.SourceFileProvider, configurer.AppServices);
         }
     }
 }

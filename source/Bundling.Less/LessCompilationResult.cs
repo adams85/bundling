@@ -5,6 +5,8 @@ namespace Karambolo.AspNetCore.Bundling.Less
 {
     public readonly struct LessCompilationResult
     {
+        public static readonly LessCompilationResult Failure = default;
+
         public LessCompilationResult(string content, IList<string> imports)
         {
             if (content == null)
