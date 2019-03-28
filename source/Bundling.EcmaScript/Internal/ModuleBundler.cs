@@ -22,7 +22,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private static string NormalizePath(string path)
         {
-            return UrlUtils.NormalizePath(path, PathNormalization.ExcludeSlash, PathNormalization.None, canonicalize: true);
+            return UrlUtils.NormalizePath(path, canonicalize: true);
         }
 
         private static string NormalizeModulePath(string basePath, string path)

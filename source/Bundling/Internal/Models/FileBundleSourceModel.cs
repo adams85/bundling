@@ -136,7 +136,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             if (_fileFilters != null)
                 await ExecuteFiltersAsync(fileList, context);
 
-            context.ChangeSources?.UnionWith(fileList.Cast<BuildItem>().Select(bi => new AbstractionFile(bi.FileProvider, bi.FilePath)));
+            context.ChangeSources?.UnionWith(fileList.Cast<BuildItem>().Select(bi => new AbstractionFile(_fileProvider, bi.FilePath)));
 
             await PostItemsAsync(fileList, context, processor);
         }
