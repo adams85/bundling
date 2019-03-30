@@ -21,6 +21,17 @@ This repository contains components which provide run-time bundling and minifica
 - **Dynamic content sources** and query string **parameterized bundles**.
 - Modular design, great extensibility.
 
+### Version 2.0
+
+The release candidate of the new major version is already available at NuGet.
+
+There are some interesting improvements which are worth checking out:
+* Change detection works now not only for the top level files but also the imported ones.
+* Bundling of ES6 (ECMAScript 2015) modules (á la webpack). Also in this case, changes are detected in the imports.
+* Design-time bundling manually using the new dotnet CLI tool or automatically by customizing the build process. 
+
+More info to follow soon.
+
 ### Basic usage
 
 #### 1. Install NuGet packages
