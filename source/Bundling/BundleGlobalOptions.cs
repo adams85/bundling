@@ -23,5 +23,13 @@ namespace Karambolo.AspNetCore.Bundling
         public bool EnableChangeDetection { get; set; }
         public bool EnableCacheHeader { get; set; }
         public TimeSpan? CacheHeaderMaxAge { get; set; }
+
+        internal void Merge(IBundleGlobalConfiguration configuration)
+        {
+            Builder = configuration.Builder ?? Builder;
+            FileFilters = configuration.FileFilters ?? FileFilters;
+            ItemTransforms = configuration.ItemTransforms ?? ItemTransforms;
+            Transforms = configuration.Transforms ?? Transforms;
+        }
     }
 }

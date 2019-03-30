@@ -25,6 +25,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return new InvalidOperationException("Http context is not available.");
         }
 
+        public static ArgumentException PathMappingNotPossible(string path, string paramName)
+        {
+            return new ArgumentException($"The specified path mapper cannot map the path '{path}'. The prefix of the path to map may not correspond to your configuration.", paramName);
+        }
+
         public static InvalidOperationException ExtensionNotRecognized(string extension)
         {
             return new InvalidOperationException($"File extension '{extension}' is not recognized.");

@@ -13,10 +13,15 @@
 
   <ItemGroup>
     <VersionPropsPath Include="$(SolutionPath)\Bundling\Properties\AssemblyInfo.props" />
+    <VersionPropsPath Include="$(SolutionPath)\Bundling.EcmaScript\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.NUglify\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.WebMarkupMin\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Less\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Sass\Properties\AssemblyInfo.props" />
+    <VersionPropsPath Include="$(SolutionPath)\Bundling.Tools\Properties\AssemblyInfo.props" />
+    <VersionPropsPath Include="$(SolutionPath)\Bundling\Build\Karambolo.AspNetCore.Bundling.props">
+      <PackageProps>true</PackageProps>
+    </VersionPropsPath>
   </ItemGroup>
 
   <Target Name="GetVersion" Condition="$(TagVersion) == '' Or $(Revision) == ''">
@@ -56,7 +61,7 @@
 
   <Target Name="Make" DependsOnTargets="RunTests;GetVersion">
     <!-- setting version -->
-    <UpdateVersion TagVersion="$(TagVersion)" Revision="$(Revision)" VersionPropsPath="%(VersionPropsPath.Identity)" />
+    <UpdateVersion TagVersion="$(TagVersion)" Revision="$(Revision)" VersionPropsPath="%(VersionPropsPath.Identity)" PackageProps="%(VersionPropsPath.PackageProps)" />
 
     <!-- create nuget package -->
     <MSBuild Projects="$(Solution)" Targets="Restore;Pack" Properties="Configuration=Release;Platform=Any CPU" />
@@ -80,6 +85,7 @@
       <TagVersion ParameterType="System.String" Required="true" />
       <Revision ParameterType="System.String" Required="true" />
       <VersionPropsPath ParameterType="System.String" Required="true" />
+      <PackageProps ParameterType="System.String" Required="false" />
     </ParameterGroup>
     <Task>
       <!--<Reference Include="" />-->
@@ -112,7 +118,6 @@ var assemblyVersion = string.Format("{0}.{1}", major, minor);
 var fileVersion = string.Format("{0}.{1}.{2}.{3}", major, minor, patch, revision);
 var nugetVersion = string.Format("{0}.{1}.{2}{3}", major, minor, patch, prerelease);
 
-// updating files
 Action<string, string, MatchEvaluator> update = (path, regex, replacer) =>
 {
     var backupPath = path + ".bak";
@@ -126,12 +131,23 @@ Action<string, string, MatchEvaluator> update = (path, regex, replacer) =>
     File.WriteAllText(path, fileContent);
 };
 
-update(VersionPropsPath,
-  @"^(?<start>\s*<(?<tag>Version|AssemblyVersion|FileVersion)>).+(?<end></\k<tag>>\s*)$",
-    m => m.Groups["start"] + (
-      m.Groups["tag"].Value == "AssemblyVersion" ? assemblyVersion :
-      m.Groups["tag"].Value == "FileVersion" ? fileVersion :
-      nugetVersion) + m.Groups["end"]);
+if (Convert.ToBoolean(PackageProps))
+{
+    // updating Karambolo.AspNetCore.Bundling.targets
+    update(VersionPropsPath,
+        @"(?<start><DotNetCliToolReference\s.*Version="")(?<version>[^""]+)(?<end>""\s.*/>)",
+        m => m.Groups["start"] + nugetVersion + m.Groups["end"]);
+}
+else
+{
+    // updating AssemblyInfo.props
+    update(VersionPropsPath,
+        @"^(?<start>\s*<(?<tag>Version|AssemblyVersion|FileVersion)>).+(?<end></\k<tag>>\s*)$",
+        m => m.Groups["start"] + (
+          m.Groups["tag"].Value == "AssemblyVersion" ? assemblyVersion :
+          m.Groups["tag"].Value == "FileVersion" ? fileVersion :
+          nugetVersion) + m.Groups["end"]);
+}
 ]]>
       </Code>
     </Task>

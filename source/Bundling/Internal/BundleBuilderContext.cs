@@ -8,10 +8,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal
     public class BundleBuilderContext : IBundleBuilderContext
     {
         public IBundlingContext BundlingContext { get; set; }
-        public HttpContext HttpContext { get; set; }
+        public PathString AppBasePath { get; set; }
         public IDictionary<string, StringValues> Params { get; set; }
         public IBundleModel Bundle { get; set; }
-        public CancellationToken CancellationToken => HttpContext.RequestAborted;
+        public CancellationToken CancellationToken { get; set; }
 
         /// <remarks>
         /// Not null when change detection is enabled, otherwise null.

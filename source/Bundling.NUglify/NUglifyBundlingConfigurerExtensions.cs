@@ -9,7 +9,7 @@ using NUglify.JavaScript;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class NUglifyBundlingServiceCollectionExtensions
+    public static class NUglifyBundlingConfigurerExtensions
     {
         public static BundlingConfigurer UseNUglify(this BundlingConfigurer configurer, CssSettings cssSettings = null, CodeSettings jsSettings = null)
         {

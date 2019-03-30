@@ -62,6 +62,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                 BundleData item = items[i];
 
                 PathString outputPath = pathMapper(UrlUtils.NormalizePath(item.OutputFileName), bundles.PathPrefix, output: true);
+                if (!outputPath.HasValue)
+                    throw ErrorHelper.PathMappingNotPossible(item.OutputFileName, nameof(pathMapper));
+
                 var extension = Path.GetExtension(outputPath);
 
                 IBundleConfiguration outputConfig = _extensionMappers.Select(em => em.MapOutput(extension)).FirstOrDefault(cfg => cfg != null);

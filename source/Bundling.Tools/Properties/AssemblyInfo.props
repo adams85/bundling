@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <PackageId>Karambolo.AspNetCore.Bundling.Tools</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Adam Simon</Authors>
+    <Company>Karambolo</Company>
+    <Product>Karambolo.AspNetCore.Bundling</Product>
+    <Description>.NET Core command-line interface (CLI) infrastructure for the Karambolo.AspNetCore.Bundling library.</Description>
+    <Copyright>© 2019 Adam Simon</Copyright>
+    <AssemblyVersion>1.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <PackageLicenseUrl>https://github.com/adams85/bundling/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/adams85/bundling</PackageProjectUrl>
+    <PackageTags>bundle bundling dotnet cli tools</PackageTags>
+    <PackageType>DotnetCliTool</PackageType>
+  </PropertyGroup>
+</Project>

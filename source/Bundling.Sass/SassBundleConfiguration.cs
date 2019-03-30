@@ -86,7 +86,10 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
             public virtual IBundleConfiguration MapInput(string extension)
             {
-                return ".sass".Equals(extension, StringComparison.OrdinalIgnoreCase) ? _options : null;
+                return 
+                    ".sass".Equals(extension, StringComparison.OrdinalIgnoreCase) || ".scss".Equals(extension, StringComparison.OrdinalIgnoreCase) ? 
+                    _options : 
+                    null;
             }
 
             public virtual IBundleConfiguration MapOutput(string extension)

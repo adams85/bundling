@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class LessBundlingServiceCollectionExtensions
+    public static class LessBundlingConfigurerExtensions
     {
         public static BundlingConfigurer AddLess(this BundlingConfigurer configurer, Action<BundleDefaultsOptions, IServiceProvider> configureDefaults = null)
         {

@@ -2,6 +2,7 @@
 using System.IO;
 using Karambolo.AspNetCore.Bundling;
 using Karambolo.AspNetCore.Bundling.Css;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Configuration;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Js;
@@ -17,7 +18,7 @@ namespace Microsoft.AspNetCore.Builder
     {
         public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, Action<BundleCollectionConfigurer> configureBundles = null)
         {
-            return builder.UseBundling(BundlingOptions.Default, configureBundles);
+            return builder.UseBundling(new BundlingOptions(), configureBundles);
         }
 
         public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, BundlingOptions options, Action<BundleCollectionConfigurer> configureBundles = null)
@@ -31,17 +32,35 @@ namespace Microsoft.AspNetCore.Builder
             if (HttpContextStatic.Current == null)
                 HttpContextStatic.Initialize(builder.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
 
-            IFileProvider sourceFileProvider =
-                options.SourceFileProvider ??
-                builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider;
-
-            var bundles = new BundleCollection(options.RequestPath, sourceFileProvider, options.CaseSensitiveSourceFilePaths);
+            var bundles = new BundleCollection(
+                options.RequestPath,
+                options.SourceFileProvider ?? builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider,
+                options.CaseSensitiveSourceFilePaths ?? AbstractionFile.GetDefaultCaseSensitiveFilePaths());
 
             configureBundles?.Invoke(new BundleCollectionConfigurer(bundles, builder.ApplicationServices));
 
             builder.UseMiddleware<BundlingMiddleware>(bundles, Options.Create(options));
 
             return builder;
+        }
+
+        public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, BundlingConfiguration configuration)
+        {
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
+
+            return builder.UseBundling(new BundlingOptions(), configuration);
+        }
+
+        public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, BundlingOptions options, BundlingConfiguration configuration)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
+
+            return builder.UseBundling(new BundlingOptions(options, configuration), configuration.Configure);
         }
 
         public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, TextReader reader,

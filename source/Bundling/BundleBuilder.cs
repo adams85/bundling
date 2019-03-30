@@ -10,7 +10,7 @@ namespace Karambolo.AspNetCore.Bundling
     public interface IBundleBuildContext
     {
         IBundlingContext BundlingContext { get; }
-        HttpContext HttpContext { get; }
+        PathString AppBasePath { get; }
         IDictionary<string, StringValues> Params { get; }
         IBundleModel Bundle { get; }
         CancellationToken CancellationToken { get; }

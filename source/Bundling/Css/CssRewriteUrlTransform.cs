@@ -20,7 +20,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
                 uri.IsAbsoluteUri)
                 return value;
 
-            return new PathString(pathPrefix).Add(basePath + value);
+            return UrlUtils.NormalizePath(new PathString(pathPrefix).Add(basePath + value), canonicalize: true);
         }
 
         protected virtual string RewriteUrls(string content, string basePath, string pathPrefix)
@@ -44,7 +44,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
             {
                 UrlUtils.GetFileName(fileItemContext.FilePath, out string basePath);
 
-                PathString pathPrefix = context.BuildContext.HttpContext.Request.PathBase + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+                PathString pathPrefix = context.BuildContext.AppBasePath + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
 
                 context.Content = RewriteUrls(context.Content, basePath, pathPrefix);
             }

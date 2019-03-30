@@ -86,10 +86,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             var builderContext = new BundleBuilderContext
             {
                 BundlingContext = _bundlingContext,
-                HttpContext = httpContext,
+                AppBasePath = httpContext.Request.PathBase,
                 Params = @params,
                 Bundle = bundle,
-                ChangeSources = _enableChangeDetection ? new HashSet<IChangeSource>() : null
+                ChangeSources = _enableChangeDetection ? new HashSet<IChangeSource>() : null,
+                CancellationToken = httpContext.RequestAborted
             };
 
             bundle.OnBuilding(builderContext);
@@ -101,9 +102,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             var versionProviderContext = new BundleVersionProviderContext
             {
-                HttpContext = httpContext,
                 Timestamp = timestamp,
                 Content = content,
+                CancellationToken = httpContext.RequestAborted
             };
 
             _versionProvider.Provide(versionProviderContext);
@@ -115,7 +116,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             if (_logger.IsEnabled(LogLevel.Information))
             {
                 var elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
-                _logger.LogInformation("Bundle instance [{MANAGER_ID}]:{PATH}{QUERY} was built in {ELAPSED}ms.", _id, bundle.Path, query, elapsedMs);
+                _logger.LogInformation("Bundle [{MANAGER_ID}]:{PATH}{QUERY} was built in {ELAPSED}ms.", _id, bundle.Path, query, elapsedMs);
             }
 
             return new BundleCacheData

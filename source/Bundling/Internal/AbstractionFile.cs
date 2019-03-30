@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
@@ -7,6 +8,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal
     public class AbstractionFile : IChangeSource, IEquatable<AbstractionFile>
     {
         public static readonly NullFileProvider NullFileProvider = new NullFileProvider();
+
+        internal static bool GetDefaultCaseSensitiveFilePaths()
+        {
+            return !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        }
 
         public AbstractionFile(IFileProvider fileProvider, string filePath, bool caseSensitiveFilePaths = true)
         {

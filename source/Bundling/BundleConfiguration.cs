@@ -12,6 +12,14 @@ namespace Karambolo.AspNetCore.Bundling
         IReadOnlyList<IBundleTransform> Transforms { get; }
     }
 
+    public abstract class BundleGlobalDefaultsOptions : IBundleGlobalConfiguration
+    {
+        public IBundleBuilder Builder { get; set; }
+        public IReadOnlyList<IFileBundleSourceFilter> FileFilters { get; set; }
+        public IReadOnlyList<IBundleItemTransform> ItemTransforms { get; set; }
+        public IReadOnlyList<IBundleTransform> Transforms { get; set; }
+    }
+
     public interface IBundleConfiguration : IBundleGlobalConfiguration
     {
         IBundleGlobalConfiguration GlobalDefaults { get; }
@@ -19,14 +27,6 @@ namespace Karambolo.AspNetCore.Bundling
         string ConcatenationToken { get; }
 
         IConfigurationHelper ConfigurationHelper { get; }
-    }
-
-    public abstract class BundleGlobalDefaultsOptions : IBundleGlobalConfiguration
-    {
-        public IBundleBuilder Builder { get; set; }
-        public IReadOnlyList<IFileBundleSourceFilter> FileFilters { get; set; }
-        public IReadOnlyList<IBundleItemTransform> ItemTransforms { get; set; }
-        public IReadOnlyList<IBundleTransform> Transforms { get; set; }
     }
 
     public class BundleDefaultsOptions : BundleGlobalDefaultsOptions, IBundleConfiguration

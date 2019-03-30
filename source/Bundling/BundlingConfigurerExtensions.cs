@@ -19,6 +19,24 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class BundlingServiceCollectionExtensions
     {
+        internal static BundlingConfigurer AddBundlingCore(this IServiceCollection services, Action<BundleGlobalOptions, IServiceProvider> configure)
+        {
+            services.AddSingleton<IConfigureOptions<BundleGlobalOptions>>(sp => new BundleGlobalOptions.Configurer(configure, sp));
+            services.TryAddScoped<IScopedDisposer, DefaultScopedDisposer>();
+
+            services.TryAddSingleton<ISystemClock, SystemClock>();
+
+            services.TryAddSingleton<IConfigFileManager, ConfigFileManager>();
+
+            services.AddSingleton<IBundleModelFactory, DefaultBundleModelFactory>();
+            services.AddSingleton(sp => new Lazy<IEnumerable<IBundleModelFactory>>(() => sp.GetRequiredService<IEnumerable<IBundleModelFactory>>()));
+
+            services.TryAddSingleton<ICssMinifier, NullCssMinifier>();
+            services.TryAddSingleton<IJsMinifier, NullJsMinifier>();
+
+            return new BundlingConfigurer(services);
+        }
+
         public static BundlingConfigurer AddBundling(this IServiceCollection services, Action<BundleGlobalOptions, IServiceProvider> configure = null)
         {
             if (services == null)
@@ -26,25 +44,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddOptions().AddLogging();
 
-            services.AddSingleton<IConfigureOptions<BundleGlobalOptions>>(sp => new BundleGlobalOptions.Configurer(configure, sp));
-            services.TryAddScoped<IScopedDisposer, DefaultScopedDisposer>();
-
-            services.TryAddSingleton<ISystemClock, SystemClock>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-
-            services.TryAddSingleton<IConfigFileManager, ConfigFileManager>();
-
-            services.AddSingleton<IBundleModelFactory, DefaultBundleModelFactory>();
-            services.AddSingleton(sp => new Lazy<IEnumerable<IBundleModelFactory>>(() => sp.GetRequiredService<IEnumerable<IBundleModelFactory>>()));
 
             services.TryAddSingleton<IBundleManagerFactory, BundleManagerFactory>();
             services.TryAddSingleton<IBundleVersionProvider>(NullBundleVersionProvider.Instance);
             services.TryAddSingleton<IBundleUrlHelper, DefaultBundleUrlHelper>();
 
-            services.TryAddSingleton<ICssMinifier, NullCssMinifier>();
-            services.TryAddSingleton<IJsMinifier, NullJsMinifier>();
-
-            return new BundlingConfigurer(services);
+            return services.AddBundlingCore(configure);
         }
 
         public static BundlingConfigurer UseMemoryCaching(this BundlingConfigurer configurer)
