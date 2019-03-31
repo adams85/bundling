@@ -56,20 +56,35 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         // DefaultBundleModelFactory schedules disposal of the bundle models for application shutdown;
         // we fake app shutdown using the cancellation token we get from the CLI tools
         // TODO: roll out a less ugly solution like introducing a dedicated interface?
-        private class Lifetime : IApplicationLifetime
+        private class Lifetime : IApplicationLifetime, IDisposable
         {
+            private CancellationTokenSource _lifetimeCts;
+            private CancellationTokenSource _linkedCts;
+
             public Lifetime(CancellationToken cancellationToken)
             {
-                ApplicationStopping = cancellationToken;
+                _lifetimeCts = new CancellationTokenSource();
+                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token, cancellationToken);
+
+                ApplicationStopping = _linkedCts.Token;
+            }
+
+            public void Dispose()
+            {
+                _lifetimeCts.Cancel();
+
+                _linkedCts.Dispose();
+                _lifetimeCts.Dispose();
             }
 
             public CancellationToken ApplicationStarted => throw new NotSupportedException();
             public CancellationToken ApplicationStopping { get; }
             public CancellationToken ApplicationStopped => throw new NotSupportedException();
+
             public void StopApplication() => throw new NotSupportedException();
         }
 
-        private static IServiceProvider BuildServiceProvider(DesignTimeBundlingConfiguration configuration, Action<int, string> logger, string mode, 
+        private static IServiceProvider BuildServiceProvider(DesignTimeBundlingConfiguration configuration, Action<int, string> logger, string mode,
             PhysicalFileProvider outputFileProvider, CancellationToken cancellationToken)
         {
             var services = new ServiceCollection();
@@ -168,7 +183,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             var outputFileProvider = new PhysicalFileProvider(outputBasePath);
 
             IServiceProvider serviceProvider = BuildServiceProvider(configuration, loggerAction, (string)settings["Mode"], outputFileProvider, cancellationToken);
-            using (serviceProvider as IDisposable)
+
+            using (serviceProvider.GetRequiredService<IApplicationLifetime>() as IDisposable)
             using (IServiceScope scope = serviceProvider.CreateScope())
             {
                 var bundles = new BundleCollection(
@@ -188,8 +204,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
                 await bundleBuilder.ProduceBundlesAsync(bundles, configuration.AppBasePath ?? PathString.Empty, bundlingContext, outputBasePath, cancellationToken);
             }
-
-            await Task.CompletedTask;
         }
 
         private readonly IEnumerable<IBundleModelFactory> _modelFactories;
@@ -199,7 +213,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         {
             _modelFactories = modelFactories;
             _logger = logger;
-            
         }
 
         private IBundleModel CreateModel(Bundle bundle)

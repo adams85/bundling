@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Tools.Infrastructure;
@@ -86,6 +87,11 @@ namespace Karambolo.AspNetCore.Bundling.Tools
             catch (Exception ex)
             {
                 _reporter.Error(ex.ToString());
+
+                if (ex is ReflectionTypeLoadException reflectionTypeLoadException)
+                    foreach (Exception loaderException in reflectionTypeLoadException.LoaderExceptions)
+                        _reporter.Error(loaderException.ToString());
+
                 _reporter.Error("An unexpected error occurred");
                 return 1;
             }
@@ -125,8 +131,6 @@ namespace Karambolo.AspNetCore.Bundling.Tools
                     _reporter.Output($"Building project {projectFilePath}...");
 
                     targetFilePath = await new MsBuildEnsureBuildTarget(_reporter, projectFilePath).ExecuteAsync(options.BuildConfiguration, _cts.Token);
-
-                    _reporter.Output("DONE" + Environment.NewLine);
 
                     // we need the project to be built if configuration is specified by code
                     if (targetFilePath == null)
