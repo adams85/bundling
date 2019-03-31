@@ -2,12 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-
-    <IsPackable>false</IsPackable>
-
     <AssemblyName>Karambolo.AspNetCore.Bundling.Test</AssemblyName>
-
     <RootNamespace>Karambolo.AspNetCore.Bundling.Test</RootNamespace>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -11,6 +11,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
     {
         private static int s_counter;
         private string _basePath;
+        private CancellationTokenSource _cts;
         private FileSystemBundleCache _cache;
         protected override IBundleCache Cache => _cache;
 
@@ -26,7 +27,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             var loggerProvider = new ConsoleLoggerProvider((s, l) => l >= LogLevel.Warning, true);
             var loggerFactory = new LoggerFactory(new[] { loggerProvider });
 
-            var cache = new FileSystemBundleCache(CancellationToken.None, null, loggerFactory, Clock,
+            _cts = new CancellationTokenSource();
+
+            var cache = new FileSystemBundleCache(_cts.Token, null, loggerFactory, Clock,
                 Options.Create(new FileSystemBundleCacheOptions
                 {
                     FileProvider = new PhysicalFileProvider(Environment.CurrentDirectory),
@@ -46,6 +49,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected override void Teardown()
         {
+            _cts.Cancel();
+            _cts.Dispose();
+
             _cache.Reset();
         }
     }

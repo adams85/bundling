@@ -234,7 +234,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to retrieve bundle instance [{MANAGER_ID}]:{PATH}{QUERY} from the cache.", key.ManagerId, key.Path, key.Query);
+                _logger.LogWarning(ex, "Failed to retrieve bundle [{MANAGER_ID}]:{PATH}{QUERY} from the cache.", key.ManagerId, key.Path, key.Query);
                 return StoreItem.NotAvailable;
             }
         }
@@ -269,7 +269,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             try
             {
                 if (File.Exists(physicalItemMetadataPath) || File.Exists(physicalItemPath))
-                    _logger.LogWarning("Bundle instance [{MANAGER_ID}]:{PATH}{QUERY} exists unexpectedly in the cache. Trying to overwrite it.",
+                    _logger.LogWarning("Bundle [{MANAGER_ID}]:{PATH}{QUERY} exists unexpectedly in the cache. Trying to overwrite it.",
                         key.ManagerId, key.Path, key.Query);
 
                 if (!Directory.Exists(physicalItemsBasePath))
@@ -295,7 +295,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to store bundle instance [{MANAGER_ID}]:{PATH}{QUERY} into the cache.", key.ManagerId, key.Path, key.Query);
+                _logger.LogWarning(ex, "Failed to store bundle [{MANAGER_ID}]:{PATH}{QUERY} into the cache.", key.ManagerId, key.Path, key.Query);
                 return StoreItem.NotAvailable;
             }
         }
@@ -396,7 +396,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to remove bundle instance [{MANAGER_ID}]:{PATH}{QUERY} from the cache.", key.ManagerId, key.Path, key.Query);
+                _logger.LogWarning(ex, "Failed to remove bundle [{MANAGER_ID}]:{PATH}{QUERY} from the cache.", key.ManagerId, key.Path, key.Query);
             }
         }
 
@@ -460,6 +460,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected virtual async Task MonitorCoreAsync(CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             var metadataFileNamePostfix = MetadataFileNamePostfix;
             var files = Directory.GetFiles(PhysicalBasePath, "*" + metadataFileNamePostfix, SearchOption.AllDirectories);
 
@@ -479,7 +481,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    _logger.LogWarning(ex, "Failed to remove expired bundle instance ({FILEPATH}) from the cache.", physicalItemMetadataPath);
+                    _logger.LogWarning(ex, "Failed to remove expired bundle ({FILEPATH}) from the cache.", physicalItemMetadataPath);
                 }
             }
         }
