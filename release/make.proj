@@ -133,9 +133,9 @@ Action<string, string, MatchEvaluator> update = (path, regex, replacer) =>
 
 if (Convert.ToBoolean(PackageProps))
 {
-    // updating Karambolo.AspNetCore.Bundling.targets
+    // updating Karambolo.AspNetCore.Bundling.props
     update(VersionPropsPath,
-        @"(?<start><DotNetCliToolReference\s.*Version="")(?<version>[^""]+)(?<end>""\s.*/>)",
+        @"(?<start><DotNetCliToolReference Include=""Karambolo.AspNetCore.Bundling.Tools"" Version="")([^""]+)(?<end>""\s.*/>)",
         m => m.Groups["start"] + nugetVersion + m.Groups["end"]);
 }
 else
