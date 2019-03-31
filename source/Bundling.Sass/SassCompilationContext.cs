@@ -7,12 +7,12 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 {
     public sealed class SassCompilationContext : IDisposable
     {
-        internal SassCompilationContext(ISassCompiler compiler, string rootPath, IFileProvider fileProvider, CancellationToken cancellationToken)
+        internal SassCompilationContext(ISassCompiler compiler, string rootPath, IFileProvider fileProvider, CancellationToken token)
         {
             Compiler = compiler;
             RootPath = rootPath;
             FileProvider = fileProvider ?? AbstractionFile.NullFileProvider;
-            CancellationToken = cancellationToken;
+            CancellationToken = token;
 
             FileProviderFileManager.SetCompilationContext(this);
         }

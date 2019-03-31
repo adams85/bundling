@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Esprima;
 using Esprima.Ast;
+using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -69,19 +70,19 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 using (var reader = new StreamReader(stream))
                     module.Content = await reader.ReadToEndAsync().ConfigureAwait(false);
             }
-            catch (Exception ex) { throw new ModuleBundlingErrorException($"Failed to read file {module.FilePath} via {GetFileProviderHint(module.File)}.", ex); }
+            catch (Exception ex) { throw EcmaScriptErrorHelper.ReadingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
 
         private static Program ParseModuleContent(ModuleData module)
         {
             var parser = new JavaScriptParser(module.Content, new ParserOptions { Loc = true, Range = true, SourceType = SourceType.Module, Tolerant = true });
             try { return parser.ParseProgram(); }
-            catch (Exception ex) { throw new ModuleBundlingErrorException($"Failed to parse file {module.FilePath} provided by {GetFileProviderHint(module.File)}.", ex); }
+            catch (Exception ex) { throw EcmaScriptErrorHelper.ParsingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
 
-        private async Task LoadModuleCoreAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken cancellationToken)
+        private async Task LoadModuleCoreAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken token)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            token.ThrowIfCancellationRequested();
 
             try
             {
@@ -104,7 +105,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         else
                             continue;
 
-                    loadModuleTasks.Add(LoadModuleAsync(module, errorCts, cancellationToken));
+                    loadModuleTasks.Add(LoadModuleAsync(module, errorCts, token));
                 }
                 await Task.WhenAll(loadModuleTasks).ConfigureAwait(false);
             }
@@ -115,13 +116,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private async Task LoadModuleAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken cancellationToken)
+        private async Task LoadModuleAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken token)
         {
             await LoadModuleContent(module).ConfigureAwait(false);
-            await LoadModuleCoreAsync(module, errorCts, cancellationToken).ConfigureAwait(false);
+            await LoadModuleCoreAsync(module, errorCts, token).ConfigureAwait(false);
         }
 
-        public async Task<ModuleBundlingResult> BundleAsync(ModuleFile[] rootFiles, CancellationToken cancellationToken = default)
+        public async Task<ModuleBundlingResult> BundleAsync(ModuleFile[] rootFiles, CancellationToken token = default)
         {
             if (rootFiles == null)
                 throw new ArgumentNullException(nameof(rootFiles));
@@ -162,14 +163,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // 1) analyze content
 
                 using (var errorCts = new CancellationTokenSource())
-                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(errorCts.Token, cancellationToken))
+                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(errorCts.Token, token))
                     await Task.WhenAll(_modules.Values.ToArray().Select(module => LoadModuleCoreAsync(module, errorCts, linkedCts.Token))).ConfigureAwait(false);
 
                 // 2) synthesize result
 
                 try
                 {
-                    Parallel.ForEach(_modules.Values, new ParallelOptions { CancellationToken = cancellationToken },
+                    Parallel.ForEach(_modules.Values, new ParallelOptions { CancellationToken = token },
                         () => new RewriteModuleLocals(),
                         RewriteModule,
                         _ => { });
@@ -180,7 +181,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     ExceptionDispatchInfo.Capture(ex.Flatten().InnerException).Throw();
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
+                token.ThrowIfCancellationRequested();
 
                 return BuildResult(rootFiles);
             }

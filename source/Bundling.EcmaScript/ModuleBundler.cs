@@ -5,6 +5,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript
 {
     public interface IModuleBundler
     {
-        Task<ModuleBundlingResult> BundleAsync(ModuleFile[] rootFiles, CancellationToken cancellationToken = default);
+        Task<ModuleBundlingResult> BundleAsync(ModuleFile[] rootFiles, CancellationToken token = default);
     }
 }

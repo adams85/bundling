@@ -61,10 +61,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             private CancellationTokenSource _lifetimeCts;
             private CancellationTokenSource _linkedCts;
 
-            public Lifetime(CancellationToken cancellationToken)
+            public Lifetime(CancellationToken shutdownToken)
             {
                 _lifetimeCts = new CancellationTokenSource();
-                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token, cancellationToken);
+                _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token, shutdownToken);
 
                 ApplicationStopping = _linkedCts.Token;
             }
@@ -85,7 +85,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         }
 
         private static IServiceProvider BuildServiceProvider(DesignTimeBundlingConfiguration configuration, Action<int, string> logger, string mode,
-            PhysicalFileProvider outputFileProvider, CancellationToken cancellationToken)
+            PhysicalFileProvider outputFileProvider, CancellationToken shutdownToken)
         {
             var services = new ServiceCollection();
 
@@ -103,7 +103,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             services.AddSingleton<BundleBuilder>();
 
             services.AddSingleton<IHostingEnvironment>(new HostingEnvironment(outputFileProvider, mode));
-            services.AddSingleton<IApplicationLifetime>(new Lifetime(cancellationToken));
+            services.AddSingleton<IApplicationLifetime>(new Lifetime(shutdownToken));
 
             configurer
                 .AddCss()
@@ -166,7 +166,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             configuration.SetModules(DiscoverModules(compilationBasePath));
         }
 
-        public static async Task ProcessAsync<TConfiguration>(Dictionary<string, object> settings, CancellationToken cancellationToken)
+        public static async Task ProcessAsync<TConfiguration>(Dictionary<string, object> settings, CancellationToken shutdownToken)
             where TConfiguration : DesignTimeBundlingConfiguration, new()
         {
             var configuration = new TConfiguration();
@@ -182,7 +182,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
             var outputFileProvider = new PhysicalFileProvider(outputBasePath);
 
-            IServiceProvider serviceProvider = BuildServiceProvider(configuration, loggerAction, (string)settings["Mode"], outputFileProvider, cancellationToken);
+            IServiceProvider serviceProvider = BuildServiceProvider(configuration, loggerAction, (string)settings["Mode"], outputFileProvider, shutdownToken);
 
             using (serviceProvider.GetRequiredService<IApplicationLifetime>() as IDisposable)
             using (IServiceScope scope = serviceProvider.CreateScope())
@@ -202,7 +202,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
                 BundleBuilder bundleBuilder = scope.ServiceProvider.GetRequiredService<BundleBuilder>();
 
-                await bundleBuilder.ProduceBundlesAsync(bundles, configuration.AppBasePath ?? PathString.Empty, bundlingContext, outputBasePath, cancellationToken);
+                await bundleBuilder.ProduceBundlesAsync(bundles, configuration.AppBasePath ?? PathString.Empty, bundlingContext, outputBasePath, shutdownToken);
             }
         }
 
@@ -222,7 +222,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
                 throw ErrorHelper.ModelFactoryNotAvailable(bundle.GetType());
         }
 
-        private async Task BuildBundleAsync(TextWriter writer, IBundleModel bundle, PathString appBasePath, BundlingContext bundlingContext, CancellationToken cancellationToken)
+        private async Task BuildBundleAsync(TextWriter writer, IBundleModel bundle, PathString appBasePath, BundlingContext bundlingContext, CancellationToken shutdownToken)
         {
             var startTicks = Stopwatch.GetTimestamp();
 
@@ -232,7 +232,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
                 BundlingContext = bundlingContext,
                 AppBasePath = appBasePath,
                 Bundle = bundle,
-                CancellationToken = cancellationToken
+                CancellationToken = shutdownToken
             };
 
             bundle.OnBuilding(builderContext);
@@ -250,7 +250,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             _logger.LogInformation("Bundle {PATH} was built in {ELAPSED}ms.", bundle.Path, elapsedMs);
         }
 
-        private async Task ProduceBundlesAsync(BundleCollection bundles, string appBasePath, BundlingContext bundlingContext, string outputBasePath, CancellationToken cancellationToken)
+        private async Task ProduceBundlesAsync(BundleCollection bundles, string appBasePath, BundlingContext bundlingContext, string outputBasePath, CancellationToken shutdownToken)
         {
             IBundleModel[] bundleModels = bundles.Select(CreateModel).ToArray();
 
@@ -259,7 +259,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
                 var outputFilePath = EnsureOutputFilePath(outputBasePath, bundlingContext.BundlesPathPrefix, bundle.Path);
 
                 using (var writer = new StreamWriter(outputFilePath, append: false, encoding: bundle.OutputEncoding))
-                    await BuildBundleAsync(writer, bundle, appBasePath, bundlingContext, cancellationToken);
+                    await BuildBundleAsync(writer, bundle, appBasePath, bundlingContext, shutdownToken);
 
                 _logger.LogInformation("Bundle {PATH} was written to {FILEPATH}", bundle.Path, outputFilePath);
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using Karambolo.AspNetCore.Bundling.Sass.Internal.Helpers;
 using LibSassHost;
 
 namespace Karambolo.AspNetCore.Bundling.Sass
@@ -17,7 +18,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
         private FileProviderFileManager() { }
 
-        private SassCompilationContext Context => s_compilationContext.Value ?? throw new InvalidOperationException("No ambient compilation context is accessible currently.");
+        private SassCompilationContext Context => s_compilationContext.Value ?? throw SassErrorHelper.CompilationContextNotAccessible();
 
         public bool SupportsConversionToAbsolutePath => false;
 
