@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\source\Bundling.EcmaScript\Bundling.EcmaScript.csproj" />
     <ProjectReference Include="..\..\source\Bundling\Bundling.csproj" />
   </ItemGroup>
 

@@ -8,10 +8,10 @@ namespace Karambolo.AspNetCore.Bundling.Test.Helpers
     {
         public static async Task<byte[]> GetContentAsync(IFileInfo fileInfo)
         {
-            using (Stream fs = fileInfo.CreateReadStream())
+            using (Stream stream = fileInfo.CreateReadStream())
             using (var ms = new MemoryStream())
             {
-                await fs.CopyToAsync(ms);
+                await stream.CopyToAsync(ms);
                 return ms.ToArray();
             }
         }

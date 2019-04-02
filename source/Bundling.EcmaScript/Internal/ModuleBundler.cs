@@ -37,7 +37,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private string GetFileProviderPrefix(ModuleFile moduleFile)
         {
-            return _fileProviderPrefixes[moduleFile.FileProvider];
+            return FileProviderPrefixes[moduleFile.FileProvider];
         }
 
         private static string GetFileProviderHint(ModuleFile moduleFile)
@@ -52,15 +52,18 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private readonly string _br;
         private readonly bool _developmentMode;
 
-        private Dictionary<ModuleFile, ModuleData> _modules;
-        private Dictionary<IFileProvider, string> _fileProviderPrefixes;
-
         public ModuleBundler(ILoggerFactory loggerFactory = null, ModuleBundlerOptions options = null)
         {
             _logger = loggerFactory?.CreateLogger<ModuleBundler>() ?? (ILogger)NullLogger.Instance;
             _br = options?.NewLine ?? Environment.NewLine;
             _developmentMode = options?.DevelopmentMode ?? false;
+
+            Modules = new Dictionary<ModuleFile, ModuleData>();
+            FileProviderPrefixes = new Dictionary<IFileProvider, string>();
         }
+
+        internal Dictionary<ModuleFile, ModuleData> Modules { get; }
+        internal Dictionary<IFileProvider, string> FileProviderPrefixes { get; }
 
         private async Task LoadModuleContent(ModuleData module)
         {
@@ -99,9 +102,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 var loadModuleTasks = new List<Task>();
                 foreach (ModuleFile moduleFile in module.ModuleRefs.Keys)
                 {
-                    lock (_modules)
-                        if (!_modules.ContainsKey(moduleFile))
-                            _modules.Add(moduleFile, module = new ModuleData(moduleFile));
+                    lock (Modules)
+                        if (!Modules.ContainsKey(moduleFile))
+                            Modules.Add(moduleFile, module = new ModuleData(moduleFile));
                         else
                             continue;
 
@@ -122,6 +125,61 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             await LoadModuleCoreAsync(module, errorCts, token).ConfigureAwait(false);
         }
 
+        internal async Task BundleCoreAsync(ModuleFile[] rootFiles, CancellationToken token)
+        {
+            int fileProviderId = 0;
+
+            for (int i = 0, n = rootFiles.Length; i < n; i++)
+            {
+                ModuleFile moduleFile = rootFiles[i];
+
+                if (Modules.ContainsKey(moduleFile))
+                    continue;
+
+                rootFiles[i] = moduleFile = new ModuleFile(
+                    moduleFile.FileProvider,
+                    moduleFile.FilePath != null ? NormalizePath(moduleFile.FilePath) : $"<root{i}>",
+                    moduleFile.CaseSensitiveFilePaths)
+                {
+                    Content = moduleFile.Content
+                };
+
+                if (!FileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
+                    FileProviderPrefixes.Add(moduleFile.FileProvider, fileProviderId++.ToString() + ':');
+
+                var module = new ModuleData(moduleFile);
+
+                if (module.Content == null)
+                    await LoadModuleContent(module).ConfigureAwait(false);
+
+                Modules.Add(moduleFile, module);
+            }
+
+            if (FileProviderPrefixes.Count == 1)
+                FileProviderPrefixes[FileProviderPrefixes.Keys.First()] = string.Empty;
+
+            // analyze
+
+            using (var errorCts = new CancellationTokenSource())
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(errorCts.Token, token))
+                await Task.WhenAll(Modules.Values.ToArray().Select(module => LoadModuleCoreAsync(module, errorCts, linkedCts.Token))).ConfigureAwait(false);
+
+            // rewrite
+
+            try
+            {
+                Parallel.ForEach(Modules.Values, new ParallelOptions { CancellationToken = token },
+                    () => new RewriteModuleLocals(),
+                    RewriteModule,
+                    _ => { });
+            }
+            catch (AggregateException ex)
+            {
+                // unwrap and re-throw aggregate exception
+                ExceptionDispatchInfo.Capture(ex.Flatten().InnerException).Throw();
+            }
+        }
+
         public async Task<ModuleBundlingResult> BundleAsync(ModuleFile[] rootFiles, CancellationToken token = default)
         {
             if (rootFiles == null)
@@ -129,57 +187,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             rootFiles = rootFiles.ToArray();
 
-            _modules = new Dictionary<ModuleFile, ModuleData>();
-            _fileProviderPrefixes = new Dictionary<IFileProvider, string>();
-            int fileProviderId = 0;
             try
             {
-                for (int i = 0, n = rootFiles.Length; i < n; i++)
-                {
-                    ModuleFile moduleFile = rootFiles[i];
+                await BundleCoreAsync(rootFiles, token).ConfigureAwait(false);
 
-                    if (_modules.ContainsKey(moduleFile))
-                        continue;
-
-                    rootFiles[i] = moduleFile = new ModuleFile(
-                        moduleFile.FileProvider,
-                        moduleFile.FilePath != null ? NormalizePath(moduleFile.FilePath) : "<>" + i,
-                        moduleFile.CaseSensitiveFilePaths);
-
-                    if (!_fileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
-                        _fileProviderPrefixes.Add(moduleFile.FileProvider, fileProviderId++.ToString() + ':');
-
-                    var module = new ModuleData(moduleFile);
-
-                    if (module.Content == null)
-                        await LoadModuleContent(module).ConfigureAwait(false);
-
-                    _modules.Add(moduleFile, module);
-                }
-
-                if (_fileProviderPrefixes.Count == 1)
-                    _fileProviderPrefixes[_fileProviderPrefixes.Keys.First()] = string.Empty;
-
-                // 1) analyze content
-
-                using (var errorCts = new CancellationTokenSource())
-                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(errorCts.Token, token))
-                    await Task.WhenAll(_modules.Values.ToArray().Select(module => LoadModuleCoreAsync(module, errorCts, linkedCts.Token))).ConfigureAwait(false);
-
-                // 2) synthesize result
-
-                try
-                {
-                    Parallel.ForEach(_modules.Values, new ParallelOptions { CancellationToken = token },
-                        () => new RewriteModuleLocals(),
-                        RewriteModule,
-                        _ => { });
-                }
-                catch (AggregateException ex)
-                {
-                    // unwrap and re-throw aggregate exception
-                    ExceptionDispatchInfo.Capture(ex.Flatten().InnerException).Throw();
-                }
+                // aggregate
 
                 token.ThrowIfCancellationRequested();
 
@@ -192,8 +204,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
             finally
             {
-                _modules = null;
-                _fileProviderPrefixes = null;
+                Modules.Clear();
+                FileProviderPrefixes.Clear();
             }
         }
     }

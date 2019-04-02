@@ -2,7 +2,7 @@
 {
     internal partial class ModuleBundler
     {
-        private abstract class ImportData
+        internal abstract class ImportData
         {
             public ImportData(ModuleFile moduleFile, string localName)
             {
@@ -14,12 +14,12 @@
             public string LocalName { get; }
         }
 
-        private class NamespaceImportData : ImportData
+        internal class NamespaceImportData : ImportData
         {
             public NamespaceImportData(ModuleFile moduleFile, string localName) : base(moduleFile, localName) { }
         }
 
-        private class NamedImportData : ImportData
+        internal class NamedImportData : ImportData
         {
             public NamedImportData(ModuleFile moduleFile, string localName, string importName) : base(moduleFile, localName)
             {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Esprima.Ast;
 using Esprima.Utils;
 using Microsoft.Extensions.Primitives;
@@ -7,6 +8,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal partial class ModuleBundler
     {
+        private delegate void SubstitutionAdjuster(ref StringSegment value);
+
         private class SubstitutionCollector : AstVisitor
         {
             private readonly ModuleData _module;
@@ -19,11 +22,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _substitutions = substitutions;
                 _nameScopeStack = new Stack<HashSet<string>>();
                 _nameScopeStack.Push(new HashSet<string>());
-            }
-
-            public void Collect()
-            {
-                Visit(_module.Ast);
             }
 
             private HashSet<string> CurrentNameScope => _nameScopeStack.Peek();
@@ -57,6 +55,34 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private void EndNameScope()
             {
                 _nameScopeStack.Pop();
+            }
+
+            private void AddSubstitution(Identifier identifier, SubstitutionAdjuster adjust)
+            {
+                if (CurrentNameScope.Contains(identifier.Name) ||
+                    !_module.Imports.TryGetValue(identifier.Name, out ImportData import))
+                    return;
+
+                StringSegment value;
+                switch (import)
+                {
+                    case NamedImportData namedImport:
+                        value = GetModuleVariableName(_module.ModuleRefs[import.ModuleFile], namedImport.ImportName);
+                        break;
+                    case NamespaceImportData namespaceImport:
+                        value = _module.ModuleRefs[import.ModuleFile];
+                        break;
+                    default:
+                        return;
+                }
+
+                adjust(ref value);
+                _substitutions.Add(identifier.Range, value);
+            }
+
+            public void Collect()
+            {
+                Visit(_module.Ast);
             }
 
             protected override void VisitArrayPattern(ArrayPattern arrayPattern) { }
@@ -255,19 +281,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override void VisitIdentifier(Identifier identifier)
             {
-                if (CurrentNameScope.Contains(identifier.Name) ||
-                    !_module.Imports.TryGetValue(identifier.Name, out ImportData import))
-                    return;
-
-                switch (import)
-                {
-                    case NamedImportData namedImport:
-                        _substitutions.Add(identifier.Range, GetModuleVariableName(_module.ModuleRefs[import.ModuleFile], namedImport.LocalName));
-                        break;
-                    case NamespaceImportData namespaceImport:
-                        _substitutions.Add(identifier.Range, _module.ModuleRefs[import.ModuleFile]);
-                        break;
-                }
+                AddSubstitution(identifier, delegate { });
             }
 
             protected override void VisitIfStatement(IfStatement ifStatement)
@@ -330,7 +344,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override void VisitProperty(Property property)
             {
-                // TODO: TEST
+                // shorthand properties need special care
+                if (property.Shorthand && !property.Method && property.Value is Identifier identifier)
+                {
+                    AddSubstitution(identifier, delegate (ref StringSegment value) { value = identifier.Name + ": " + value; });
+                    return;
+                }
+
                 // key skipped
                 Visit(property.Value);
             }

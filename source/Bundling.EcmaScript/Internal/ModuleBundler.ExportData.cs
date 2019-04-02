@@ -4,7 +4,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal partial class ModuleBundler
     {
-        private abstract class ExportData
+        internal abstract class ExportData
         {
             public ExportData(string exportName)
             {
@@ -14,7 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public string ExportName { get; }
         }
 
-        private class NamedExportData : ExportData
+        internal class NamedExportData : ExportData
         {
             public NamedExportData(string localName) : this(localName, localName) { }
 
@@ -26,7 +26,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public string LocalName { get; }
         }
 
-        private class DefaultExpressionExportData : ExportData
+        internal class DefaultExpressionExportData : ExportData
         {
             public DefaultExpressionExportData(IDeclaration expression) : base(ModuleBundler.DefaultExportName)
             {
@@ -36,7 +36,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public IDeclaration Expression { get; }
         }
 
-        private class ReexportData : NamedExportData
+        internal class ReexportData : NamedExportData
         {
             public ReexportData(ModuleFile moduleFile) : this(moduleFile, null, null) { }
 

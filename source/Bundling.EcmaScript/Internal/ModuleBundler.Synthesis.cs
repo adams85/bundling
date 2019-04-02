@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -92,7 +93,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             if (_developmentMode)
             {
                 sb.Append(_br);
-                sb.Append("/* Imports */").Append(_br);
+
+                if (_developmentMode)
+                    sb.Append("/* Imports */").Append(_br);
             }
 
             foreach (KeyValuePair<ModuleFile, string> moduleRef in module.ModuleRefs)
@@ -124,7 +127,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             if (_developmentMode)
             {
                 sb.Append(_br);
-                sb.Append("/* Exports */").Append(_br);
+
+                if (_developmentMode)
+                    sb.Append("/* Exports */").Append(_br);
             }
 
             foreach (ExportData export in exports.Values)
@@ -145,29 +150,30 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private void ExpandExports(Dictionary<string, ExportData> exports, HashSet<ModuleData> visitedModules, ModuleData module, ModuleFile moduleFile = null)
+        private void ExpandExports(Dictionary<string, ExportData> exports, HashSet<ModuleData> visitedModules, ModuleData module,
+            ModuleFile rootModuleFile, ModuleFile importModuleFile = null)
         {
             for (int i = 0, n = module.ExportsRaw.Count; i < n; i++)
                 switch (module.ExportsRaw[i])
                 {
                     // wildcard re-exports (export * from '...';)
                     case ReexportData reexport when reexport.ExportName == null:
-                        ModuleData reexportedModule = _modules[reexport.ModuleFile];
+                        ModuleData reexportedModule = Modules[reexport.ModuleFile];
 
-                        if (moduleFile == null)
+                        if (importModuleFile == null)
                             visitedModules.Clear();
 
                         if (visitedModules.Add(reexportedModule))
-                            ExpandExports(exports, visitedModules, reexportedModule, moduleFile ?? reexport.ModuleFile);
+                            ExpandExports(exports, visitedModules, reexportedModule, rootModuleFile, importModuleFile ?? reexport.ModuleFile);
                         break;
-                    // locals and named re-exports when expanding a wildcard re-export
-                    case NamedExportData namedExport when moduleFile != null:
-                        exports[namedExport.ExportName] = new ReexportData(moduleFile, namedExport.ExportName, namedExport.ExportName);
+                    // locals and named re-exports when expanding a wildcard re-export (except for circular references)
+                    case NamedExportData namedExport when importModuleFile != null && rootModuleFile != module.File:
+                        exports[namedExport.ExportName] = new ReexportData(importModuleFile, namedExport.ExportName, namedExport.ExportName);
                         break;
                     // rest
                     case ExportData export:
                         // default exports skipped when expanding a wildcard re-export
-                        if (moduleFile == null || export.ExportName != DefaultExportName)
+                        if (importModuleFile == null || export.ExportName != DefaultExportName)
                             exports[export.ExportName] = export;
                         break;
                 }
@@ -190,7 +196,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             // define exports
 
-            ExpandExports(exports, locals.VisitedModules, module);
+            ExpandExports(exports, locals.VisitedModules, module, module.File);
 
             if (exports.Count > 0)
                 AppendExports(sb, module, exports);
@@ -199,7 +205,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             new SubstitutionCollector(module, substitutions).Collect();
 
-            sb.Append(_br);
             int offset = sb.Length;
 
             sb.Append(module.Content);
@@ -220,13 +225,11 @@ $@"(function (modules) {{
     function {RequireId}(moduleId) {{
         var module = moduleCache[moduleId];
         if (!module) {{
-            var module = {{
+            moduleCache[moduleId] = module = {{
                 id: moduleId,
                 exports: {{}}
             }};
-
             modules[moduleId].call(module.exports, {RequireId}, module.exports);
-            moduleCache[moduleId] = module;
         }}
         return module.exports;
     }}
@@ -247,22 +250,25 @@ $@"(function (modules) {{
             sb
                 .Append("})({").Append(_br);
 
-            foreach (ModuleData module in _modules.Values)
+            foreach (ModuleData module in Modules.Values)
             {
-                if (_developmentMode)
-                    sb.Append(' ', 4).Append($"/*** Module: {GetFileProviderHint(module.File)}:{module.FilePath} *** /").Append(module.FilePath).Append(" ***/").Append(_br);
-
                 sb.Append(' ', 4).Append($"\"{GetFileProviderPrefix(module.File)}{module.FilePath}\": function ({RequireId}, {ExportsId}) {{").Append(_br);
 
                 if (_developmentMode)
-                    sb.Append("/* ").Append("<").Append('-', 4).Append(" */").Append(_br);
+                {
+                    var index = sb.Length;
+                    sb.Append('/').Append('*', 3)
+                        .Append($" MODULE: {GetFileProviderHint(module.File)}:{module.FilePath} ")
+                        .Append('*', 78 - Math.Max(sb.Length - index, 0)).Append('*').Append('/')
+                        .Append(_br);
+                }
 
                 sb.Append(module.Content).Append(_br);
 
                 if (_developmentMode)
-                    sb.Append("/* ").Append('-', 4).Append(">").Append(" */");
-                        
-                sb.Append(" },").Append(_br);
+                    sb.Append('/').Append('*', 78).Append('/').Append(_br);
+
+                sb.Append(' ', 4).Append("},").Append(_br);
             }
 
             sb
@@ -270,7 +276,7 @@ $@"(function (modules) {{
 
             var imports = new HashSet<AbstractionFile>();
 
-            foreach (ModuleFile moduleFile in _modules.Keys)
+            foreach (ModuleFile moduleFile in Modules.Keys)
                 if (!rootModules.Contains(moduleFile))
                 {
                     moduleFile.Content = null;

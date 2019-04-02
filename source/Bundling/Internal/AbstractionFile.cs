@@ -56,7 +56,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public override int GetHashCode()
         {
-            return FileProvider.GetHashCode() ^ PathComparer.GetHashCode(FilePath) ^ PathComparer.GetHashCode();
+            return
+                FileProvider.GetHashCode() ^
+                (FilePath != null ? PathComparer.GetHashCode(FilePath) : 0) ^
+                PathComparer.GetHashCode();
         }
     }
 }
