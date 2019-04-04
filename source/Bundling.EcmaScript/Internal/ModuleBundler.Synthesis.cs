@@ -259,7 +259,7 @@ $@"(function (modules) {{
                     var index = sb.Length;
                     sb.Append('/').Append('*', 3)
                         .Append($" MODULE: {GetFileProviderHint(module.File)}:{module.FilePath} ")
-                        .Append('*', 78 - Math.Max(sb.Length - index, 0)).Append('*').Append('/')
+                        .Append('*', Math.Max(78 - (sb.Length - index), 0)).Append('*').Append('/')
                         .Append(_br);
                 }
 
