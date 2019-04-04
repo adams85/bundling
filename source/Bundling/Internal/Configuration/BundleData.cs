@@ -12,7 +12,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
         public List<string> InputFiles { get; } = new List<string>();
 
         [JsonProperty("minify")]
-        public Dictionary<string, object> Minify { get; } = new Dictionary<string, object> { { "enabled", true } };
+        public Dictionary<string, object> Minify { get; } = new Dictionary<string, object> { ["enabled"] = true };
 
         [JsonProperty("includeInProject")]
         public bool IncludeInProject { get; set; } = true;

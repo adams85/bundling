@@ -84,6 +84,15 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                 {
                     var inputFile = item.InputFiles[j];
 
+                    bool exclude;
+                    if (inputFile.StartsWith('!'))
+                    {
+                        inputFile = inputFile.Substring(1);
+                        exclude = true;
+                    }
+                    else
+                        exclude = false;
+
                     PathString inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
                     extension = Path.GetExtension(inputPath);
 
@@ -91,7 +100,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                     if (inputConfig == null)
                         throw ErrorHelper.ExtensionNotRecognized(extension);
 
-                    var bundleSourceItem = new FileBundleSourceItem(inputPath, bundleSource);
+                    var bundleSourceItem = new FileBundleSourceItem(inputPath, bundleSource) { Exclude = exclude };
 
                     bundleSourceItem.ItemTransforms = inputConfig.ConfigurationHelper.SetDefaultItemTransforms(bundleSourceItem.ItemTransforms);
 
