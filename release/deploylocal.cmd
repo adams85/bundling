@@ -8,8 +8,6 @@ IF [%2] == [] (
   SET PKGVER=1.0.0
 )
 
-echo %PKGVER%
-
 msbuild /p:TagVersion=%PKGVER%-0-x /p:Revision=0
 IF %ERRORLEVEL% NEQ 0 goto:eof
 

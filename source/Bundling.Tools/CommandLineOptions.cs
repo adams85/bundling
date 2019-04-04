@@ -53,20 +53,6 @@ namespace Karambolo.AspNetCore.Bundling.Tools
                 Out = console.Out,
                 Error = console.Error,
                 AllowArgumentSeparator = true,
-                ExtendedHelpText = $@"
-Remarks:
-  The special option '--' is used to delimit the end of the options and
-  the beginning of arguments that will be passed to the child dotnet process.
-  Its use is optional. When the special option '--' is not used,
-  {s_name} will use the first unrecognized argument as the beginning
-  of all arguments passed into the child dotnet process.
-
-  For example: {s_name} -- --verbose
-
-  Even though '--verbose' is an option {s_name} supports, the use of '--'
-  indicates that '--verbose' should be treated instead as an argument for
-  dotnet-run.
-"
             };
 
             app.HelpOption("-?|-h|--help");
