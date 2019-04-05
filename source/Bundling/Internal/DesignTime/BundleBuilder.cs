@@ -183,10 +183,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             using (serviceProvider.GetRequiredService<IApplicationLifetime>() as IDisposable)
             using (IServiceScope scope = serviceProvider.CreateScope())
             {
+                IFileProvider sourceFileProvider = configuration.SourceFileProvider ?? outputFileProvider;
+
                 var bundles = new BundleCollection(
                     configuration.BundlesPathPrefix ?? BundlingConfiguration.DefaultBundlesPathPrefix,
-                    configuration.SourceFileProvider ?? outputFileProvider,
-                    configuration.CaseSensitiveSourceFilePaths ?? AbstractionFile.GetDefaultCaseSensitiveFilePaths());
+                    sourceFileProvider,
+                    configuration.CaseSensitiveSourceFilePaths ?? AbstractionFile.GetDefaultCaseSensitiveFilePaths(sourceFileProvider));
 
                 configuration.Configure(new BundleCollectionConfigurer(bundles, scope.ServiceProvider));
 

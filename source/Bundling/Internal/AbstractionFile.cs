@@ -9,9 +9,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
     {
         public static readonly NullFileProvider NullFileProvider = new NullFileProvider();
 
-        internal static bool GetDefaultCaseSensitiveFilePaths()
+        internal static bool GetDefaultCaseSensitiveFilePaths(IFileProvider fileProvider)
         {
-            return !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            return !(fileProvider is PhysicalFileProvider) || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
 
         public AbstractionFile(IFileProvider fileProvider, string filePath, bool caseSensitiveFilePaths = true)

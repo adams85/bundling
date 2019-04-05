@@ -32,10 +32,12 @@ namespace Microsoft.AspNetCore.Builder
             if (HttpContextStatic.Current == null)
                 HttpContextStatic.Initialize(builder.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
 
+            IFileProvider sourceFileProvider = options.SourceFileProvider ?? builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider;
+
             var bundles = new BundleCollection(
                 options.RequestPath,
-                options.SourceFileProvider ?? builder.ApplicationServices.GetRequiredService<IHostingEnvironment>().WebRootFileProvider,
-                options.CaseSensitiveSourceFilePaths ?? AbstractionFile.GetDefaultCaseSensitiveFilePaths());
+                sourceFileProvider,
+                options.CaseSensitiveSourceFilePaths ?? AbstractionFile.GetDefaultCaseSensitiveFilePaths(sourceFileProvider));
 
             configureBundles?.Invoke(new BundleCollectionConfigurer(bundles, builder.ApplicationServices));
 
