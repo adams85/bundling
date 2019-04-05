@@ -105,10 +105,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             services.AddSingleton<IHostingEnvironment>(new HostingEnvironment(outputFileProvider, mode));
             services.AddSingleton<IApplicationLifetime>(new Lifetime(shutdownToken));
 
-            configurer
-                .AddCss()
-                .AddJs();
-
             if (mode == "Production")
                 configurer.EnableMinification();
 
@@ -163,7 +159,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         private static void SetupConfigFileConfiguration(ConfigFileConfiguration configuration, string configFilePath, string compilationBasePath)
         {
             configuration.ConfigFilePath = configFilePath;
-            configuration.SetModules(DiscoverModules(compilationBasePath));
+            configuration.AddModules(DiscoverModules(compilationBasePath));
         }
 
         public static async Task ProcessAsync<TConfiguration>(Dictionary<string, object> settings, CancellationToken shutdownToken)

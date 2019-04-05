@@ -27,6 +27,10 @@ namespace Karambolo.AspNetCore.Bundling
         public virtual IReadOnlyList<IBundleItemTransform> ItemTransforms { get; }
         public virtual IReadOnlyList<IBundleTransform> Transforms { get; }
 
-        public abstract IEnumerable<IBundlingModule> Modules { get; }
+        public virtual IEnumerable<IBundlingModule> Modules { get; } = new IBundlingModule[]
+        {
+            new CssBundlingModule(),
+            new JsBundlingModule(),
+        };
     }
 }

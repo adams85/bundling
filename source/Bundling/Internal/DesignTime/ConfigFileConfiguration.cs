@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.FileProviders;
 
@@ -7,14 +8,19 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 {
     internal class ConfigFileConfiguration : DesignTimeBundlingConfiguration
     {
+        public ConfigFileConfiguration()
+        {
+            _modules = base.Modules;
+        }
+
         public string ConfigFilePath { get; set; }
 
         private IEnumerable<IBundlingModule> _modules;
         public override IEnumerable<IBundlingModule> Modules => _modules;
 
-        public void SetModules(IEnumerable<IBundlingModule> modules)
+        public void AddModules(IEnumerable<IBundlingModule> modules)
         {
-            _modules = modules;
+            _modules = _modules.Concat(modules);
         }
 
         public override void Configure(BundleCollectionConfigurer bundles)
