@@ -5,7 +5,7 @@
     <Authors>Adam Simon</Authors>
     <Company>Karambolo</Company>
     <Product>Karambolo.AspNetCore.Bundling</Product>
-    <Description>A run-time bundling and minification library for ASP.NET Core.</Description>
+    <Description>A library for optimizing and bundling web assets of ASP.NET Core applications.</Description>
     <Copyright>© 2019 Adam Simon</Copyright>
     <AssemblyVersion>1.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
