@@ -26,7 +26,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
             if (virtualBasePath == null)
                 throw new ArgumentNullException(nameof(virtualBasePath));
 
-            if (!virtualBasePath.EndsWith('/'))
+            if (!virtualBasePath.EndsWith("/"))
                 virtualBasePath += '/';
 
             FileProviderFileReader fileReader = fileProvider != null ? new FileProviderFileReader(fileProvider) : FileProviderFileReader.Null;

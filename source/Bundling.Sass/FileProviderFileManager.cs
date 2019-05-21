@@ -45,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            return path.StartsWith('/');
+            return path.StartsWith("/");
         }
 
         public string ToAbsolutePath(string path)

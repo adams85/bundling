@@ -14,7 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
         protected virtual string RebaseUrl(string value, string basePath, string pathPrefix)
         {
-            if (value.StartsWith('/') ||
+            if (value.StartsWith("/") ||
                 value.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
                 !Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out Uri uri) ||
                 uri.IsAbsoluteUri)
