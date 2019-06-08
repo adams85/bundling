@@ -32,7 +32,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             if (index < 0 || path[index] != '.')
                 path += ".js";
 
-            return NormalizePath(path.StartsWith('/') ? path : basePath + path);
+            return NormalizePath(path.StartsWith("/") ? path : basePath + path);
         }
 
         private string GetFileProviderPrefix(ModuleFile moduleFile)

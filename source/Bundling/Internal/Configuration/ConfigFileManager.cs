@@ -85,7 +85,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                     var inputFile = item.InputFiles[j];
 
                     bool exclude;
-                    if (inputFile.StartsWith('!'))
+                    if (inputFile.StartsWith("!"))
                     {
                         inputFile = inputFile.Substring(1);
                         exclude = true;
