@@ -496,5 +496,72 @@ export default 3.14;";
                 "new MyClass().myMethod(__es$module_0);",
             }, foo2Lines);
         }
+
+        [Fact]
+        public async Task Import_SpecialPropertiesAndMethods()
+        {
+            var fooContent =
+ @"import { someKey } from './bar';
+
+let o = { someKey, [someKey]: 0 };
+o = { someKey() {}, [someKey]() {} };
+o = { *someKey() {}, *[someKey]() {} };
+o = { get someKey() {}, get [someKey]() {} };
+o = { set someKey(_) {}, set [someKey](_) {} };
+class C1 { 
+  [someKey]() {}
+  get someKey() {}
+  set someKey(_) {}
+  get [someKey]() {}
+  set [someKey](_) {}
+}
+class C2 {
+  *someKey() {}
+  *[someKey]() {} 
+}
+class C3 {
+  static someKey() {}
+  static [someKey]() {} 
+}";
+
+            var barContent =
+@"export const propKey = 'propKey';";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, null) { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "let o = { someKey: __es$module_0.someKey, [__es$module_0.someKey]: 0 };",
+                "o = { someKey() {}, [__es$module_0.someKey]() {} };",
+                "o = { *someKey() {}, *[__es$module_0.someKey]() {} };",
+                "o = { get someKey() {}, get [__es$module_0.someKey]() {} };",
+                "o = { set someKey(_) {}, set [__es$module_0.someKey](_) {} };",
+                "class C1 { ",
+                "  [__es$module_0.someKey]() {}",
+                "  get someKey() {}",
+                "  set someKey(_) {}",
+                "  get [__es$module_0.someKey]() {}",
+                "  set [__es$module_0.someKey](_) {}",
+                "}",
+                "class C2 {",
+                "  *someKey() {}",
+                "  *[__es$module_0.someKey]() {} ",
+                "}",
+                "class C3 {",
+                "  static someKey() {}",
+                "  static [__es$module_0.someKey]() {} ",
+                "}",
+            }, fooLines);
+        }
     }
 }

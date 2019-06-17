@@ -322,7 +322,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override void VisitMethodDefinition(MethodDefinition methodDefinitions)
             {
-                // key skipped
+                // key skipped if not computed (e.g. "class C { [var]() {} }")
+                if (methodDefinitions.Computed)
+                    Visit(methodDefinitions.Key);
+
                 Visit(methodDefinitions.Value);
             }
 
@@ -351,7 +354,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     return;
                 }
 
-                // key skipped
+                // key skipped if not computed (e.g. "{ [var]: 0 }")
+                if (property.Computed)
+                    Visit(property.Key);
+
                 Visit(property.Value);
             }
 
