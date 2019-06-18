@@ -10,7 +10,7 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="Esprima" Version="1.0.0-beta-1186" />
+    <PackageReference Include="Esprima" Version="1.0.0-beta-1202" />
   </ItemGroup>
 
   <ItemGroup>
