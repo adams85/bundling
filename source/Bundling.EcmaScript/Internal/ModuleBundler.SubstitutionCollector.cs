@@ -439,17 +439,16 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override void VisitUnaryExpression(UnaryExpression unaryExpression)
             {
-                // operators ++, --, delete and void skipped (imports are read-only)
+                // operators ++, -- and delete skipped (imports are read-only)
                 switch (unaryExpression.Operator)
                 {
-                    case UnaryOperator.BitwiseNot:
-                    case UnaryOperator.LogicalNot:
-                    case UnaryOperator.Minus:
-                    case UnaryOperator.Plus:
-                    case UnaryOperator.TypeOf:
-                        Visit(unaryExpression.Argument);
+                    case UnaryOperator.Increment:
+                    case UnaryOperator.Decrement:
+                    case UnaryOperator.Delete:
                         return;
                 }
+
+                Visit(unaryExpression.Argument);
             }
 
             protected override void VisitUnknownNode(INode node)
