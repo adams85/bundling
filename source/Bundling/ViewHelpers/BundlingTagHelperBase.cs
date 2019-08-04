@@ -46,7 +46,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             output.CopyHtmlAttribute(UrlAttributeName, context);
 
             Microsoft.AspNetCore.Mvc.IUrlHelper urlHelper = _urlHelperFactory.GetUrlHelper(ViewContext);
-            UrlUtils.FromRelative(urlHelper.Content(Url), out PathString path, out QueryString query, out FragmentString fragment);
+            UrlUtils.FromRelative(urlHelper.Content(Url), out PathString path, out QueryString query, out _);
 
             string url = null;
             var n = _bundleManagerFactory.Instances.Count;

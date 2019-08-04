@@ -21,9 +21,9 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             protected override void SetDefaults(BundleDefaultsOptions options)
             {
-                IConfigurationHelper helper = _serviceProvider.GetRequiredService<IEnumerable<IConfigurationHelper>>().First(h => h.Type == BundleType);
+                IConfigurationHelper helper = ServiceProvider.GetRequiredService<IEnumerable<IConfigurationHelper>>().First(h => h.Type == BundleType);
 
-                options.GlobalDefaults = _serviceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
+                options.GlobalDefaults = ServiceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
                 options.Type = BundleType;
                 options.ConcatenationToken = "\n";
 

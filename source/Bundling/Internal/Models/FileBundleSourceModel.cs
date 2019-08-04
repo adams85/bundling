@@ -14,14 +14,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
     {
         protected class Include
         {
-            public Include(FileBundleSourceItem item, string[] _excludePatterns)
+            public Include(FileBundleSourceItem item, string[] excludePatterns)
             {
                 AutoDetectEncoding = item.InputEncoding == null;
                 Encoding = item.InputEncoding ?? Encoding.UTF8;
                 ItemTransforms = item.ItemTransforms;
 
                 Matcher = new Matcher().AddInclude(item.Pattern);
-                Array.ForEach(_excludePatterns, p => Matcher.AddExclude(p));
+                Array.ForEach(excludePatterns, p => Matcher.AddExclude(p));
             }
 
             public bool AutoDetectEncoding { get; }

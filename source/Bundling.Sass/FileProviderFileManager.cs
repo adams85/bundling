@@ -9,7 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
     public sealed class FileProviderFileManager : IFileManager
     {
         public static readonly FileProviderFileManager Instance = new FileProviderFileManager();
-        private static AsyncLocal<SassCompilationContext> s_compilationContext = new AsyncLocal<SassCompilationContext>();
+        private static readonly AsyncLocal<SassCompilationContext> s_compilationContext = new AsyncLocal<SassCompilationContext>();
 
         internal static void SetCompilationContext(SassCompilationContext context)
         {

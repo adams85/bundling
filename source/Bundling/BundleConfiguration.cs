@@ -42,7 +42,6 @@ namespace Karambolo.AspNetCore.Bundling
         where TDefaults : BundleGlobalDefaultsOptions
     {
         private readonly Action<TDefaults, IServiceProvider> _action;
-        protected readonly IServiceProvider _serviceProvider;
 
         protected BundleDefaultsConfigurerBase(Action<TDefaults, IServiceProvider> action, IServiceProvider serviceProvider)
         {
@@ -50,8 +49,10 @@ namespace Karambolo.AspNetCore.Bundling
                 throw new ArgumentNullException(nameof(serviceProvider));
 
             _action = action;
-            _serviceProvider = serviceProvider;
+            ServiceProvider = serviceProvider;
         }
+
+        protected IServiceProvider ServiceProvider { get; }
 
         protected abstract string Name { get; }
 
@@ -70,7 +71,7 @@ namespace Karambolo.AspNetCore.Bundling
             if (name == Name)
             {
                 SetDefaults(options);
-                _action?.Invoke(options, _serviceProvider);
+                _action?.Invoke(options, ServiceProvider);
             }
         }
     }

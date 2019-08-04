@@ -58,8 +58,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         // TODO: roll out a less ugly solution like introducing a dedicated interface?
         private class Lifetime : IApplicationLifetime, IDisposable
         {
-            private CancellationTokenSource _lifetimeCts;
-            private CancellationTokenSource _linkedCts;
+            private readonly CancellationTokenSource _lifetimeCts;
+            private readonly CancellationTokenSource _linkedCts;
 
             public Lifetime(CancellationToken shutdownToken)
             {

@@ -25,8 +25,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
         public override void Configure(BundleCollectionConfigurer bundles)
         {
-            var fileProvider = new PhysicalFileProvider(Path.GetDirectoryName(ConfigFilePath));
-            bundles.LoadFromConfigFile(Path.GetFileName(ConfigFilePath), fileProvider);
+            using (var fileProvider = new PhysicalFileProvider(Path.GetDirectoryName(ConfigFilePath)))
+                bundles.LoadFromConfigFile(Path.GetFileName(ConfigFilePath), fileProvider);
         }
     }
 }

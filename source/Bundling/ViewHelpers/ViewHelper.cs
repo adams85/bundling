@@ -23,7 +23,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         {
             var actionContext = new ActionContext(httpContext, s_dummyRouteData, s_dummyActionDescriptor);
             var urlHelper = new UrlHelper(actionContext);
-            UrlUtils.FromRelative(urlHelper.Content(pathString), out PathString path, out QueryString query, out FragmentString fragment);
+            UrlUtils.FromRelative(urlHelper.Content(pathString), out PathString path, out QueryString query, out _);
 
             string url = null;
             var n = bundleManagerFactory.Instances.Count;

@@ -69,7 +69,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     case NamedImportData namedImport:
                         value = GetModuleVariableName(_module.ModuleRefs[import.ModuleFile], namedImport.ImportName);
                         break;
-                    case NamespaceImportData namespaceImport:
+                    case NamespaceImportData _:
                         value = _module.ModuleRefs[import.ModuleFile];
                         break;
                     default:

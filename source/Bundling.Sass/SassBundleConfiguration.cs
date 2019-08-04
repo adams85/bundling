@@ -21,9 +21,9 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
             protected override void SetDefaults(BundleDefaultsOptions options)
             {
-                IConfigurationHelper helper = _serviceProvider.GetRequiredService<IEnumerable<IConfigurationHelper>>().First(h => h.Type == BundleType);
+                IConfigurationHelper helper = ServiceProvider.GetRequiredService<IEnumerable<IConfigurationHelper>>().First(h => h.Type == BundleType);
 
-                options.GlobalDefaults = _serviceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
+                options.GlobalDefaults = ServiceProvider.GetRequiredService<IOptions<BundleGlobalOptions>>().Value;
                 options.Type = BundleType;
                 options.ConcatenationToken = "\n";
 
@@ -38,7 +38,6 @@ namespace Karambolo.AspNetCore.Bundling.Sass
         {
             private readonly BundleGlobalOptions _globalOptions;
             private readonly SassCompileTransform _compileTransform;
-            private readonly CssRewriteUrlTransform _rewriteUrlTransform;
             private readonly CssMinifyTransform _minifyTransform;
 
             public string Type => BundleType;
@@ -47,7 +46,6 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             {
                 _globalOptions = globalOptions.Value;
                 _compileTransform = new SassCompileTransform(compiler);
-                _rewriteUrlTransform = new CssRewriteUrlTransform();
                 _minifyTransform = new CssMinifyTransform(minifier);
             }
 

@@ -37,10 +37,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                     ExpirationScanFrequency = expirationScanFrequency ?? default(TimeSpan),
                     AutoResetOnCreate = true,
                     BasePath = "Cache" + Interlocked.Increment(ref s_counter).ToString()
-                }),
-                Options.Create(new BundleGlobalOptions
-                {
-                    EnableChangeDetection = true
                 }));
 
             _cache = cache;

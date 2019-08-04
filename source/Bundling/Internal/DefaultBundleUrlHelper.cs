@@ -7,7 +7,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class DefaultBundleUrlHelper : IBundleUrlHelper
     {
-        private const string versionPrefix = ".v";
+        private const string VersionPrefix = ".v";
 
         public void AddVersion(string version, ref PathString path, ref QueryString query)
         {
@@ -16,7 +16,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             var extension = Path.GetExtension(fileName);
             fileName = Path.GetFileNameWithoutExtension(fileName);
 
-            fileName = string.Concat(fileName, versionPrefix, WebUtility.UrlEncode(version));
+            fileName = string.Concat(fileName, VersionPrefix, WebUtility.UrlEncode(version));
 
             path = string.Concat(basePath, fileName, extension);
         }
@@ -28,11 +28,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             var extension = Path.GetExtension(fileName);
             fileName = Path.GetFileNameWithoutExtension(fileName);
 
-            var index = fileName.LastIndexOf(versionPrefix);
+            var index = fileName.LastIndexOf(VersionPrefix);
             if (index < 0)
                 return null;
 
-            var result = fileName.Substring(index + versionPrefix.Length);
+            var result = fileName.Substring(index + VersionPrefix.Length);
             fileName = fileName.Substring(0, index);
 
             path = string.Concat(basePath, fileName, extension);

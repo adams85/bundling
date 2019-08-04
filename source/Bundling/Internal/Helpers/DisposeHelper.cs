@@ -40,7 +40,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
     public class DefaultScopedDisposer : IScopedDisposer
     {
         private bool _isDisposed;
-        private List<IDisposable> _disposables = new List<IDisposable>();
+        private readonly List<IDisposable> _disposables = new List<IDisposable>();
 
         public void Register(IDisposable disposable)
         {

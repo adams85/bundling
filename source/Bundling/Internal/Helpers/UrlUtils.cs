@@ -37,7 +37,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         public static void FromRelative(string url, out PathString path, out QueryString query, out FragmentString fragment)
         {
             var uri = new Uri(s_dummyBaseUri, url);
-            UriHelper.FromAbsolute(uri.ToString(), out string scheme, out HostString host, out path, out query, out fragment);
+            UriHelper.FromAbsolute(uri.ToString(), out _, out _, out path, out query, out fragment);
         }
 
         public static QueryString NormalizeQuery(QueryString query, out IDictionary<string, StringValues> parsedQuery)

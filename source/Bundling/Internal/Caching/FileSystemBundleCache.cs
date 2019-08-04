@@ -91,20 +91,18 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         private readonly TimeSpan _monitorScanFrequency;
         private readonly CancellationToken _shutdownToken;
-        private readonly bool _changeDetectionEnabled;
         private readonly ISystemClock _clock;
         private readonly ILogger _logger;
         private readonly AsyncKeyedLock<(int, PathString)> _bundleLock;
 
         public FileSystemBundleCache(CancellationToken shutdownToken, IHostingEnvironment env, ILoggerFactory loggerFactory, ISystemClock clock,
-            IOptions<FileSystemBundleCacheOptions> options, IOptions<BundleGlobalOptions> globalOptions)
+            IOptions<FileSystemBundleCacheOptions> options)
         {
             FileSystemBundleCacheOptions optionsUnwrapped = options.Value;
             FileProvider = optionsUnwrapped.FileProvider ?? env.ContentRootFileProvider as PhysicalFileProvider ?? throw ErrorHelper.ContentRootNotPhysical(nameof(options));
             BasePath = optionsUnwrapped.BasePath ?? @"App_Data\Bundles";
 
             _shutdownToken = shutdownToken;
-            _changeDetectionEnabled = globalOptions.Value.EnableChangeDetection;
             _clock = clock;
             _logger = loggerFactory.CreateLogger<FileSystemBundleCache>();
 
