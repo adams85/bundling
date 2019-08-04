@@ -23,7 +23,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         private static readonly JsonSerializerOptions s_serializerOptions = new JsonSerializerOptions
         {
-            Converters = { new JsonConverterTimeSpan() }
+            Converters = { new JsonConverterTimeSpan() },
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip
         };
 
         public static void Serialize<T>(Stream stream, T obj)
