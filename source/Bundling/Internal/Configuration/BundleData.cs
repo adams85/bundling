@@ -1,26 +1,26 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 {
     public class BundleData
     {
-        [JsonProperty("outputFileName")]
+        [JsonPropertyName("outputFileName")]
         public string OutputFileName { get; set; }
 
-        [JsonProperty("inputFiles")]
+        [JsonPropertyName("inputFiles")]
         public List<string> InputFiles { get; } = new List<string>();
 
-        [JsonProperty("minify")]
+        [JsonPropertyName("minify")]
         public Dictionary<string, object> Minify { get; } = new Dictionary<string, object> { ["enabled"] = true };
 
-        [JsonProperty("includeInProject")]
+        [JsonPropertyName("includeInProject")]
         public bool IncludeInProject { get; set; } = true;
 
-        [JsonProperty("sourceMap")]
+        [JsonPropertyName("sourceMap")]
         public bool SourceMap { get; set; }
 
-        [JsonProperty("sourceMapRootPath")]
+        [JsonPropertyName("sourceMapRootPath")]
         public string SourceMapRootPath { get; set; }
     }
 }

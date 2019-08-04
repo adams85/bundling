@@ -334,7 +334,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                 Assert.False(factoryRun);
 
-
                 await Task.Delay(TimeSpan.FromSeconds(2.5));
 
                 factoryRun = false;

@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Esprima.Ast;
 using Esprima.Utils;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
+    using Range = Esprima.Ast.Range;
+
     internal partial class ModuleBundler
     {
         private delegate void SubstitutionAdjuster(ref StringSegment value);

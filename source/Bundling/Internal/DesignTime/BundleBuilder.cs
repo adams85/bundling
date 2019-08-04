@@ -13,13 +13,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 {
     internal class BundleBuilder
     {
-        private class HostingEnvironment : IHostingEnvironment
+        private class HostingEnvironment : IWebHostEnvironment
         {
             public HostingEnvironment(PhysicalFileProvider outputFileProvider, string mode)
             {
@@ -56,7 +57,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         // DefaultBundleModelFactory schedules disposal of the bundle models for application shutdown;
         // we fake app shutdown using the cancellation token we get from the CLI tools
         // TODO: roll out a less ugly solution like introducing a dedicated interface?
-        private class Lifetime : IApplicationLifetime, IDisposable
+        private class Lifetime : IHostApplicationLifetime, IDisposable
         {
             private readonly CancellationTokenSource _lifetimeCts;
             private readonly CancellationTokenSource _linkedCts;
@@ -102,8 +103,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
             services.AddSingleton<BundleBuilder>();
 
-            services.AddSingleton<IHostingEnvironment>(new HostingEnvironment(outputFileProvider, mode));
-            services.AddSingleton<IApplicationLifetime>(new Lifetime(shutdownToken));
+            services.AddSingleton<IWebHostEnvironment>(new HostingEnvironment(outputFileProvider, mode));
+            services.AddSingleton<IHostApplicationLifetime>(new Lifetime(shutdownToken));
 
             if (mode == "Production")
                 configurer.EnableMinification();
@@ -180,7 +181,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
             IServiceProvider serviceProvider = BuildServiceProvider(configuration, loggerAction, (string)settings["Mode"], outputFileProvider, shutdownToken);
 
-            using (serviceProvider.GetRequiredService<IApplicationLifetime>() as IDisposable)
+            using (serviceProvider.GetRequiredService<IHostApplicationLifetime>() as IDisposable)
             using (IServiceScope scope = serviceProvider.CreateScope())
             {
                 IFileProvider sourceFileProvider = configuration.SourceFileProvider ?? outputFileProvider;

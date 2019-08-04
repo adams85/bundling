@@ -16,7 +16,7 @@ namespace Karambolo.AspNetCore.Bundling
         private readonly IBundleManager _bundleManager;
         private readonly StaticFileMiddleware _staticFileMiddleware;
 
-        public BundlingMiddleware(RequestDelegate next, IHostingEnvironment env, ILoggerFactory loggerFactory, IHttpContextAccessor httpContextAccessor,
+        public BundlingMiddleware(RequestDelegate next, IWebHostEnvironment env, ILoggerFactory loggerFactory, IHttpContextAccessor httpContextAccessor,
             IOptions<BundleGlobalOptions> globalOptions, IBundleManagerFactory bundleManagerFactory, BundleCollection bundles, IOptions<BundlingOptions> options)
         {
             if (next == null)

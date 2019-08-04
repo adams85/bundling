@@ -1,20 +1,41 @@
-﻿using System.IO;
-using Newtonsoft.Json;
+﻿using System;
+using System.Globalization;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
     internal static class SerializationHelper
     {
-        private static readonly JsonSerializer s_serializer = JsonSerializer.CreateDefault();
-
-        public static void Serialize<T>(TextWriter writer, T obj)
+        private sealed class JsonConverterTimeSpan : JsonConverter<TimeSpan>
         {
-            s_serializer.Serialize(writer, obj, typeof(T));
+            public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return TimeSpan.Parse(reader.GetString(), CultureInfo.InvariantCulture);
+            }
+
+            public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value.ToString(null, CultureInfo.InvariantCulture));
+            }
         }
 
-        public static T Deserialize<T>(TextReader reader)
+        private static readonly JsonSerializerOptions s_serializerOptions = new JsonSerializerOptions
         {
-            return (T)s_serializer.Deserialize(reader, typeof(T));
+            Converters = { new JsonConverterTimeSpan() }
+        };
+
+        public static void Serialize<T>(Stream stream, T obj)
+        {
+            using (var writer = new Utf8JsonWriter(stream))
+                JsonSerializer.Serialize(writer, obj, s_serializerOptions);
+        }
+
+        public static T Deserialize<T>(in ReadOnlySpan<byte> data)
+        {
+            var reader = new Utf8JsonReader(data);
+            return JsonSerializer.Deserialize<T>(ref reader, s_serializerOptions);
         }
     }
 }

@@ -11,6 +11,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
+    using Range = Esprima.Ast.Range;
+
     internal partial class ModuleBundler
     {
         private class DescendingRangeComparer : IComparer<Range>

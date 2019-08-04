@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
@@ -65,7 +65,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
     public static class DisposeHelper
     {
-        public static T ScheduleDisposeForShutdown<T>(this IApplicationLifetime appLifetime, T disposable)
+        public static T ScheduleDisposeForShutdown<T>(this IHostApplicationLifetime appLifetime, T disposable)
             where T : IDisposable
         {
             if (appLifetime == null)

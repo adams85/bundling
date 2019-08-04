@@ -1,8 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Caching
@@ -20,9 +18,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             {
                 FileProvider = new PhysicalFileProvider(Environment.CurrentDirectory)
             });
-
-            var loggerProvider = new ConsoleLoggerProvider((s, l) => l >= LogLevel.Warning, true);
-            var loggerFactory = new LoggerFactory(new[] { loggerProvider });
 
             var memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions
             {

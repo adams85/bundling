@@ -11,6 +11,7 @@ using Karambolo.AspNetCore.Bundling.Js;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -70,7 +71,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(configurer));
 
             configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleCache>(sp => new FileSystemBundleCache(
-                sp.GetRequiredService<IApplicationLifetime>().ApplicationStopping, sp.GetRequiredService<IHostingEnvironment>(), sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping, sp.GetRequiredService<IWebHostEnvironment>(), sp.GetRequiredService<ILoggerFactory>(),
                 sp.GetRequiredService<ISystemClock>(), sp.GetRequiredService<IOptions<FileSystemBundleCacheOptions>>())));
 
             if (configure != null)
@@ -157,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return configurer;
         }
 
-        public static BundlingConfigurer UseDefaults(this BundlingConfigurer configurer, IHostingEnvironment environment)
+        public static BundlingConfigurer UseDefaults(this BundlingConfigurer configurer, IWebHostEnvironment environment)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));

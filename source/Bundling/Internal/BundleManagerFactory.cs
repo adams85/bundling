@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,7 +26,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         private readonly IOptions<BundleGlobalOptions> _globalOptions;
 
         public BundleManagerFactory(IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper,
-            ILoggerFactory loggerFactory, ISystemClock clock, IApplicationLifetime applicationLifetime, IOptions<BundleGlobalOptions> globalOptions)
+            ILoggerFactory loggerFactory, ISystemClock clock, IHostApplicationLifetime applicationLifetime, IOptions<BundleGlobalOptions> globalOptions)
         {
             _modelFactories = modelFactories;
             _cache = cache;

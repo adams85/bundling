@@ -4,6 +4,7 @@ using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Js;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.AspNetCore.Builder
 {
@@ -27,7 +28,7 @@ namespace Microsoft.AspNetCore.Builder
 
                     var options = new ModuleBundlerOptions
                     {
-                        DevelopmentMode = configurer.AppServices.GetService<IHostingEnvironment>()?.IsDevelopment() ?? false
+                        DevelopmentMode = configurer.AppServices.GetService<IWebHostEnvironment>()?.IsDevelopment() ?? false
                     };
 
                     configure?.Invoke(options);

@@ -2,7 +2,6 @@
 using System.Threading;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Caching
@@ -24,8 +23,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected override void Setup(TimeSpan? expirationScanFrequency)
         {
-            var loggerProvider = new ConsoleLoggerProvider((s, l) => l >= LogLevel.Warning, true);
-            var loggerFactory = new LoggerFactory(new[] { loggerProvider });
+            var loggerFactory = new LoggerFactory();
 
             _cts = new CancellationTokenSource();
 

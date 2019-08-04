@@ -95,7 +95,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         private readonly ILogger _logger;
         private readonly AsyncKeyedLock<(int, PathString)> _bundleLock;
 
-        public FileSystemBundleCache(CancellationToken shutdownToken, IHostingEnvironment env, ILoggerFactory loggerFactory, ISystemClock clock,
+        public FileSystemBundleCache(CancellationToken shutdownToken, IWebHostEnvironment env, ILoggerFactory loggerFactory, ISystemClock clock,
             IOptions<FileSystemBundleCacheOptions> options)
         {
             FileSystemBundleCacheOptions optionsUnwrapped = options.Value;
@@ -205,8 +205,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     await fs.CopyToAsync(ms, CopyBufferSize, token);
 
-                ms.Position = 0;
-                return SerializationHelper.Deserialize<StoreItemMetadata>(new StreamReader(ms));
+                return SerializationHelper.Deserialize<StoreItemMetadata>(ms.GetBuffer().AsSpan(0, (int)ms.Length));
             }
         }
 
@@ -241,9 +240,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         {
             using (var ms = new MemoryStream())
             {
-                var writer = new StreamWriter(ms);
-                SerializationHelper.Serialize(writer, metadata);
-                writer.Flush();
+                SerializationHelper.Serialize(ms, metadata);
 
                 ms.Position = 0;
                 using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Create, FileAccess.Write, FileShare.Read))

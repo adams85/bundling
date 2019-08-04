@@ -2,17 +2,16 @@
 using System.Collections.Generic;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Models;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class DefaultBundleModelFactory : IBundleModelFactory
     {
         private readonly Lazy<IEnumerable<IBundleModelFactory>> _modelFactories;
-        private readonly IApplicationLifetime _appLifetime;
+        private readonly IHostApplicationLifetime _appLifetime;
 
-        public DefaultBundleModelFactory(Lazy<IEnumerable<IBundleModelFactory>> modelFactories, IApplicationLifetime appLifetime)
+        public DefaultBundleModelFactory(Lazy<IEnumerable<IBundleModelFactory>> modelFactories, IHostApplicationLifetime appLifetime)
         {
             _modelFactories = modelFactories;
             _appLifetime = appLifetime;

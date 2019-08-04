@@ -4,13 +4,12 @@ using System.IO;
 using System.Linq;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 {
     public interface IConfigFileManager
     {
-        void Load(BundleCollection bundles, TextReader reader, ConfigFilePathMapper pathMapper = null);
+        void Load(BundleCollection bundles, in ReadOnlySpan<byte> fileContent, ConfigFilePathMapper pathMapper = null);
     }
 
     public delegate PathString ConfigFilePathMapper(string filePath, PathString pathPrefix, bool output);
@@ -39,13 +38,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
             return result;
         }
 
-        public void Load(BundleCollection bundles, TextReader reader, ConfigFilePathMapper pathMapper)
+        public void Load(BundleCollection bundles, in ReadOnlySpan<byte> fileContent, ConfigFilePathMapper pathMapper)
         {
             if (bundles == null)
                 throw new ArgumentNullException(nameof(bundles));
-
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
 
             if (bundles.SourceFileProvider == null)
                 throw ErrorHelper.PropertyCannotBeNull(nameof(bundles), nameof(bundles.SourceFileProvider));
@@ -53,8 +49,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
             if (pathMapper == null)
                 pathMapper = DefaultMapPath;
 
-            var serializer = JsonSerializer.CreateDefault();
-            BundleData[] items = SerializationHelper.Deserialize<BundleData[]>(reader);
+            BundleData[] items = SerializationHelper.Deserialize<BundleData[]>(fileContent);
 
             var n = items.Length;
             for (var i = 0; i < n; i++)
