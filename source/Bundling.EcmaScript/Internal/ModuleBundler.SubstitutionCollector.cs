@@ -137,9 +137,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override void VisitCallExpression(CallExpression callExpression)
             {
-                if (!callExpression.Cached)
-                    for (int i = 0, n = callExpression.Arguments.Count; i < n; i++)
-                        Visit(callExpression.Arguments[i]);
+                for (int i = 0, n = callExpression.Arguments.Count; i < n; i++)
+                    Visit(callExpression.Arguments[i]);
 
                 Visit(callExpression.Callee);
             }

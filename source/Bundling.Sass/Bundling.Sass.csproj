@@ -10,7 +10,7 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="LibSassHost" Version="1.2.5" />
+    <PackageReference Include="LibSassHost" Version="1.2.10" />
   </ItemGroup>
 
   <ItemGroup>

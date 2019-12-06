@@ -16,10 +16,10 @@ namespace JsTranslation.Infrastructure.Localization
     {
         public const string BasePath = "/App_Data/Localization";
 
-        readonly IHostingEnvironment _env;
+        readonly IWebHostEnvironment _env;
         readonly ILogger<POLocalizationProvider> _logger;
 
-        public POLocalizationProvider(IHostingEnvironment env, ILogger<POLocalizationProvider> logger)
+        public POLocalizationProvider(IWebHostEnvironment env, ILogger<POLocalizationProvider> logger)
         {
             _env = env;
             _logger = logger;

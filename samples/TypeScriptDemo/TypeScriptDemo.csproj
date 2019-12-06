@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-    <TypeScriptToolsVersion>3.1</TypeScriptToolsVersion>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TypeScriptToolsVersion>3.7</TypeScriptToolsVersion>
     <TypeScriptModuleKind>ES6</TypeScriptModuleKind>
     <TypeScriptTarget>ES6</TypeScriptTarget>
   </PropertyGroup>
@@ -11,14 +11,6 @@
     <Content Remove="wwwroot\ts\bar.ts" />
     <Content Remove="wwwroot\ts\foo.ts" />
     <Content Remove="wwwroot\ts\main.ts" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.All" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.2" />
   </ItemGroup>
 
   <ItemGroup>
