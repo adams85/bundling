@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <DefaultNetCoreTargetFramework>netcoreapp3.0</DefaultNetCoreTargetFramework>
+  </PropertyGroup>
+</Project>
