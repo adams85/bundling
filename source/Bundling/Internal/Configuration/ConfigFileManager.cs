@@ -71,36 +71,36 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 
                 bundle.Transforms = outputConfig.ConfigurationHelper.SetDefaultTransforms(bundle.Transforms);
 
-                if (item.Minify.Any(kvp => "enabled".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase) && kvp.Value is bool boolValue && boolValue))
+                if (item.Minify != null && item.Minify.Any(kvp => "enabled".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase) && kvp.Value is bool boolValue && boolValue))
                     bundle.Transforms = outputConfig.ConfigurationHelper.EnableMinification(bundle.Transforms);
 
-                var m = item.InputFiles.Count;
-                for (var j = 0; j < m; j++)
-                {
-                    var inputFile = item.InputFiles[j];
-
-                    bool exclude;
-                    if (inputFile.StartsWith("!"))
+                if (item.InputFiles != null)
+                    for (int j = 0, m = item.InputFiles.Count; j < m; j++)
                     {
-                        inputFile = inputFile.Substring(1);
-                        exclude = true;
+                        var inputFile = item.InputFiles[j];
+
+                        bool exclude;
+                        if (inputFile.StartsWith("!"))
+                        {
+                            inputFile = inputFile.Substring(1);
+                            exclude = true;
+                        }
+                        else
+                            exclude = false;
+
+                        PathString inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
+                        extension = Path.GetExtension(inputPath);
+
+                        IBundleConfiguration inputConfig = _extensionMappers.Select(em => em.MapInput(extension)).FirstOrDefault(cfg => cfg != null);
+                        if (inputConfig == null)
+                            throw ErrorHelper.ExtensionNotRecognized(extension);
+
+                        var bundleSourceItem = new FileBundleSourceItem(inputPath, bundleSource) { Exclude = exclude };
+
+                        bundleSourceItem.ItemTransforms = inputConfig.ConfigurationHelper.SetDefaultItemTransforms(bundleSourceItem.ItemTransforms);
+
+                        bundleSource.Items.Add(bundleSourceItem);
                     }
-                    else
-                        exclude = false;
-
-                    PathString inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
-                    extension = Path.GetExtension(inputPath);
-
-                    IBundleConfiguration inputConfig = _extensionMappers.Select(em => em.MapInput(extension)).FirstOrDefault(cfg => cfg != null);
-                    if (inputConfig == null)
-                        throw ErrorHelper.ExtensionNotRecognized(extension);
-
-                    var bundleSourceItem = new FileBundleSourceItem(inputPath, bundleSource) { Exclude = exclude };
-
-                    bundleSourceItem.ItemTransforms = inputConfig.ConfigurationHelper.SetDefaultItemTransforms(bundleSourceItem.ItemTransforms);
-
-                    bundleSource.Items.Add(bundleSourceItem);
-                }
 
                 bundle.Sources.Add(bundleSource);
                 bundles.Add(bundle);

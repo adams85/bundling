@@ -36,8 +36,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public static T Deserialize<T>(in ReadOnlySpan<byte> data)
         {
-            var reader = new Utf8JsonReader(data);
-            return JsonSerializer.Deserialize<T>(ref reader, s_serializerOptions);
+            return JsonSerializer.Deserialize<T>(data, s_serializerOptions);
         }
     }
 }
