@@ -1,11 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <Target Name="BundleByCli" AfterTargets="Build" Condition="'$(DotNetBundlingBuild)' == 'true'">
-    <Message Text="Bundling.TargetPath=&lt;$(TargetPath)&gt;" />
+  <Target Name="DefineBundlingProjectMetadata">
+    <ItemGroup>
+      <BundlingProjectMetadata Include="AssemblyName=$(AssemblyName)" />
+      <BundlingProjectMetadata Include="OutputPath=$(OutputPath)" />
+      <BundlingProjectMetadata Include="ProjectAssetsFile=$(ProjectAssetsFile)" />
+      <BundlingProjectMetadata Include="ProjectDir=$(ProjectDir)" />
+      <BundlingProjectMetadata Include="RuntimeFrameworkVersion=$(RuntimeFrameworkVersion)" />
+      <BundlingProjectMetadata Include="TargetFileName=$(TargetFileName)" />
+      <BundlingProjectMetadata Include="TargetFrameworkMoniker=$(TargetFrameworkMoniker)" />
+    </ItemGroup>
   </Target>
 
-  <Target Name="BundleByBuild" AfterTargets="Build" Condition="'$(BundleOnBuild)' == 'true' AND '$(DotNetBundlingBuild)' != 'true'">
+  <Target Name="GetBundlingProjectMetadata" DependsOnTargets="DefineBundlingProjectMetadata" Condition="'$(TargetFramework)' != ''">
+    <Message Text="Bundling.%(BundlingProjectMetadata.Identity)" />
+  </Target>
+
+  <Target Name="BundleByBuild" AfterTargets="Build" DependsOnTargets="DefineBundlingProjectMetadata" Condition="'$(BundleOnBuild)' == 'true'">
     <PropertyGroup>
       <BundlingConfigSourcesOption Condition="'$(BundlingConfigSources)' != ''">-s &quot;$(BundlingConfigSources)&quot;</BundlingConfigSourcesOption>
       <BundlingConfigFileOption Condition="'$(BundlingConfigFile)' != ''">-f &quot;$(BundlingConfigFile)&quot;</BundlingConfigFileOption>
@@ -13,7 +24,11 @@
       <BundlingModeOption Condition="'$(BundlingMode)' == '' AND $(DefineConstants.Contains('DEBUG'))">-m Development</BundlingModeOption>
     </PropertyGroup>
 
-    <Exec Command="$(_DotNetHostExecutableName) bundle -p &quot;$(MSBuildProjectFullPath)&quot; --target-path &quot;$(TargetPath)&quot; $(BundlingConfigSourcesOption) $(BundlingConfigFileOption) $(BundlingModeOption)" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMsBuild="true" EchoOff="true" />
-  </Target>
+    <Exec Command="dotnet bundle -p &quot;meta:@(BundlingProjectMetadata)&quot; $(BundlingConfigSourcesOption) $(BundlingConfigFileOption) $(BundlingModeOption)" WorkingDirectory="$(MSBuildProjectDirectory)" ContinueOnError="True" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode"/>
+    </Exec>
 
+    <Warning Condition="'$(ErrorCode)' != '0'" Code="BUN0001"
+             Text="Bundling web assets failed. Please make sure you have installed Karambolo.AspNetCore.Bundling.Tools by 'dotnet tool install'. If you installed the tool locally, you may need to restore it by 'dotnet tool restore'. Check build output for more information." />
+  </Target>
 </Project>

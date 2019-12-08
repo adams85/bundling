@@ -1,18 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <AssemblyName>dotnet-bundle</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.Tools</RootNamespace>
-    <OutputType>exe</OutputType>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="3.0.0-preview7-27912-14" />
-  </ItemGroup>
 
 </Project>

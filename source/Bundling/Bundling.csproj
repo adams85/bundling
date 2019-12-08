@@ -10,15 +10,10 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <None Remove="Build\Karambolo.AspNetCore.Bundling.props" />
     <None Remove="Build\Karambolo.AspNetCore.Bundling.targets" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Build\Karambolo.AspNetCore.Bundling.props">
-      <PackagePath>\build\</PackagePath>
-      <Pack>true</Pack>
-    </Content>
     <Content Include="Build\Karambolo.AspNetCore.Bundling.targets">
       <Pack>true</Pack>
       <PackagePath>\build\</PackagePath>

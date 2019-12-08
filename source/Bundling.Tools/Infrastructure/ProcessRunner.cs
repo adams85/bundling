@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Karambolo.AspNetCore.Bundling.Tools.Infrastructure
 {
-    public class ProcessRunner
+    public partial class ProcessRunner
     {
         private readonly IReporter _reporter;
 

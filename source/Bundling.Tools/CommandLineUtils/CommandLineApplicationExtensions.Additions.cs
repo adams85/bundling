@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Linq;
-using Microsoft.Extensions.CommandLineUtils;
 
-namespace Karambolo.AspNetCore.Bundling.Tools.Infrastructure
+namespace Microsoft.DotNet.Cli.CommandLine
 {
     internal static partial class CommandLineApplicationExtensions
     {

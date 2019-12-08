@@ -171,11 +171,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             if (configuration is ConfigFileConfiguration)
                 SetupConfigFileConfiguration((ConfigFileConfiguration)(object)configuration, (string)settings["ConfigFilePath"], (string)settings["CompilationBasePath"]);
 
-            var projectFilePath = (string)settings["ProjectFilePath"];
+            var projectDirPath = (string)settings["ProjectDirPath"];
             var loggerAction = (Action<int, string>)settings["Logger"];
 
             // TODO: outputBasePath from CLI tools?
-            var outputBasePath = configuration.OutputBasePath ?? GetDefaultOutputBasePath(Path.GetDirectoryName(projectFilePath));
+            var outputBasePath = configuration.OutputBasePath ?? GetDefaultOutputBasePath(projectDirPath);
 
             var outputFileProvider = new PhysicalFileProvider(outputBasePath);
 
@@ -246,7 +246,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             var endTicks = Stopwatch.GetTimestamp();
 
             var elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
-            _logger.LogInformation("Bundle {PATH} was built in {ELAPSED}ms.", bundle.Path, elapsedMs);
+            _logger.LogInformation("Bundle '{PATH}' was built in {ELAPSED}ms.", bundle.Path, elapsedMs);
         }
 
         private async Task ProduceBundlesAsync(BundleCollection bundles, string appBasePath, BundlingContext bundlingContext, string outputBasePath, CancellationToken shutdownToken)
@@ -260,7 +260,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
                 using (var writer = new StreamWriter(outputFilePath, append: false, encoding: bundle.OutputEncoding))
                     await BuildBundleAsync(writer, bundle, appBasePath, bundlingContext, shutdownToken);
 
-                _logger.LogInformation("Bundle {PATH} was written to {FILEPATH}", bundle.Path, outputFilePath);
+                _logger.LogInformation("Bundle '{PATH}' was written to {FILEPATH}", bundle.Path, outputFilePath);
             }
         }
     }

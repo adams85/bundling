@@ -19,9 +19,6 @@
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Less\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Sass\Properties\AssemblyInfo.props" />
     <VersionPropsPath Include="$(SolutionPath)\Bundling.Tools\Properties\AssemblyInfo.props" />
-    <VersionPropsPath Include="$(SolutionPath)\Bundling\Build\Karambolo.AspNetCore.Bundling.props">
-      <PackageProps>true</PackageProps>
-    </VersionPropsPath>
   </ItemGroup>
 
   <Target Name="GetVersion" Condition="$(TagVersion) == '' Or $(Revision) == ''">
@@ -61,7 +58,7 @@
 
   <Target Name="Make" DependsOnTargets="RunTests;GetVersion">
     <!-- setting version -->
-    <UpdateVersion TagVersion="$(TagVersion)" Revision="$(Revision)" VersionPropsPath="%(VersionPropsPath.Identity)" PackageProps="%(VersionPropsPath.PackageProps)" />
+    <UpdateVersion TagVersion="$(TagVersion)" Revision="$(Revision)" VersionPropsPath="%(VersionPropsPath.Identity)" />
 
     <!-- create nuget package -->
     <MSBuild Projects="$(Solution)" Targets="Restore;Pack" Properties="Configuration=Release;Platform=Any CPU" />
@@ -85,7 +82,6 @@
       <TagVersion ParameterType="System.String" Required="true" />
       <Revision ParameterType="System.String" Required="true" />
       <VersionPropsPath ParameterType="System.String" Required="true" />
-      <PackageProps ParameterType="System.String" Required="false" />
     </ParameterGroup>
     <Task>
       <!--<Reference Include="" />-->
@@ -131,23 +127,13 @@ Action<string, string, MatchEvaluator> update = (path, regex, replacer) =>
     File.WriteAllText(path, fileContent);
 };
 
-if (Convert.ToBoolean(PackageProps))
-{
-    // updating Karambolo.AspNetCore.Bundling.props
-    update(VersionPropsPath,
-        @"(?<start><DotNetCliToolReference Include=""Karambolo.AspNetCore.Bundling.Tools"" Version="")([^""]+)(?<end>""\s.*/>)",
-        m => m.Groups["start"] + nugetVersion + m.Groups["end"]);
-}
-else
-{
-    // updating AssemblyInfo.props
-    update(VersionPropsPath,
-        @"^(?<start>\s*<(?<tag>Version|AssemblyVersion|FileVersion)>).+(?<end></\k<tag>>\s*)$",
-        m => m.Groups["start"] + (
-          m.Groups["tag"].Value == "AssemblyVersion" ? assemblyVersion :
-          m.Groups["tag"].Value == "FileVersion" ? fileVersion :
-          nugetVersion) + m.Groups["end"]);
-}
+// updating AssemblyInfo.props
+update(VersionPropsPath,
+    @"^(?<start>\s*<(?<tag>Version|AssemblyVersion|FileVersion)>).+(?<end></\k<tag>>\s*)$",
+    m => m.Groups["start"] + (
+      m.Groups["tag"].Value == "AssemblyVersion" ? assemblyVersion :
+      m.Groups["tag"].Value == "FileVersion" ? fileVersion :
+      nugetVersion) + m.Groups["end"]);
 ]]>
       </Code>
     </Task>

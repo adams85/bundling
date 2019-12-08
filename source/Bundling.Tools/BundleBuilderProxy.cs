@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Tools.Infrastructure;
@@ -13,25 +15,25 @@ namespace Karambolo.AspNetCore.Bundling.Tools
     {
         public const string BundlingAssemblyName = "Karambolo.AspNetCore.Bundling";
 
-        private readonly AssemblyLoader _assemblyLoader;
+        private readonly AssemblyLoadContext _assemblyLoadContext;
         private readonly Type _bundlingConfigurationType;
         private readonly Type _configFileConfigurationType;
         private readonly MethodInfo _processMethodDefinition;
         private readonly IReporter _reporter;
 
-        public BundleBuilderProxy(AssemblyLoader assemblyLoader, IReporter reporter)
+        public BundleBuilderProxy(AssemblyLoadContext assemblyLoadContext, IReporter reporter)
         {
-            if (assemblyLoader == null)
-                throw new ArgumentNullException(nameof(assemblyLoader));
+            if (assemblyLoadContext == null)
+                throw new ArgumentNullException(nameof(assemblyLoadContext));
 
             if (reporter == null)
                 throw new ArgumentNullException(nameof(reporter));
 
-            _assemblyLoader = assemblyLoader;
+            _assemblyLoadContext = assemblyLoadContext;
             _reporter = reporter;
 
             Assembly bundlingAssembly;
-            try { bundlingAssembly = assemblyLoader.LoadFromAssemblyName(new AssemblyName(BundlingAssemblyName)); }
+            try { bundlingAssembly = assemblyLoadContext.LoadFromAssemblyName(new AssemblyName(BundlingAssemblyName)); }
             catch (Exception ex) { throw new InvalidOperationException($"Failed to load the {BundlingAssemblyName} assembly.", ex); }
 
             Type bundleBuilderClass;
@@ -50,7 +52,7 @@ namespace Karambolo.AspNetCore.Bundling.Tools
 
         private void ScanAssemblyForConfigurations(List<Type> configurationTypes, string assemblyPath)
         {
-            Assembly assembly = _assemblyLoader.LoadFromAssemblyPath(assemblyPath);
+            Assembly assembly = _assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
 
             IEnumerable<Type> types = assembly.GetTypes()
                 .Where(type =>
@@ -87,16 +89,27 @@ namespace Karambolo.AspNetCore.Bundling.Tools
 
             _reporter.Output($"Found {configurationTypes.Count} bundling configuration(s).");
 
-            // TODO: parallelize?
-            for (int i = 0, n = configurationTypes.Count; i < n; i++)
+            if (configurationTypes.Count > 0)
             {
-                Type configurationType = configurationTypes[i];
+                var startTicks = Stopwatch.GetTimestamp();
 
-                _reporter.Output($"{Environment.NewLine}*** {(configurationType == _configFileConfigurationType ? configFilePath : configurationType)} ***");
+                // TODO: parallelize?
+                for (int i = 0, n = configurationTypes.Count; i < n; i++)
+                {
+                    Type configurationType = configurationTypes[i];
 
-                await ProcessConfigurationAsync(configurationType, settings, cancellationToken);
+                    _reporter.Output(string.Empty);
+                    _reporter.Output($"Processing configuration '{(configurationType == _configFileConfigurationType ? configFilePath : configurationType)}'...");
 
-                _reporter.Output("*** DONE ***");
+                    await ProcessConfigurationAsync(configurationType, settings, cancellationToken);
+                }
+
+                var endTicks = Stopwatch.GetTimestamp();
+
+                var elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
+
+                _reporter.Output(string.Empty);
+                _reporter.Output($"Finished bundling in {elapsedMs}ms.");
             }
         }
     }

@@ -19,8 +19,8 @@ IF %ERRORLEVEL% NEQ 0 goto:eof
 dotnet nuget push Karambolo.AspNetCore.Bundling.Sass.%PKGVER%.nupkg -k %APIKEY% -s %SOURCE%
 IF %ERRORLEVEL% NEQ 0 goto:eof
 
-dotnet nuget push Karambolo.AspNetCore.Bundling.Tools.%PKGVER%.nupkg -k %APIKEY% -s %SOURCE%
+dotnet nuget push Karambolo.AspNetCore.Bundling.WebMarkupMin.%PKGVER%.nupkg -k %APIKEY% -s %SOURCE%
 IF %ERRORLEVEL% NEQ 0 goto:eof
 
-dotnet nuget push Karambolo.AspNetCore.Bundling.WebMarkupMin.%PKGVER%.nupkg -k %APIKEY% -s %SOURCE%
+dotnet nuget push dotnet-bundlingtools.%PKGVER%.nupkg -k %APIKEY% -s %SOURCE%
 IF %ERRORLEVEL% NEQ 0 goto:eof
