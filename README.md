@@ -1,8 +1,12 @@
+| :mega: Important notices |
+|--------------|
+| If you use the design-time features of the library, please note that version 3.0 switches to the Global / Local .NET Core CLI extensibility model. See the [documentation](#design-time-mode) for further information. |
+
 # Karambolo.AspNetCore.Bundling
 
-This library can be used to optimize and bundle web assets of ASP.NET Core 2 applications. Primarily, it was developed as a .NET Core replacement for the *System.Web.Optimization* library of classic ASP.NET, which provides these features at run-time. However, starting with version 2.0, *webpack*-like design-time usage mode is also supported in the form of a .NET Core CLI extension tool.
+This library can be used to optimize and bundle web assets of ASP.NET Core 2+ applications. Primarily, it was developed as a .NET Core replacement for the *System.Web.Optimization* library of classic ASP.NET, which provides these features at run-time. However, starting with version 2.0, *webpack*-like design-time usage mode is also supported in the form of a .NET Core CLI extension tool.
 
-[![NuGet Release](https://img.shields.io/nuget/v/Karambolo.AspNetCore.Bundling.svg)](https://www.nuget.org/packages/Karambolo.AspNetCore.Bundling/) [![Join the chat at https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby](https://badges.gitter.im/Karambolo-AspNetCore-Bundling/Lobby.svg)](https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![NuGet Release](https://img.shields.io/nuget/v/Karambolo.AspNetCore.Bundling.svg)](https://www.nuget.org/packages/Karambolo.AspNetCore.Bundling/)
 
 ### Main features
 - **CSS minification and bundling** including support for CSS pre-processors:
@@ -46,27 +50,27 @@ This library can be used to optimize and bundle web assets of ASP.NET Core 2 app
 
 The *Karambolo.AspNetCore.Bundling* package contains the core components only, so you need to install a package that provides an actual implementation. You can choose between implementations using [NUglify](https://github.com/xoofx/NUglify) and [WebMarkupMin](https://github.com/Taritsyn/WebMarkupMin) currently.
 
-    Install-Package Karambolo.AspNetCore.Bundling.NUglify
+    dotnet add package Karambolo.AspNetCore.Bundling.NUglify
 
 or
 
-    Install-Package Karambolo.AspNetCore.Bundling.WebMarkupMin
+    dotnet add package Karambolo.AspNetCore.Bundling.WebMarkupMin
 
 If you want to use CSS pre-proccessor features, you will also need one of the following packages:
 
 - LESS
 
-      Install-Package Karambolo.AspNetCore.Bundling.Less
+      dotnet add package Karambolo.AspNetCore.Bundling.Less
 
 - SASS/SCSS
 
-      Install-Package Karambolo.AspNetCore.Bundling.Sass
+      dotnet add package Karambolo.AspNetCore.Bundling.Sass
 
-  The current implementation uses *LibSassHost* under the hood, which is a wrapper around [LibSass](https://sass-lang.com/libsass), an unmanaged library written in C/C++. Therefore you need to install an additional NuGet package which contains this native dependency compiled to your target platform. E.g. on Windows x64 systems: `Install-Package LibSassHost.Native.win-x64`. For further details refer to the [documentation of LibSassHost](https://github.com/Taritsyn/LibSassHost#installation).
+  The current implementation uses *LibSassHost* under the hood, which is a wrapper around [LibSass](https://sass-lang.com/libsass), an unmanaged library written in C/C++. Therefore you need to install an additional NuGet package which contains this native dependency compiled to your target platform. E.g. on Windows x64 systems: `dotnet add package LibSassHost.Native.win-x64`. For further details refer to the [documentation of LibSassHost](https://github.com/Taritsyn/LibSassHost#installation).
 
 Finally, if you want to bundle ES6 modules, you need to install an additional package:
 
-    Install-Package Karambolo.AspNetCore.Bundling.EcmaScript
+    dotnet add package Karambolo.AspNetCore.Bundling.EcmaScript
 
  ### Run-time mode
 
@@ -185,9 +189,21 @@ Starting with version 2.0, it's possible to pre-build bundles at design-time. Th
 
 Just like in the case of run-time bundling, install the required NuGet packages first. On top of that you need to **make sure that the core library is referenced** as well:
 
-    Install-Package Karambolo.AspNetCore.Bundling
+    dotnet add package Karambolo.AspNetCore.Bundling
 
-This package contains some files which are necessary to extend the build process and make the design-time method work.
+(This package contains some files which are necessary to extend the build process and make the design-time method work.)
+
+Prior to version 3.0 the step above automatically enabled the .NET Core CLI extension `dotnet bundle` by adding the necessary [DotNetCliToolReference](https://docs.microsoft.com/en-us/dotnet/core/tools/extensibility) to your project. However, [*DotNetCliToolReference* is more or less obsolete now](https://github.com/dotnet/sdk/issues/3115), so version 3.0 swithes to [the newer approach introduced in NET Core 2.1](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
+
+Thus, **from version 3.0 on, you also need to install the .Net Core CLI extension manually**. In return, you have multiple options to choose from:
+
+* You can make the tool globally available on your development machine.
+       dotnet tool install -g dotnet-bundlingtools
+* You can install the tool into a specific directory.
+       dotnet tool install --tool-path .tools dotnet-bundlingtools
+* You can make the tool available in your project only. (Please note that [Local Tools](https://stu.dev/dotnet-core-3-local-tools/) are available since .NET Core 3 only.)
+       dotnet new tool-manifest
+       dotnet tool install dotnet-bundlingtools
 
 After installing the necessary components, check if everything has been set up correctly: issue the `dotnet bundle --version` command in your project folder.
 
@@ -288,7 +304,7 @@ Web assets are not monitored by default, so you need to add something like this 
 
 (For the exact configuration and capabilities of the *watch* tool, please refer to [its official documentation](https://docs.microsoft.com/en-us/aspnet/core/tutorials/dotnet-watch).)
 
-Then you can start monitoring by issuing the `dotnet watch bundle` command in the project folder.
+Then you can start monitoring by issuing the `dotnet watch bundle --no-build` command in the project folder.
 
 ### Reference
 
