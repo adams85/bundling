@@ -198,12 +198,17 @@ Prior to version 3.0 the step above automatically enabled the .NET Core CLI exte
 Thus, **from version 3.0 on, you also need to install the .Net Core CLI extension manually**. In return, you have multiple options to choose from:
 
 * You can make the tool globally available on your development machine.
-       dotnet tool install -g dotnet-bundlingtools
+
+      dotnet tool install -g dotnet-bundlingtools
+       
 * You can install the tool into a specific directory.
-       dotnet tool install --tool-path .tools dotnet-bundlingtools
+
+      dotnet tool install --tool-path .tools dotnet-bundlingtools
+       
 * You can make the tool available in your project only. (Please note that [Local Tools](https://stu.dev/dotnet-core-3-local-tools/) are available since .NET Core 3 only.)
-       dotnet new tool-manifest
-       dotnet tool install dotnet-bundlingtools
+
+      dotnet new tool-manifest
+      dotnet tool install dotnet-bundlingtools
 
 After installing the necessary components, check if everything has been set up correctly: issue the `dotnet bundle --version` command in your project folder.
 
