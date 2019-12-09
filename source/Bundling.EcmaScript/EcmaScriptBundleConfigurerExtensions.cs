@@ -2,12 +2,18 @@
 using Karambolo.AspNetCore.Bundling.EcmaScript;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Js;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.AspNetCore.Builder
 {
+#if NETSTANDARD2_0
+    using Microsoft.AspNetCore.Hosting;
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+#else
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Hosting;
+#endif
+
     public static class EcmaScriptBundleConfigurerExtensions
     {
         public static JsBundleConfigurer EnableEs6ModuleBundling(this JsBundleConfigurer configurer, Action<ModuleBundlerOptions> configure = null)

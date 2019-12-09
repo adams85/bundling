@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
@@ -10,6 +9,12 @@ using Microsoft.Net.Http.Headers;
 
 namespace Karambolo.AspNetCore.Bundling
 {
+#if NETSTANDARD2_0
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+#else
+    using Microsoft.AspNetCore.Hosting;
+#endif
+
     public class BundlingMiddleware
     {
         private readonly RequestDelegate _next;

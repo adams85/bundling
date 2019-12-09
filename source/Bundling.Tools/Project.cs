@@ -133,7 +133,7 @@ namespace Karambolo.AspNetCore.Bundling.Tools
             if (exitCode != 0)
             {
                 DumpMSBuildOutput(capture);
-                throw new CommandException("Unable to retrieve project metadata. Please ensure it's an MSBuild-based .NET Core project which references the " + BundleBuilderProxy.BundlingAssemblyName + " NuGet package explicitly. " +
+                throw new CommandException("Unable to retrieve project metadata. Please ensure it's an MSBuild-based .NET Core project which references " + BundleBuilderProxy.BundlingAssemblyName + " 3.0.0 or newer explicitly. " +
                     "If it's a multi-targeted project, you need to select one of the target frameworks by the '--framework' option.");
             }
 

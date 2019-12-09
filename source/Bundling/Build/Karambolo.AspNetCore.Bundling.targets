@@ -29,6 +29,6 @@
     </Exec>
 
     <Warning Condition="'$(ErrorCode)' != '0'" Code="BUN0001"
-             Text="Bundling web assets failed. Please make sure you have installed Karambolo.AspNetCore.Bundling.Tools by 'dotnet tool install'. If you installed the tool locally, you may need to restore it by 'dotnet tool restore'. Check build output for more information." />
+             Text="Bundling web assets failed. Please make sure you have installed dotnet-bundlingtools by 'dotnet tool install'. If you installed the tool locally, you may need to restore it by 'dotnet tool restore'. Check build output for more information." />
   </Target>
 </Project>

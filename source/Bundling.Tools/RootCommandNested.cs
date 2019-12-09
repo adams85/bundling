@@ -57,8 +57,6 @@ namespace Karambolo.AspNetCore.Bundling.Tools
             var settings = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
             {
                 ["ProjectDirPath"] = ProjectDirPath,
-                // Kept for backward compatibility.
-                ["ProjectFilePath"] = Path.Combine(ProjectDirPath, "unused.proj"),
                 ["CompilationBasePath"] = compilationBasePath,
                 ["Mode"] = BundlingMode.ToString(),
                 ["Logger"] = new Action<int, string>(Log)

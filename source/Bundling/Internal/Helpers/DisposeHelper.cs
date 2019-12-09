@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Microsoft.Extensions.Hosting;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
+#if NETSTANDARD2_0
+    using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
+#else
+    using Microsoft.Extensions.Hosting;
+#endif
+
     internal class NullDisposable : IDisposable
     {
         public static readonly NullDisposable Instance = new NullDisposable();

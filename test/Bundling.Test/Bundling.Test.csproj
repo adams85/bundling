@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(DefaultNetCoreTargetFramework)</TargetFramework>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);netcoreapp2.1</TargetFrameworks>
     <AssemblyName>Karambolo.AspNetCore.Bundling.Test</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.Test</RootNamespace>
     <IsPackable>false</IsPackable>

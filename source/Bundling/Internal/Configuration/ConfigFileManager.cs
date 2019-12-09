@@ -9,7 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 {
     public interface IConfigFileManager
     {
-        void Load(BundleCollection bundles, in ReadOnlySpan<byte> fileContent, ConfigFilePathMapper pathMapper = null);
+        void Load(BundleCollection bundles, TextReader reader, ConfigFilePathMapper pathMapper = null);
     }
 
     public delegate PathString ConfigFilePathMapper(string filePath, PathString pathPrefix, bool output);
@@ -38,10 +38,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
             return result;
         }
 
-        public void Load(BundleCollection bundles, in ReadOnlySpan<byte> fileContent, ConfigFilePathMapper pathMapper)
+        public void Load(BundleCollection bundles, TextReader reader, ConfigFilePathMapper pathMapper)
         {
             if (bundles == null)
                 throw new ArgumentNullException(nameof(bundles));
+
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
 
             if (bundles.SourceFileProvider == null)
                 throw ErrorHelper.PropertyCannotBeNull(nameof(bundles), nameof(bundles.SourceFileProvider));
@@ -49,7 +52,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
             if (pathMapper == null)
                 pathMapper = DefaultMapPath;
 
-            BundleData[] items = SerializationHelper.Deserialize<BundleData[]>(fileContent);
+            BundleData[] items = SerializationHelper.Deserialize<BundleData[]>(reader);
 
             var n = items.Length;
             for (var i = 0; i < n; i++)
@@ -71,7 +74,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 
                 bundle.Transforms = outputConfig.ConfigurationHelper.SetDefaultTransforms(bundle.Transforms);
 
-                if (item.Minify != null && item.Minify.Any(kvp => "enabled".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase) && kvp.Value is bool boolValue && boolValue))
+                if (item.Minify == null || 
+                    !item.Minify.Any(kvp => "enabled".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Value is bool boolValue && boolValue))
                     bundle.Transforms = outputConfig.ConfigurationHelper.EnableMinification(bundle.Transforms);
 
                 if (item.InputFiles != null)

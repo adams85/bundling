@@ -69,7 +69,7 @@ namespace Karambolo.AspNetCore.Bundling.Tools
 
             var targetDir = Path.GetFullPath(Path.Combine(project.ProjectDir, project.OutputPath));
             var targetPath = Path.Combine(targetDir, project.TargetFileName);
-            
+
             var depsFile = Path.Combine(targetDir, project.AssemblyName + ".deps.json");
             var runtimeConfig = Path.Combine(targetDir, project.AssemblyName + ".runtimeconfig.json");
             var projectAssetsFile = project.ProjectAssetsFile;

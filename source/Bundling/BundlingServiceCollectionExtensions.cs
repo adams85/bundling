@@ -8,16 +8,23 @@ using Karambolo.AspNetCore.Bundling.Internal.Configuration;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Versioning;
 using Karambolo.AspNetCore.Bundling.Js;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+#if NETSTANDARD2_0
+    using Microsoft.AspNetCore.Hosting;
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+    using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
+#else
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Hosting;
+#endif
+
     public static class BundlingServiceCollectionExtensions
     {
         internal static BundlingConfigurer AddBundlingCore(this IServiceCollection services, Action<BundleGlobalOptions, IServiceProvider> configure)

@@ -1,8 +1,13 @@
 ﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 {
+#if NETSTANDARD2_0
+    using JsonPropertyNameAttribute = Newtonsoft.Json.JsonPropertyAttribute;
+#else
+    using System.Text.Json.Serialization;
+#endif
+
     public class BundleData
     {
         [JsonPropertyName("outputFileName")]

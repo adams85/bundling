@@ -9,15 +9,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 {
+#if NETSTANDARD2_0
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+    using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
+#else
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Hosting;
+#endif
+
     internal class BundleBuilder
     {
         private class HostingEnvironment : IWebHostEnvironment
@@ -168,10 +174,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         {
             var configuration = new TConfiguration();
 
-            if (configuration is ConfigFileConfiguration)
-                SetupConfigFileConfiguration((ConfigFileConfiguration)(object)configuration, (string)settings["ConfigFilePath"], (string)settings["CompilationBasePath"]);
+            if (configuration is ConfigFileConfiguration configFileConfiguration)
+                SetupConfigFileConfiguration(configFileConfiguration, (string)settings["ConfigFilePath"], (string)settings["CompilationBasePath"]);
 
-            var projectDirPath = (string)settings["ProjectDirPath"];
+            var projectDirPath = settings.TryGetValue("ProjectDirPath", out var valueObj) ?
+                (string)valueObj :
+                (string)settings["ProjectFilePath"]; // for backward compatibility
+
             var loggerAction = (Action<int, string>)settings["Logger"];
 
             // TODO: outputBasePath from CLI tools?

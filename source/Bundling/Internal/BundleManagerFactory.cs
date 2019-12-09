@@ -1,12 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
+#if NETSTANDARD2_0
+    using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
+#else
+    using Microsoft.Extensions.Hosting;
+#endif
+
     public interface IBundleManagerFactory
     {
         IBundleManager Create(BundleCollection bundles, IBundlingContext bundlingContext);

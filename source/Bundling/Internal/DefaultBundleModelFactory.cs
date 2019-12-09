@@ -2,10 +2,15 @@
 using System.Collections.Generic;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Models;
-using Microsoft.Extensions.Hosting;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
+#if NETSTANDARD2_0
+    using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
+#else
+    using Microsoft.Extensions.Hosting;
+#endif
+
     public class DefaultBundleModelFactory : IBundleModelFactory
     {
         private readonly Lazy<IEnumerable<IBundleModelFactory>> _modelFactories;

@@ -1,13 +1,31 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
+#if NETSTANDARD2_0
+    using Newtonsoft.Json;
+#else
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
+#endif
+
     internal static class SerializationHelper
     {
+#if NETSTANDARD2_0
+        private static readonly JsonSerializer s_serializer = JsonSerializer.CreateDefault();
+
+        public static void Serialize<T>(TextWriter writer, T obj)
+        {
+            s_serializer.Serialize(writer, obj, typeof(T));
+        }
+
+        public static T Deserialize<T>(TextReader reader)
+        {
+            return (T)s_serializer.Deserialize(reader, typeof(T));
+        }
+#else
         private sealed class JsonConverterTimeSpan : JsonConverter<TimeSpan>
         {
             public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -28,15 +46,17 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             ReadCommentHandling = JsonCommentHandling.Skip
         };
 
-        public static void Serialize<T>(Stream stream, T obj)
+        public static void Serialize<T>(TextWriter writer, T obj)
         {
-            using (var writer = new Utf8JsonWriter(stream))
-                JsonSerializer.Serialize(writer, obj, s_serializerOptions);
+            var json = JsonSerializer.Serialize(obj, s_serializerOptions);
+            writer.Write(json);
         }
 
-        public static T Deserialize<T>(in ReadOnlySpan<byte> data)
+        public static T Deserialize<T>(TextReader reader)
         {
-            return JsonSerializer.Deserialize<T>(data, s_serializerOptions);
+            var json = reader.ReadToEnd();
+            return JsonSerializer.Deserialize<T>(json, s_serializerOptions);
         }
+#endif
     }
 }

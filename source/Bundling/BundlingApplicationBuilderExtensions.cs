@@ -7,7 +7,6 @@ using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Configuration;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Js;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -15,6 +14,12 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Builder
 {
+#if NETSTANDARD2_0
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+#else
+    using Microsoft.AspNetCore.Hosting;
+#endif
+
     public static class BundlingApplicationBuilderExtensions
     {
         public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, Action<BundleCollectionConfigurer> configureBundles = null)
@@ -66,14 +71,14 @@ namespace Microsoft.AspNetCore.Builder
             return builder.UseBundling(new BundlingOptions(options, configuration), configuration.Configure);
         }
 
-        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, in ReadOnlySpan<byte> fileContent,
+        public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, TextReader reader,
             ConfigFilePathMapper pathMapper = null)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
             IConfigFileManager configFileManager = configurer.AppServices.GetRequiredService<IConfigFileManager>();
-            configFileManager.Load(configurer.Bundles, fileContent, pathMapper);
+            configFileManager.Load(configurer.Bundles, reader, pathMapper);
 
             return configurer;
         }
@@ -87,13 +92,9 @@ namespace Microsoft.AspNetCore.Builder
             if (fileInfo == null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
-            string fileContent;
-
             using (Stream stream = fileInfo.CreateReadStream())
             using (var reader = new StreamReader(stream))
-                fileContent = reader.ReadToEnd();
-
-            return configurer.LoadFromConfigFile(Encoding.UTF8.GetBytes(fileContent), pathMapper);
+                return configurer.LoadFromConfigFile(reader, pathMapper);
         }
 
         public static BundleCollectionConfigurer LoadFromConfigFile(this BundleCollectionConfigurer configurer, string path, IFileProvider fileProvider,

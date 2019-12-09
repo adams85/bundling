@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Internal;
@@ -12,6 +11,12 @@ using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
+#if NETSTANDARD2_0
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+#else
+    using Microsoft.AspNetCore.Hosting;
+#endif
+
     public class FileSystemBundleCacheOptions
     {
         public PhysicalFileProvider FileProvider { get; set; }
@@ -205,7 +210,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     await fs.CopyToAsync(ms, CopyBufferSize, token);
 
-                return SerializationHelper.Deserialize<StoreItemMetadata>(ms.GetBuffer().AsSpan(0, (int)ms.Length));
+                ms.Position = 0;
+                return SerializationHelper.Deserialize<StoreItemMetadata>(new StreamReader(ms));
             }
         }
 
@@ -240,7 +246,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         {
             using (var ms = new MemoryStream())
             {
-                SerializationHelper.Serialize(ms, metadata);
+                var writer = new StreamWriter(ms);
+                SerializationHelper.Serialize(writer, metadata);
+                writer.Flush();
 
                 ms.Position = 0;
                 using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Create, FileAccess.Write, FileShare.Read))
@@ -431,7 +439,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 await RemoveAllItemsAsync(managerId, bundlePath, token);
         }
 
-        #region Expiration scanning
+#region Expiration scanning
 
         private readonly AsyncKeyedLock<object> _monitorLock;
         private readonly Func<Task<IDisposable>> _acquireMonitorWriteLock;
@@ -481,6 +489,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             }
         }
 
-        #endregion
+#endregion
     }
 }
