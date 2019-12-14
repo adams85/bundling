@@ -15,7 +15,11 @@ namespace Karambolo.AspNetCore.Bundling.Tools
 
             using (var cts = new CancellationTokenSource())
             {
-                Console.CancelKeyPress += (s, e) => cts.Cancel();
+                Console.CancelKeyPress += (s, e) =>
+                {
+                    e.Cancel = true;
+                    cts.Cancel();
+                };
 
                 var app = new CancelableCommandLineApplication(throwOnUnexpectedArg: !isNestedRun, cancellationToken: cts.Token) { Name = "dotnet bundle" };
 
@@ -32,6 +36,8 @@ namespace Karambolo.AspNetCore.Bundling.Tools
                 }
                 catch (OperationCanceledException)
                 {
+                    Reporter.WriteWarning("Command was canceled.");
+
                     // swallow when only exception is the CTRL+C forced an exit
                     return 0;
                 }

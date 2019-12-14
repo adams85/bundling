@@ -92,6 +92,7 @@ namespace Karambolo.AspNetCore.Bundling.Tools.Infrastructure
                 FileName = fileName,
                 Arguments = arguments,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true, // added by @adams85: swallow error output
                 UseShellExecute = false
             };
 
