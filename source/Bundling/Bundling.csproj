@@ -25,7 +25,6 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.11.0" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.TagHelpers" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" />

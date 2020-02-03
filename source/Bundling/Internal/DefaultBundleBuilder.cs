@@ -1,34 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class DefaultBundleBuilder : IBundleBuilder
     {
-        protected virtual void CreateItemTransformPipeline(IBundleBuilderContext context, out ITargetBlock<IBundleSourceBuildItem> input, out ISourceBlock<IBundleItemTransformContext> output)
-        {
-            var transformBlock = new TransformBlock<IBundleSourceBuildItem, IBundleItemTransformContext>(
-                it => ApplyItemTransformsAsync(it.ItemTransformContext, it.ItemTransforms),
-                new ExecutionDataflowBlockOptions
-                {
-                    CancellationToken = context.CancellationToken,
-                    EnsureOrdered = true,
-                    MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
-                    SingleProducerConstrained = true,
-                });
-
-            input = transformBlock;
-            output = transformBlock;
-        }
-
         protected virtual async Task<IBundleItemTransformContext> ApplyItemTransformsAsync(IBundleItemTransformContext context, IReadOnlyList<IBundleItemTransform> transforms)
         {
             if (transforms != null)
-            {
-                var n = transforms.Count;
-                for (var i = 0; i < n; i++)
+                for (int i = 0, n = transforms.Count; i < n; i++)
                 {
                     context.BuildContext.CancellationToken.ThrowIfCancellationRequested();
 
@@ -36,7 +18,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                     await transform.TransformAsync(context);
                     transform.Transform(context);
                 }
-            }
 
             return context;
         }
@@ -47,6 +28,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 for (int i = 0, n = transforms.Count; i < n; i++)
                     if (transforms[i] is IAggregatorBundleTransform aggregatorTransform)
                     {
+                        context.BuildContext.CancellationToken.ThrowIfCancellationRequested();
+
                         await aggregatorTransform.AggregateAsync(context);
                         if (context.Content != null)
                             return;
@@ -55,6 +38,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                         if (context.Content != null)
                             return;
                     }
+
+            context.BuildContext.CancellationToken.ThrowIfCancellationRequested();
 
             // falling back to simple concatenation when aggregation was not handled by the transforms
             context.Content = string.Join(context.BuildContext.Bundle.ConcatenationToken, context.TransformedItemContexts.Select(itemContext => itemContext.Content));
@@ -77,42 +62,34 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public virtual async Task BuildAsync(IBundleBuilderContext context)
         {
-            // building items
+            // applying transforms to items
 
-            CreateItemTransformPipeline(context, out ITargetBlock<IBundleSourceBuildItem> input, out ISourceBlock<IBundleItemTransformContext> output);
+            var itemTransformTasks = new ConcurrentQueue<Task<IBundleItemTransformContext>>();
 
-            // consumer
-            async Task<List<IBundleItemTransformContext>> ConsumeAsync()
-            {
-                var itemContexts = new List<IBundleItemTransformContext>();
-
-                while (await output.OutputAvailableAsync(context.CancellationToken))
-                    itemContexts.Add(output.Receive());
-
-                return itemContexts;
-            };
-
-            Task<List<IBundleItemTransformContext>> consumeTask = ConsumeAsync();
-
-            // producer
             var n = context.Bundle.Sources.Length;
             for (var i = 0; i < n; i++)
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 IBundleSourceModel source = context.Bundle.Sources[i];
-                await source.ProvideBuildItemsAsync(context, it => input.Post(it));
+                await source.ProvideBuildItemsAsync(context, it => itemTransformTasks
+                    .Enqueue(Task.Run(() => ApplyItemTransformsAsync(it.ItemTransformContext, it.ItemTransforms), it.ItemTransformContext.BuildContext.CancellationToken)));
             }
-            input.Complete();
 
-            // building result
+            await Task.WhenAll(itemTransformTasks).ConfigureAwait(false);
+
+            // aggregating items
 
             var transformContext = new BundleTransformContext(context)
             {
-                TransformedItemContexts = await consumeTask
+                TransformedItemContexts = itemTransformTasks.Select(task => task.GetAwaiter().GetResult()).ToArray()
             };
 
+            itemTransformTasks = null;
+
             await AggregateAsync(transformContext, context.Bundle.Transforms);
+
+            // applying transforms to bundle
 
             transformContext.TransformedItemContexts = null;
 
