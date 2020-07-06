@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
@@ -38,10 +39,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public bool Equals(AbstractionFile other)
         {
-            return
-                other != null ?
-                FileProvider == other.FileProvider && PathComparer == other.PathComparer && PathComparer.Equals(FilePath, other.FilePath) :
-                false;
+            return other != null && 
+                FileProvider == other.FileProvider && 
+                PathComparer == other.PathComparer && 
+                PathComparer.Equals(FilePath, other.FilePath);
         }
 
         public bool Equals(IChangeSource other)
@@ -56,10 +57,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public override int GetHashCode()
         {
-            return
-                FileProvider.GetHashCode() ^
-                (FilePath != null ? PathComparer.GetHashCode(FilePath) : 0) ^
-                PathComparer.GetHashCode();
+            int hashCode = -1540411083;
+            hashCode = hashCode * -1521134295 + FileProvider.GetHashCode();
+            hashCode = hashCode * -1521134295 + (FilePath != null ? PathComparer.GetHashCode(FilePath) : 0);
+            hashCode = hashCode * -1521134295 + PathComparer.GetHashCode();
+            return hashCode;
         }
     }
 }

@@ -25,10 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public bool Equals(IChangeSource other)
         {
-            return
-                other is FactoryChangeSource otherSource ?
-                _factory == otherSource._factory :
-                false;
+            return other is FactoryChangeSource otherSource && _factory == otherSource._factory;
         }
 
         public override bool Equals(object obj)

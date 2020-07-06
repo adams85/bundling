@@ -26,12 +26,16 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public override bool Equals(object obj)
         {
-            return obj is BundleCacheKey other ? Equals(other) : false;
+            return obj is BundleCacheKey other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            return ManagerId.GetHashCode() ^ Path.GetHashCode() ^ Query.GetHashCode();
+            int hashCode = -2072340198;
+            hashCode = hashCode * -1521134295 + ManagerId.GetHashCode();
+            hashCode = hashCode * -1521134295 + Path.GetHashCode();
+            hashCode = hashCode * -1521134295 + Query.GetHashCode();
+            return hashCode;
         }
     }
 
