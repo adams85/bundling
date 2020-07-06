@@ -43,16 +43,24 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private void ExtractVariableExports(ModuleData module, ObjectPattern objectPattern)
         {
             for (int i = 0, n = objectPattern.Properties.Count; i < n; i++)
-                switch (objectPattern.Properties[i].Value)
+                switch (objectPattern.Properties[i])
                 {
-                    case Identifier identifier:
-                        module.ExportsRaw.Add(new NamedExportData(identifier.Name));
+                    case Property property:
+                        switch (property.Value)
+                        {
+                            case Identifier identifier:
+                                module.ExportsRaw.Add(new NamedExportData(identifier.Name));
+                                break;
+                            case ArrayPattern nestedArrayPattern:
+                                ExtractVariableExports(module, nestedArrayPattern);
+                                break;
+                            case ObjectPattern nestedObjectPattern:
+                                ExtractVariableExports(module, nestedObjectPattern);
+                                break;
+                        }
                         break;
-                    case ArrayPattern nestedArrayPattern:
-                        ExtractVariableExports(module, nestedArrayPattern);
-                        break;
-                    case ObjectPattern nestedObjectPattern:
-                        ExtractVariableExports(module, nestedObjectPattern);
+                    case RestElement restElement:
+                        ExtractVariableExports(module, restElement);
                         break;
                 }
         }

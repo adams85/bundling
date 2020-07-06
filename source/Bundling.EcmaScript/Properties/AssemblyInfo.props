@@ -5,7 +5,7 @@
     <Authors>Adam Simon</Authors>
     <Company>Karambolo</Company>
     <Product>Karambolo.AspNetCore.Bundling</Product>
-    <Description>ES6 (ECMAScript 2015) bundling features for the Karambolo.AspNetCore.Bundling library.</Description>
+    <Description>ES6 (ECMAScript 2015) module bundling features for the Karambolo.AspNetCore.Bundling library.</Description>
     <Copyright>© 2020 Adam Simon</Copyright>
     <AssemblyVersion>1.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>

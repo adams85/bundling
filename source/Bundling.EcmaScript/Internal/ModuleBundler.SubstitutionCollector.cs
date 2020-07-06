@@ -121,6 +121,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 Visit(assignmentPattern.Right);
             }
 
+            protected override void VisitAwaitExpression(AwaitExpression awaitExpression)
+            {
+                Visit(awaitExpression.Argument);
+            }
+
             protected override void VisitBinaryExpression(BinaryExpression binaryExpression)
             {
                 Visit(binaryExpression.Left);
@@ -291,6 +296,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 if (ifStatement.Alternate != null)
                     Visit(ifStatement.Alternate);
             }
+
+            protected override void VisitImport(Import import) { }
 
             protected override void VisitImportDefaultSpecifier(ImportDefaultSpecifier importDefaultSpecifier) { }
 

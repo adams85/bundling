@@ -79,7 +79,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private static Program ParseModuleContent(ModuleData module)
         {
             var parser = new JavaScriptParser(module.Content, new ParserOptions { Loc = true, Range = true, SourceType = SourceType.Module, Tolerant = true });
-            try { return parser.ParseProgram(); }
+            try { return parser.ParseModule(); }
             catch (Exception ex) { throw EcmaScriptErrorHelper.ParsingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
 

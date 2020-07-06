@@ -171,7 +171,7 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
 @"export * from './baz'";
 
             var bazContent =
-@"export var [myVar1, {a: myVar2, b: [myVar3, ...rest]}] = [1, {a: 2, b: [3.14]}];";
+@"export var [myVar1, { a: myVar2, b: { c: myVar3, ...rest1} }, ...rest2] = [1, { a: 2, b: { c: 3.14 } }];";
 
             var fileProvider = new MemoryFileProvider();
             fileProvider.CreateFile("/bar.js", barContent);
@@ -191,7 +191,8 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
                 "__es$require.d(__es$exports, \"myVar1\", function() { return __es$module_0.myVar1; });",
                 "__es$require.d(__es$exports, \"myVar2\", function() { return __es$module_0.myVar2; });",
                 "__es$require.d(__es$exports, \"myVar3\", function() { return __es$module_0.myVar3; });",
-                "__es$require.d(__es$exports, \"rest\", function() { return __es$module_0.rest; });",
+                "__es$require.d(__es$exports, \"rest1\", function() { return __es$module_0.rest1; });",
+                "__es$require.d(__es$exports, \"rest2\", function() { return __es$module_0.rest2; });",
             }, barLines);
 
             var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/baz.js").Value.Content);
@@ -201,8 +202,9 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
                 "__es$require.d(__es$exports, \"myVar1\", function() { return myVar1; });",
                 "__es$require.d(__es$exports, \"myVar2\", function() { return myVar2; });",
                 "__es$require.d(__es$exports, \"myVar3\", function() { return myVar3; });",
-                "__es$require.d(__es$exports, \"rest\", function() { return rest; });",
-                "var [myVar1, {a: myVar2, b: [myVar3, ...rest]}] = [1, {a: 2, b: [3.14]}];",
+                "__es$require.d(__es$exports, \"rest1\", function() { return rest1; });",
+                "__es$require.d(__es$exports, \"rest2\", function() { return rest2; });",
+                "var [myVar1, { a: myVar2, b: { c: myVar3, ...rest1} }, ...rest2] = [1, { a: 2, b: { c: 3.14 } }];",
             }, bazLines);
         }
 
@@ -562,6 +564,55 @@ class C3 {
                 "  static [__es$module_0.someKey]() {} ",
                 "}",
             }, fooLines);
+        }
+
+        [Fact]
+        public async Task Feature_AsyncAwait_And_DynamicImport()
+        {
+            var fooContent =
+@"import * as bar from './bar';
+(async () => await bar.myAsyncFunc3())();
+";
+
+            var barContent =
+@"
+export const myAsyncLambda = async () => await import('x');
+export const myAsyncFunc1 = async function() { return await myAsyncLambda(); }
+export async function myAsyncFunc2() { return await myAsyncFunc1(); }
+async function myAsyncFunc3() { return await myAsyncFunc2(); }
+export { myAsyncFunc3 }
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "(async () => await __es$module_0.myAsyncFunc3())();",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "__es$require.d(__es$exports, \"myAsyncLambda\", function() { return myAsyncLambda; });",
+                "__es$require.d(__es$exports, \"myAsyncFunc1\", function() { return myAsyncFunc1; });",
+                "__es$require.d(__es$exports, \"myAsyncFunc2\", function() { return myAsyncFunc2; });",
+                "__es$require.d(__es$exports, \"myAsyncFunc3\", function() { return myAsyncFunc3; });",
+                "const myAsyncLambda = async () => await import('x');",
+                "const myAsyncFunc1 = async function() { return await myAsyncLambda(); }",
+                "async function myAsyncFunc2() { return await myAsyncFunc1(); }",
+                "async function myAsyncFunc3() { return await myAsyncFunc2(); }",
+            }, barLines);
         }
     }
 }
