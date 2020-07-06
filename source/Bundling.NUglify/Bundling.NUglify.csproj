@@ -10,7 +10,7 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="NUglify" Version="1.5.13" />
+    <PackageReference Include="NUglify" Version="1.6.4" />
   </ItemGroup>
 
   <ItemGroup>
