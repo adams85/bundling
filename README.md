@@ -48,13 +48,19 @@ This library can be used to optimize and bundle web assets of ASP.NET Core 2+ ap
 
 ### Installation
 
-The *Karambolo.AspNetCore.Bundling* package contains the core components only, so you need to install a package that provides an actual implementation. You can choose between implementations using [NUglify](https://github.com/xoofx/NUglify) and [WebMarkupMin](https://github.com/Taritsyn/WebMarkupMin) currently.
+The *Karambolo.AspNetCore.Bundling* package contains the core components and interfaces but no actual implementation. Therefore you need to install additional packages depending on your preference/requirements.
+
+#### Minimizer
+
+ You can choose between implementations using [NUglify](https://github.com/xoofx/NUglify) and [WebMarkupMin](https://github.com/Taritsyn/WebMarkupMin) currently.
 
     dotnet add package Karambolo.AspNetCore.Bundling.NUglify
 
 or
 
     dotnet add package Karambolo.AspNetCore.Bundling.WebMarkupMin
+
+#### CSS pre-processor
 
 If you want to use CSS pre-proccessor features, you will also need one of the following packages:
 
@@ -66,11 +72,15 @@ If you want to use CSS pre-proccessor features, you will also need one of the fo
 
       dotnet add package Karambolo.AspNetCore.Bundling.Sass
 
-  The current implementation uses *LibSassHost* under the hood, which is a wrapper around [LibSass](https://sass-lang.com/libsass), an unmanaged library written in C/C++. Therefore you need to install an additional NuGet package which contains this native dependency compiled to your target platform. E.g. on Windows x64 systems: `dotnet add package LibSassHost.Native.win-x64`. For further details refer to the [documentation of LibSassHost](https://github.com/Taritsyn/LibSassHost#installation).
+  Note: The current implementation uses *LibSassHost* under the hood, which is a wrapper around [LibSass](https://sass-lang.com/libsass), an unmanaged library written in C/C++. Therefore you need to install an additional NuGet package which contains this native dependency compiled to your target platform. E.g. on Windows x64 systems: `dotnet add package LibSassHost.Native.win-x64`. For further details refer to the [documentation of LibSassHost](https://github.com/Taritsyn/LibSassHost#installation).
+
+#### ES6 module bundler
 
 Finally, if you want to bundle ES6 modules, you need to install an additional package:
 
     dotnet add package Karambolo.AspNetCore.Bundling.EcmaScript
+
+Note: ES6 module bundling is built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet), which supports roughly ES2017 (ES2016 + async/await) language features currently. If you want to utilize the newer features, you may use TypeScript and target ES2017. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).) Alternatively, you may use the [bundling features of the TypeScript compiler](https://blog.tekmi.nl/how-to-bundle-many-typescript-files-using-systemjs) but then you will need a module loader like [SystemJS](https://github.com/systemjs/systemjs) as well.
 
  ### Run-time mode
 
@@ -387,4 +397,3 @@ Check out [this demo](https://github.com/adams85/bundling/tree/master/samples/Dy
 [This sample](https://github.com/adams85/bundling/tree/master/samples/VueDemo) shows how you can setup a component-based Vue.js application. (This one uses vanilla JavaScript and doesn't use ES6 modules but it can be easily re-configured by examining the setup of the [TypeScriptDemo app](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).)
 
 ### *Any feedback appreciated, contributions are welcome!*
-Feel free to contact me at [Gitter](https://gitter.im/Karambolo-AspNetCore-Bundling/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link).
