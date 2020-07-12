@@ -54,10 +54,9 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 return itemTransforms.ModifyIf(itemTransforms == null || !itemTransforms.Any(t => t is SassCompileTransform),
                     l =>
                     {
+                        // url rewriting is done by the compiler
+                        l.RemoveAll(t => t is CssRewriteUrlTransform);
                         l.Insert(0, _compileTransform);
-
-                        if (l.FindIndex(t => t is CssRewriteUrlTransform) < 0)
-                            l.Add(new CssRewriteUrlTransform());
                     });
             }
 

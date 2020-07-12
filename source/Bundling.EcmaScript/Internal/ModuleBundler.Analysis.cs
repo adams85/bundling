@@ -1,4 +1,6 @@
 ﻿using Esprima.Ast;
+using Karambolo.AspNetCore.Bundling.Internal.Helpers;
+using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
@@ -156,12 +158,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private void AnalyzeDeclarations(ModuleData module)
         {
-            var index = module.FilePath.LastIndexOf('/');
-            var basePath = index >= 0 ? module.FilePath.Substring(0, index + 1) : "/";
+            UrlUtils.GetFileNameSegment(module.FilePath, out StringSegment basePathSegment);
+            var basePath = basePathSegment.Value;
+            
             string modulePath;
-
             ModuleFile moduleRefFile;
-            index = 0; // variable re-used as module counter
+            var index = 0;
 
             for (int i = 0, n = module.Ast.Body.Count; i < n; i++)
                 switch (module.Ast.Body[i])

@@ -1,25 +1,57 @@
 ﻿using System;
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
+using Karambolo.AspNetCore.Bundling.Sass.Internal.Helpers;
 using LibSassHost;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
+using SourcemapToolkit.SourcemapParser;
 
 namespace Karambolo.AspNetCore.Bundling.Sass
 {
     public interface ISassCompiler
     {
-        Task<SassCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
+        Task<SassCompilationResult> CompileAsync(string content, PathString virtualPathPrefix, string filePath, IFileProvider fileProvider, PathString outputPath, CancellationToken token);
     }
 
     public class SassCompiler : ISassCompiler
     {
-        private static readonly Regex s_rewriteUrlsRegex = new Regex(
-                @"(?<before>url\()(?<url>'\.{1,2}/[^']+'|""\.{1,2}/[^""]+""|\.{1,2}/[^)]+)(?<after>\))|" +
-                @"(?<before>@import\s+)(?<url>'\.{1,2}/[^']+\.css'|""\.{1,2}/[^""]+\.css"")(?<after>\s*;)",
-                RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private readonly struct SourcePositionComparer : IComparer<(SourcePosition, MappingEntry)>
+        {
+            public static readonly IComparer<(SourcePosition, MappingEntry)> BoxedInstance = new SourcePositionComparer();
+
+            public int Compare((SourcePosition, MappingEntry) x, (SourcePosition, MappingEntry) y) => x.Item1.CompareTo(y.Item1);
+        }
+
+        private static readonly CompilationOptions s_compilationOptions = new CompilationOptions
+        {
+            SourceMap = true,
+            OmitSourceMapUrl = true
+        };
+
+        private static MappingEntry FindSourceMapping(int captureIndex, List<(SourcePosition, MappingEntry)> sourceMappings, MultiLineTextHelper textHelper)
+        {
+            var capturePosition = new SourcePosition();
+            (capturePosition.ZeroBasedLineNumber, capturePosition.ZeroBasedColumnNumber) = textHelper.MapToPosition(captureIndex);
+
+            var index = sourceMappings.BinarySearch((capturePosition, null), SourcePositionComparer.BoxedInstance);
+
+            if (index < 0)
+            {
+                index = ~index;
+                if (index > 0)
+                    index--;
+            }
+
+            return sourceMappings[index].Item2;
+        }
+
         private readonly ILogger _logger;
 
         public SassCompiler(ILoggerFactory loggerFactory)
@@ -30,62 +62,72 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             _logger = loggerFactory.CreateLogger<SassCompiler>();
         }
 
-        protected internal virtual string GetBasePath(string filePath, string rootPath)
+        protected virtual string GetBasePath(string sourceFilePath, SassCompilationContext context)
         {
-            var endIndex = filePath.LastIndexOf('/');
-            return filePath.Substring(rootPath.Length, endIndex - rootPath.Length + 1);
+            StringSegment pathSegment =
+                !sourceFilePath.StartsWith("/") ?
+                UrlUtils.NormalizePathSegment(context.RootPath + (!context.RootPath.EndsWith("/") ? "/" : string.Empty) + sourceFilePath, canonicalize: true) :
+                sourceFilePath;
+
+            UrlUtils.GetFileNameSegment(pathSegment, out StringSegment basePathSegment);
+            basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
+            return basePathSegment.Value;
         }
 
-        protected internal virtual string RebaseUrl(string value, string basePath, SassCompilationContext context)
+        protected virtual string RebaseUrl(string value, string basePath, SassCompilationContext context)
         {
-            return basePath + value;
+            return CssRewriteUrlTransform.RebaseUrlCore(value, basePath, context.VirtualPathPrefix, context.OutputPath);
         }
 
-        protected internal virtual string RewriteUrls(string content, string basePath, SassCompilationContext context)
+        protected virtual string RewriteUrls(CompilationResult compilationResult, SassCompilationContext context)
         {
-            // 1) url values can usually be SASS expressions, there's no easy way to decide,
-            // so only relative paths starting with "./" or "../" are rebased
+            SourceMap sourceMap = new SourceMapParser().ParseSourceMap(compilationResult.SourceMap);
 
-            // 2) urls ending with '.css' must be rebased as they are not included
-            // https://stackoverflow.com/questions/7111610/import-regular-css-file-in-scss-file
+            if (sourceMap.ParsedMappings.Count == 0)
+                return compilationResult.CompiledContent;
 
-            return s_rewriteUrlsRegex.Replace(content,
-                m =>
-                {
-                    var value = m.Groups["url"].Value;
-                    var quote = StringUtils.RemoveQuotes(ref value);
+            sourceMap.ParsedMappings.Sort((x, y) => x.GeneratedSourcePosition.CompareTo(y.GeneratedSourcePosition));
 
-                    return string.Concat(
-                        m.Groups["before"].Value,
-                        quote, RebaseUrl(value, basePath, context), quote,
-                        m.Groups["after"].Value);
-                });
+            var sourceMappings = sourceMap.ParsedMappings
+                .Select(entry => (entry.GeneratedSourcePosition, entry))
+                .ToList();
+
+            var textHelper = new MultiLineTextHelper(compilationResult.CompiledContent);
+
+            return CssRewriteUrlTransform.RewriteUrlsCore(compilationResult.CompiledContent, (url, capture) =>
+            {
+                MappingEntry sourceMapping = FindSourceMapping(capture.Index, sourceMappings, textHelper);
+                var basePath = GetBasePath(sourceMapping.OriginalFileName, context);
+                return RebaseUrl(url, basePath, context);
+            });
         }
 
-        public Task<SassCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
+        public Task<SassCompilationResult> CompileAsync(string content, PathString virtualPathPrefix, string filePath, IFileProvider fileProvider, PathString outputPath, CancellationToken token)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
 
             token.ThrowIfCancellationRequested();
 
-            string rootPath;
+            string fileBasePath;
             if (filePath != null)
             {
-                var index = filePath.LastIndexOf('/');
-                rootPath = filePath.Substring(0, index + 1);
+                filePath = UrlUtils.NormalizePath(filePath.Replace('\\', '/'));
+                UrlUtils.GetFileNameSegment(filePath, out StringSegment basePathSegment);
+                basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
+                fileBasePath = basePathSegment.Value;
             }
             else
-                filePath = rootPath = "/";
+                filePath = fileBasePath = "/";
+
+            virtualPathPrefix = UrlUtils.NormalizePath(virtualPathPrefix, trailingNormalization: PathNormalization.ExcludeSlash);
 
             CompilationResult compilationResult;
-            using (var context = new SassCompilationContext(this, rootPath, fileProvider, token))
+            using (var context = new SassCompilationContext(this, fileBasePath, virtualPathPrefix, fileProvider, outputPath, token))
             {
-                content = RewriteUrls(content, string.Empty, context);
-
                 try
                 {
-                    compilationResult = LibSassHost.SassCompiler.Compile(content, filePath);
+                    compilationResult = LibSassHost.SassCompiler.Compile(content, filePath, options: s_compilationOptions);
                 }
                 catch (Exception ex)
                 {
@@ -95,12 +137,12 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
                     compilationResult = null;
                 }
-            }
 
-            return Task.FromResult(
-                compilationResult != null ?
-                new SassCompilationResult(compilationResult.CompiledContent, compilationResult.IncludedFilePaths) :
-                SassCompilationResult.Failure);
+                return Task.FromResult(
+                    compilationResult != null ?
+                    new SassCompilationResult(RewriteUrls(compilationResult, context), compilationResult.IncludedFilePaths) :
+                    SassCompilationResult.Failure);
+            }
         }
     }
 }

@@ -35,9 +35,10 @@ namespace Karambolo.AspNetCore.Bundling.Less
                 fileProvider = null;
             }
 
-            PathString pathPrefix = context.BuildContext.AppBasePath + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+            PathString pathPrefix = context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+            PathString outputPath = context.BuildContext.BundlingContext.BundlesPathPrefix.Add(context.BuildContext.Bundle.Path);
 
-            LessCompilationResult result = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, context.BuildContext.CancellationToken);
+            LessCompilationResult result = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, outputPath, context.BuildContext.CancellationToken);
 
             context.Content = result.Content ?? string.Empty;
             if (result.Imports != null && result.Imports.Count > 0)

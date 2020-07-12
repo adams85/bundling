@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Css
 {
@@ -9,44 +10,61 @@ namespace Karambolo.AspNetCore.Bundling.Css
     {
         private static readonly Regex s_rewriteUrlsRegex = new Regex(
             @"(?<before>url\()(?<url>'[^']+'|""[^""]+""|[^)]+)(?<after>\))|" +
-            @"(?<before>@import\s+)(?<url>'[^']+'|""[^""]+"")(?<after>\s*;)",
-            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            @"(?<before>@import\s+)(?<url>'[^']+'|""[^""]+"")(?<after>(?:\s[^;]+)?\s*;)",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        protected virtual string RebaseUrl(string value, string basePath, string pathPrefix)
+        internal static string RebaseUrlCore(string value, string basePath, PathString virtualPathPrefix, PathString outputPath)
         {
-            if (value.StartsWith("/") ||
-                value.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
-                !Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out Uri uri) ||
-                uri.IsAbsoluteUri)
+            if (!UrlUtils.IsRelative(value))
                 return value;
 
-            return UrlUtils.NormalizePath(new PathString(pathPrefix).Add(basePath + value), canonicalize: true);
+            value = UrlUtils.NormalizePath(virtualPathPrefix.Add(basePath).Add("/" + value), canonicalize: true);
+
+            if (outputPath.HasValue)
+                value = UrlUtils.MakeRelativePath(outputPath, value);
+
+            return value;
         }
 
-        protected virtual string RewriteUrls(string content, string basePath, string pathPrefix)
+        protected virtual string RebaseUrl(string value, string basePath, PathString virtualPathPrefix, PathString outputPath)
+        {
+            return RebaseUrlCore(value, basePath, virtualPathPrefix, outputPath);
+        }
+
+        internal static string RewriteUrlsCore(string content, Func<string, Capture, string> rebaseUrl)
         {
             return s_rewriteUrlsRegex.Replace(content,
                 m =>
                 {
-                    var value = m.Groups["url"].Value;
-                    var quote = StringUtils.RemoveQuotes(ref value);
+                    Group capture = m.Groups["url"];
+                    var url = capture.Value;
+                    var quote = StringUtils.RemoveQuotes(ref url);
 
                     return string.Concat(
                         m.Groups["before"].Value,
-                        quote, RebaseUrl(value, basePath, pathPrefix), quote,
+                        quote, rebaseUrl(url, capture), quote,
                         m.Groups["after"].Value);
                 });
+        }
+
+        protected virtual string RewriteUrls(string content, string basePath, PathString virtualPathPrefix, PathString outputPath)
+        {
+            return RewriteUrlsCore(content, (url, _) => RebaseUrl(url, basePath, virtualPathPrefix, outputPath));
         }
 
         public override void Transform(IBundleItemTransformContext context)
         {
             if (context is IFileBundleItemTransformContext fileItemContext)
             {
-                UrlUtils.GetFileName(fileItemContext.FilePath, out string basePath);
+                StringSegment filePathSegment = UrlUtils.NormalizePathSegment(fileItemContext.FilePath.Replace('\\', '/'));
+                UrlUtils.GetFileNameSegment(filePathSegment, out StringSegment basePathSegment);
+                basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
 
-                PathString pathPrefix = context.BuildContext.AppBasePath + context.BuildContext.BundlingContext.StaticFilesPathPrefix;
+                var virtualPathPrefix = UrlUtils.NormalizePath(context.BuildContext.BundlingContext.StaticFilesPathPrefix, trailingNormalization: PathNormalization.ExcludeSlash);
 
-                context.Content = RewriteUrls(context.Content, basePath, pathPrefix);
+                PathString outputPath = context.BuildContext.BundlingContext.BundlesPathPrefix.Add(context.BuildContext.Bundle.Path);
+
+                context.Content = RewriteUrls(context.Content, basePathSegment.Value, virtualPathPrefix, outputPath);
             }
         }
     }

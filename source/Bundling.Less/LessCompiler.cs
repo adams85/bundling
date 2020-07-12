@@ -1,18 +1,19 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using dotless.Core;
+using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Less
 {
     public interface ILessCompiler
     {
-        Task<LessCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token);
+        Task<LessCompilationResult> CompileAsync(string content, PathString virtualPathPrefix, string filePath, IFileProvider fileProvider, PathString targetPath, CancellationToken token);
     }
 
     public class LessCompiler : ILessCompiler
@@ -32,24 +33,28 @@ namespace Karambolo.AspNetCore.Bundling.Less
             _logger = loggerFactory.CreateLogger<LessCompiler>();
         }
 
-        public Task<LessCompilationResult> CompileAsync(string content, string virtualPathPrefix, string filePath, IFileProvider fileProvider, CancellationToken token)
+        public Task<LessCompilationResult> CompileAsync(string content, PathString virtualPathPrefix, string filePath, IFileProvider fileProvider, PathString outputPath, CancellationToken token)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));
 
             token.ThrowIfCancellationRequested();
 
-            string fileBasePath, virtualBasePath, fileName;
+            string fileBasePath, fileName;
             if (filePath != null)
             {
-                fileBasePath = Path.GetDirectoryName(filePath).Replace('\\', '/');
-                virtualBasePath = new PathString(virtualPathPrefix).Add(fileBasePath);
-                fileName = Path.GetFileName(filePath);
+                filePath = UrlUtils.NormalizePath(filePath.Replace('\\', '/'));
+                fileName = UrlUtils.GetFileNameSegment(filePath, out StringSegment basePathSegment).Value;
+                basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
+                fileBasePath = basePathSegment.Value;
             }
             else
-                fileBasePath = virtualBasePath = fileName = null;
+            {
+                fileBasePath = "/";
+                fileName = string.Empty;
+            }
 
-            ILessEngine engine = _engineFactory.Create(fileBasePath ?? string.Empty, virtualBasePath ?? string.Empty, fileProvider);
+            ILessEngine engine = _engineFactory.Create(fileBasePath, virtualPathPrefix, fileProvider, outputPath, token);
 
             content = engine.TransformToCss(content, fileName);
 
@@ -64,7 +69,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             return Task.FromResult(
                 content != null ?
-                new LessCompilationResult(content, engine.GetImports().ToArray()) :
+                new LessCompilationResult(content, engine.GetImports().Select(path => UrlUtils.NormalizePath(path, canonicalize: true)).ToArray()) :
                 LessCompilationResult.Failure);
         }
     }

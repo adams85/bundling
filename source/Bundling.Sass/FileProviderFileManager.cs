@@ -9,6 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
     public sealed class FileProviderFileManager : IFileManager
     {
         public static readonly FileProviderFileManager Instance = new FileProviderFileManager();
+
         private static readonly AsyncLocal<SassCompilationContext> s_compilationContext = new AsyncLocal<SassCompilationContext>();
 
         internal static void SetCompilationContext(SassCompilationContext context)
@@ -24,7 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
         public string GetCurrentDirectory()
         {
-            return "/";
+            return string.Empty;
         }
 
         public bool FileExists(string path)
@@ -53,16 +54,6 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             throw new NotSupportedException();
         }
 
-        private string RewriteUrls(string content, string path)
-        {
-            SassCompilationContext context = Context;
-
-            var compiler = (SassCompiler)context.Compiler;
-            path = compiler.GetBasePath(path, context.RootPath);
-
-            return compiler.RewriteUrls(content, path, context);
-        }
-
         public string ReadFile(string path)
         {
             if (path == null)
@@ -72,10 +63,9 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            Microsoft.Extensions.FileProviders.IFileInfo fileInfo = context.FileProvider.GetFileInfo(path);
-            using (Stream stream = fileInfo.CreateReadStream())
+            using (Stream stream = context.FileProvider.GetFileInfo(path).CreateReadStream())
             using (var reader = new StreamReader(stream))
-                return RewriteUrls(reader.ReadToEnd(), path);
+                return reader.ReadToEnd();
         }
     }
 }
