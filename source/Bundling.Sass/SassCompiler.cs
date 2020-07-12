@@ -129,10 +129,10 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 {
                     compilationResult = LibSassHost.SassCompiler.Compile(content, filePath, options: s_compilationOptions);
                 }
-                catch (Exception ex)
+                catch (SassCompilationException ex)
                 {
                     _logger.LogWarning($"Sass compilation of '{{FILEPATH}}' failed.{Environment.NewLine}{{REASON}}",
-                        (filePath ?? "(content)"),
+                        filePath ?? "(content)",
                         ex.Message);
 
                     compilationResult = null;

@@ -28,7 +28,7 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
             if (result.Errors.Count > 0)
             {
                 _logger.LogWarning($"Css minification of '{{FILEPATH}}' failed:{Environment.NewLine}{{REASON}}",
-                    (filePath ?? "(content)"),
+                    filePath ?? "(content)",
                     result.Errors.Select(e => e.Message));
 
                 return content;
@@ -36,7 +36,7 @@ namespace Karambolo.AspNetCore.Bundling.WebMarkupMin
             else if (result.Warnings.Count > 0)
             {
                 _logger.LogWarning($"Css minification of '{{FILEPATH}}' completed with warnings:{Environment.NewLine}{{REASON}}",
-                    (filePath ?? "(content)"),
+                    filePath ?? "(content)",
                     result.Warnings.Select(e => e.Message));
             }
 

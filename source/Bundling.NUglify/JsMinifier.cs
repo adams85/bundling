@@ -32,7 +32,7 @@ namespace Karambolo.AspNetCore.Bundling.NUglify
                     $"Js minification of '{{FILEPATH}}' completed with warnings:{Environment.NewLine}{{REASON}}";
 
                 _logger.LogWarning(message,
-                    (filePath ?? "(content)"),
+                    filePath ?? "(content)",
                     string.Join(Environment.NewLine, result.Errors));
 
                 if (result.HasErrors)

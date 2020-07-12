@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,13 +57,20 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             ILessEngine engine = _engineFactory.Create(fileBasePath, virtualPathPrefix, fileProvider, outputPath, token);
 
-            content = engine.TransformToCss(content, fileName);
+            Exception transformException = null;
+            try { content = engine.TransformToCss(content, fileName); }
+            catch (FileNotFoundException ex) { transformException = ex; }
 
-            if (!engine.LastTransformationSuccessful)
+            if (transformException != null || !engine.LastTransformationSuccessful)
             {
+                string reason =
+                    transformException != null ? transformException.Message :
+                    engine is LessEngine lessEngine ? lessEngine.LastTransformationError?.Message :
+                    null;
+
                 _logger.LogWarning($"Less compilation of '{{FILEPATH}}' failed:{Environment.NewLine}{{REASON}}",
-                    (filePath ?? "(content)"),
-                    (engine is LessEngine lessEngine ? lessEngine.LastTransformationError?.Message : null) ?? "Unknown reason.");
+                    filePath ?? "(content)",
+                    reason ?? "Unknown reason.");
 
                 content = null;
             }
