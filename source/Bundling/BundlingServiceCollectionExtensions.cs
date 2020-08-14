@@ -30,7 +30,6 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static BundlingConfigurer AddBundlingCore(this IServiceCollection services, Action<BundleGlobalOptions, IServiceProvider> configure)
         {
             services.AddSingleton<IConfigureOptions<BundleGlobalOptions>>(sp => new BundleGlobalOptions.Configurer(configure, sp));
-            services.TryAddScoped<IScopedDisposer, DefaultScopedDisposer>();
 
             services.TryAddSingleton<ISystemClock, SystemClock>();
 

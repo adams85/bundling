@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
+using Microsoft.AspNetCore.Http;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
@@ -37,38 +37,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         }
     }
 
-    public interface IScopedDisposer : IDisposable
-    {
-        void Register(IDisposable disposable);
-    }
-
-    public class DefaultScopedDisposer : IScopedDisposer
-    {
-        private bool _isDisposed;
-        private readonly List<IDisposable> _disposables = new List<IDisposable>();
-
-        public void Register(IDisposable disposable)
-        {
-            if (disposable == null)
-                throw new ArgumentNullException(nameof(disposable));
-
-            if (_isDisposed)
-                throw new ObjectDisposedException(nameof(DefaultScopedDisposer));
-
-            _disposables.Add(disposable);
-        }
-
-        public void Dispose()
-        {
-            if (!_isDisposed)
-            {
-                _disposables.ForEach(d => d.Dispose());
-                _isDisposed = true;
-            }
-        }
-    }
-
-    public static class DisposeHelper
+    internal static class DisposeHelper
     {
         public static T ScheduleDisposeForShutdown<T>(this IHostApplicationLifetime appLifetime, T disposable)
             where T : IDisposable
@@ -85,13 +54,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return disposable;
         }
 
-        public static T ScheduleDisposeForScopeEnd<T>(this IScopedDisposer disposer, T disposable)
+        public static T ScheduleDisposeForRequestEnd<T>(this HttpContext httpContext, T disposable)
             where T : IDisposable
         {
-            if (disposer == null)
-                throw new ArgumentNullException(nameof(disposer));
+            if (httpContext == null)
+                throw new ArgumentNullException(nameof(httpContext));
 
-            disposer.Register(disposable);
+            httpContext.Response.RegisterForDispose(disposable);
             return disposable;
         }
     }

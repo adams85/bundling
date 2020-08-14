@@ -184,8 +184,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             if (!_bundles.TryGetValue(bundlePath, out IBundleModel bundle))
                 return false;
 
-            IScopedDisposer disposer = httpContext.RequestServices.GetRequiredService<IScopedDisposer>();
-
             query = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> @params);
             if (!bundle.DependsOnParams)
                 query = QueryString.Empty;
@@ -195,9 +193,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             try
             {
-                // scheduling release of the lock for the end of the scope (request),
-                // so that the file remain unchanged until it's served
-                disposer.Register(cacheItem.FileReleaser);
+                // scheduling release of the lock for the end of the request so that the file remain unchanged until it's served
+                httpContext.ScheduleDisposeForRequestEnd(cacheItem.FileReleaser);
             }
             catch
             {
