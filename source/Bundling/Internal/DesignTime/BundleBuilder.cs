@@ -230,10 +230,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
                 throw ErrorHelper.ModelFactoryNotAvailable(bundle.GetType());
         }
 
-        private async Task BuildBundleAsync(TextWriter writer, IBundleModel bundle, PathString appBasePath, BundlingContext bundlingContext, CancellationToken shutdownToken)
+        private async Task<string> BuildBundleAsync(IBundleModel bundle, PathString appBasePath, BundlingContext bundlingContext, CancellationToken shutdownToken)
         {
-            var startTicks = Stopwatch.GetTimestamp();
-
             // TODO: support params?
             var builderContext = new BundleBuilderContext
             {
@@ -247,15 +245,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
             await bundle.Builder.BuildAsync(builderContext);
 
-            await writer.WriteAsync(builderContext.Result);
-            await writer.FlushAsync();
-
             bundle.OnBuilt(builderContext);
 
-            var endTicks = Stopwatch.GetTimestamp();
-
-            var elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
-            _logger.LogInformation("Bundle '{PATH}' was built in {ELAPSED}ms.", bundle.Path, elapsedMs);
+            return builderContext.Result;
         }
 
         private async Task ProduceBundlesAsync(BundleCollection bundles, string appBasePath, BundlingContext bundlingContext, string outputBasePath, CancellationToken shutdownToken)
@@ -267,9 +259,35 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
                 var outputFilePath = EnsureOutputFilePath(outputBasePath, bundlingContext.BundlesPathPrefix, bundle.Path);
 
                 using (var writer = new StreamWriter(outputFilePath, append: false, encoding: bundle.OutputEncoding))
-                    await BuildBundleAsync(writer, bundle, appBasePath, bundlingContext, shutdownToken);
+                {
+                    long startTicks = Stopwatch.GetTimestamp();
 
-                _logger.LogInformation("Bundle '{PATH}' was written to {FILEPATH}", bundle.Path, outputFilePath);
+                    string bundleContent;
+                    try { bundleContent = await BuildBundleAsync(bundle, appBasePath, bundlingContext, shutdownToken); }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogWarning("Bundle '{PATH}' was not built. Build was cancelled.", bundle.Path);
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Bundle '{PATH}' was not built. Build failed.", bundle.Path);
+                        if (ex is BundlingErrorException)
+                            throw new BundlingErrorException($"Bundle '{bundle.Path}' could not be built.");
+                        else
+                            throw;
+                    }
+
+                    long endTicks = Stopwatch.GetTimestamp();
+
+                    long elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
+                    _logger.LogInformation("Bundle '{PATH}' was built in {ELAPSED}ms.", bundle.Path, elapsedMs);
+
+                    await writer.WriteAsync(bundleContent);
+                    await writer.FlushAsync();
+
+                    _logger.LogInformation("Bundle '{PATH}' was written to {FILEPATH}", bundle.Path, outputFilePath);
+                }
             }
         }
     }

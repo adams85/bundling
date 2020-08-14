@@ -19,7 +19,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         event EventHandler Changed;
 
-        void OnBuilding(IBundleBuilderContext context);
-        void OnBuilt(IBundleBuilderContext context);
+        void OnBuilding(IBundleBuildContext context);
+        void OnBuilt(IBundleBuildContext context);
     }
 }

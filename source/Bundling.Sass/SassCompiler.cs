@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Css;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Sass.Internal.Helpers;
 using LibSassHost;
@@ -131,17 +132,16 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 }
                 catch (SassCompilationException ex)
                 {
-                    _logger.LogWarning($"Sass compilation of '{{FILEPATH}}' failed.{Environment.NewLine}{{REASON}}",
-                        filePath ?? "(content)",
-                        ex.Message);
+                    filePath = filePath ?? "(content)";
 
-                    compilationResult = null;
+                    const string messageFormat = "Sass compilation of '{0}' failed.";
+
+                    _logger.LogError(string.Format(messageFormat, "{FILEPATH}") + Environment.NewLine + "{REASON}", filePath, ex.Message);
+
+                    throw new BundlingErrorException(string.Format(messageFormat, filePath), ex);
                 }
 
-                return Task.FromResult(
-                    compilationResult != null ?
-                    new SassCompilationResult(RewriteUrls(compilationResult, context), compilationResult.IncludedFilePaths) :
-                    SassCompilationResult.Failure);
+                return Task.FromResult(new SassCompilationResult(RewriteUrls(compilationResult, context), compilationResult.IncludedFilePaths));
             }
         }
     }

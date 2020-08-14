@@ -78,13 +78,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
                 ResetChangeSource(() => NullChangeToken.Singleton);
         }
 
-        public void OnBuilding(IBundleBuilderContext context)
+        public void OnBuilding(IBundleBuildContext context)
         {
             if (context.ChangeSources != null)
                 ResetChangeDetection(null);
         }
 
-        public void OnBuilt(IBundleBuilderContext context)
+        public void OnBuilt(IBundleBuildContext context)
         {
             if (context.ChangeSources != null)
                 ResetChangeDetection(context.ChangeSources);

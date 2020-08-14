@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using dotless.Core;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
@@ -63,22 +64,19 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             if (transformException != null || !engine.LastTransformationSuccessful)
             {
-                string reason =
-                    transformException != null ? transformException.Message :
-                    engine is LessEngine lessEngine ? lessEngine.LastTransformationError?.Message :
-                    null;
+                if (transformException == null && engine is LessEngine lessEngine)
+                    transformException = lessEngine.LastTransformationError;
 
-                _logger.LogWarning($"Less compilation of '{{FILEPATH}}' failed:{Environment.NewLine}{{REASON}}",
-                    filePath ?? "(content)",
-                    reason ?? "Unknown reason.");
+                filePath = filePath ?? "(content)";
 
-                content = null;
+                const string messageFormat = "Less compilation of '{0}' failed.";
+
+                _logger.LogError(string.Format(messageFormat, "{FILEPATH}") + Environment.NewLine + "{REASON}", filePath, transformException?.Message ?? "Unknown reason.");
+
+                throw new BundlingErrorException(string.Format(messageFormat, filePath), transformException);
             }
 
-            return Task.FromResult(
-                content != null ?
-                new LessCompilationResult(content, engine.GetImports().Select(path => UrlUtils.NormalizePath(path, canonicalize: true)).ToArray()) :
-                LessCompilationResult.Failure);
+            return Task.FromResult(new LessCompilationResult(content, engine.GetImports().Select(path => UrlUtils.NormalizePath(path, canonicalize: true)).ToArray()));
         }
     }
 }

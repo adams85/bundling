@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Esprima.Ast;
 using Esprima.Utils;
+using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
@@ -13,12 +14,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private class SubstitutionCollector : AstVisitor
         {
+            private readonly ModuleBundler _bundler;
             private readonly ModuleData _module;
             private readonly SortedDictionary<Range, StringSegment> _substitutions;
             private readonly Stack<HashSet<string>> _nameScopeStack;
 
-            public SubstitutionCollector(ModuleData module, SortedDictionary<Range, StringSegment> substitutions)
+            public SubstitutionCollector(ModuleBundler bundler, ModuleData module, SortedDictionary<Range, StringSegment> substitutions)
             {
+                _bundler = bundler;
                 _module = module;
                 _substitutions = substitutions;
                 _nameScopeStack = new Stack<HashSet<string>>();
@@ -461,7 +464,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override void VisitUnknownNode(INode node)
             {
                 Range range = node.Range;
-                throw CreateRewriteError(_module, node.Location.Start, $"'{_module.Content.Substring(range.Start, range.End - range.Start)}' is not supported currently.");
+                throw _bundler._logger.RewritingModuleFileFailed(_module.FilePath, GetFileProviderHint(_module.File), node.Location.Start,
+                    $"'{_module.Content.Substring(range.Start, range.End - range.Start)}' is not supported currently.");
             }
 
             protected override void VisitUpdateExpression(UpdateExpression updateExpression) { }
@@ -487,7 +491,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override void VisitWithStatement(WithStatement withStatement)
             {
                 // modules are always in strict mode and that doesn't allow with statements
-                throw CreateRewriteError(_module, withStatement.Location.Start, "With statements are not supported in ES6 modules.");
+                throw _bundler._logger.RewritingModuleFileFailed(_module.FilePath, GetFileProviderHint(_module.File), withStatement.Location.Start,
+                    "With statements are not supported in ES6 modules.");
             }
 
             protected override void VisitYieldExpression(YieldExpression yieldExpression)

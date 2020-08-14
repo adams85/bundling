@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Esprima;
-using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.Primitives;
@@ -49,11 +47,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private const string RequireDefineId = "d";
         private const string ExportsId = "__es$exports";
         private const string ModuleIdPrefix = "__es$module_";
-
-        private static ModuleBundlingErrorException CreateRewriteError(ModuleData module, in Position position, string reason)
-        {
-            return new ModuleBundlingErrorException($"Failed to rewrite file {module.FilePath} provided by {GetFileProviderHint(module.File)}. Error at {position}: " + reason);
-        }
 
         private static StringSegment GetContentSegment(string content, in Range range)
         {
@@ -205,7 +198,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             // substitutions
 
-            new SubstitutionCollector(module, substitutions).Collect();
+            new SubstitutionCollector(this, module, substitutions).Collect();
 
             int offset = sb.Length;
 

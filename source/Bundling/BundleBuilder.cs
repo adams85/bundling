@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal;
@@ -20,6 +21,8 @@ namespace Karambolo.AspNetCore.Bundling
     public interface IBundleBuilderContext : IBundleBuildContext
     {
         string Result { get; set; }
+
+        IDisposable UseExternalCancellationToken(CancellationToken cancellationToken);
     }
 
     public interface IBundleBuilder

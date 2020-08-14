@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Esprima;
 using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -73,14 +74,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 using (var reader = new StreamReader(stream))
                     module.Content = await reader.ReadToEndAsync().ConfigureAwait(false);
             }
-            catch (Exception ex) { throw EcmaScriptErrorHelper.ReadingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
+            catch (Exception ex) { throw _logger.ReadingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
 
-        private static Program ParseModuleContent(ModuleData module)
+        private Program ParseModuleContent(ModuleData module)
         {
             var parser = new JavaScriptParser(module.Content, new ParserOptions { Loc = true, Range = true, SourceType = SourceType.Module, Tolerant = true });
             try { return parser.ParseModule(); }
-            catch (Exception ex) { throw EcmaScriptErrorHelper.ParsingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
+            catch (Exception ex) { throw _logger.ParsingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
 
         private async Task LoadModuleCoreAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken token)
@@ -196,11 +197,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 token.ThrowIfCancellationRequested();
 
                 return BuildResult(rootFiles);
-            }
-            catch (ModuleBundlingErrorException ex)
-            {
-                _logger.LogError(ex, ex.Message);
-                return ModuleBundlingResult.Failure;
             }
             finally
             {

@@ -81,8 +81,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         protected virtual async Task<BundleCacheData> BuildBundleAsync(IBundleModel bundle, QueryString query, IDictionary<string, StringValues> @params, HttpContext httpContext)
         {
-            var startTicks = Stopwatch.GetTimestamp();
-
             var builderContext = new BundleBuilderContext
             {
                 BundlingContext = _bundlingContext,
@@ -111,20 +109,47 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             bundle.OnBuilt(builderContext);
 
-            var endTicks = Stopwatch.GetTimestamp();
-
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                var elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
-                _logger.LogInformation("Bundle [{MANAGER_ID}]:{PATH}{QUERY} was built in {ELAPSED}ms.", _id, bundle.Path, query, elapsedMs);
-            }
-
             return new BundleCacheData
             {
                 Content = content,
                 Timestamp = timestamp,
                 Version = versionProviderContext.Result,
             };
+        }
+
+        private Task<IBundleCacheItem> GetBundleCacheItem(BundleCacheKey cacheKey, IBundleModel bundle, QueryString query, IDictionary<string, StringValues> @params, HttpContext httpContext,
+            bool lockFile)
+        {
+            return _cache.GetOrAddAsync(
+                cacheKey,
+                async _ =>
+                {
+                    long startTicks = Stopwatch.GetTimestamp();
+
+                    BundleCacheData cacheItem;
+                    try { cacheItem = await BuildBundleAsync(bundle, query, @params, httpContext); }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogInformation("Bundle [{MANAGER_ID}]:{PATH}{QUERY} was not built. Build was cancelled.", _id, bundle.Path, query);
+                        throw;
+                    }
+                    catch
+                    {
+                        _logger.LogInformation("Bundle [{MANAGER_ID}]:{PATH}{QUERY} was not built. Build failed.", _id, bundle.Path, query);
+                        throw;
+                    }
+
+                    long endTicks = Stopwatch.GetTimestamp();
+
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        long elapsedMs = (endTicks - startTicks) / (Stopwatch.Frequency / 1000);
+                        _logger.LogInformation("Bundle [{MANAGER_ID}]:{PATH}{QUERY} was built in {ELAPSED}ms.", _id, bundle.Path, query, elapsedMs);
+                    }
+
+                    return cacheItem;
+                },
+                httpContext.RequestAborted, bundle.CacheOptions, lockFile);
         }
 
         public async Task<string> TryGenerateUrlAsync(PathString path, QueryString query, HttpContext httpContext)
@@ -140,8 +165,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 query = QueryString.Empty;
 
             var cacheKey = new BundleCacheKey(_id, bundlePath, query);
-            IBundleCacheItem cacheItem = await _cache.GetOrAddAsync(cacheKey, ct => BuildBundleAsync(bundle, query, @params, httpContext),
-                httpContext.RequestAborted, bundle.CacheOptions);
+            IBundleCacheItem cacheItem = await GetBundleCacheItem(cacheKey, bundle, query, @params, httpContext, lockFile: false);
 
             _urlHelper.AddVersion(cacheItem.Version, ref bundlePath, ref query);
 
@@ -167,8 +191,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 query = QueryString.Empty;
 
             var cacheKey = new BundleCacheKey(_id, bundlePath, query);
-            IBundleCacheItem cacheItem = await _cache.GetOrAddAsync(cacheKey, ct => BuildBundleAsync(bundle, query, @params, httpContext),
-                httpContext.RequestAborted, bundle.CacheOptions, lockFile: true);
+            IBundleCacheItem cacheItem = await GetBundleCacheItem(cacheKey, bundle, query, @params, httpContext, lockFile: true);
 
             try
             {
