@@ -614,5 +614,31 @@ export { myAsyncFunc3 }
                 "async function myAsyncFunc3() { return await myAsyncFunc2(); }",
             }, barLines);
         }
+    
+        [Fact]
+        public async Task Issue11_NRE_When_Variable_Has_No_Initializer()
+        {
+            var fooContent =
+@"
+var i, length;
+i = 1;
+";
+
+            var fileProvider = new MemoryFileProvider();
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var i, length;",
+                "i = 1;",
+            }, fooLines);
+        }
     }
 }

@@ -479,7 +479,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override void VisitVariableDeclarator(VariableDeclarator variableDeclarator)
             {
                 // id skipped
-                Visit(variableDeclarator.Init);
+
+                if (variableDeclarator.Init != null)
+                    Visit(variableDeclarator.Init);
             }
 
             protected override void VisitWhileStatement(WhileStatement whileStatement)
