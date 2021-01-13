@@ -1,0 +1,26 @@
+﻿@model string
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Bundle Source demo</title>
+
+    <environment include="Development">
+        @* This will render the input files of the bundle as individual link tags. 
+           (Please note that it only works out-of-the box if these files are relative to the root path of IWebHostEnvironment.WebRootFileProvider and
+           the StaticFiles middleware isn't configured to use a prefix. In that case, you need to specify the correct file-to-url resolution by supplying the mapFileToUrl callback.) *@
+        @await Html.RenderIndividualBundleStylesAsync("~/bundles/site.css")
+    </environment>
+    <environment exclude="Development">
+        @await Styles.RenderAsync("~/bundles/site.css")
+    </environment>
+</head>
+
+<body>
+    <div>
+        This text should be centered horizontally.
+    </div>
+</body>
+</html>
