@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling
 {
     public interface IFileBundleSourceFilterItem
     {
+        IFileProvider FileProvider { get; }
+        bool CaseSensitiveFilePaths { get; }
         string FilePath { get; }
     }
 

@@ -77,6 +77,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             return new BuildItem(context)
             {
                 Include = include,
+                FileProvider = _fileProvider,
+                CaseSensitiveFilePaths = _caseSensitiveFilePaths,
                 FilePath = filePath,
             };
         }
@@ -119,9 +121,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 var item = (BuildItem)fileList[i];
-                item.FileProvider = _fileProvider;
-                item.CaseSensitiveFilePaths = _caseSensitiveFilePaths;
-                item.FileInfo = _fileProvider.GetFileInfo(item.FilePath);
+                item.FileInfo = item.FileProvider.GetFileInfo(item.FilePath);
 
                 using (Stream stream = item.FileInfo.CreateReadStream())
                 using (var reader = new StreamReader(stream, item.Include.Encoding, item.Include.AutoDetectEncoding))
@@ -140,7 +140,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
             if (_fileFilters != null)
                 await ExecuteFiltersAsync(fileList, context);
 
-            context.ChangeSources?.UnionWith(fileList.Cast<BuildItem>().Select(bi => new AbstractionFile(_fileProvider, bi.FilePath)));
+            context.ChangeSources?.UnionWith(fileList.Cast<BuildItem>().Select(bi => new AbstractionFile(bi.FileProvider, bi.FilePath, bi.CaseSensitiveFilePaths)));
 
             await PostItemsAsync(fileList, context, processor);
         }
