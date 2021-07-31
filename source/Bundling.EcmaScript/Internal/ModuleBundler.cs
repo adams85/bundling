@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Esprima;
 using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
-using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -41,12 +40,20 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             return FileProviderPrefixes[moduleFile.FileProvider];
         }
 
-        private static string GetFileProviderHint(ModuleFile moduleFile)
+        private string GetFileProviderHint(ModuleFile moduleFile)
         {
             return
                 moduleFile.FileProvider is PhysicalFileProvider physicalFileProvider ?
                 $"{physicalFileProvider.GetType().Name}[{physicalFileProvider.Root}]" :
-                moduleFile.FileProvider.GetType().Name;
+                $"{moduleFile.FileProvider.GetType().Name}{GetFileProviderPrefix(moduleFile)}";
+        }
+
+        private Uri GetFileUrl(ModuleFile moduleFile)
+        {
+            return
+                moduleFile.FileProvider is PhysicalFileProvider physicalFileProvider ?
+                new Uri(Uri.UriSchemeFile + "://" + Path.Combine(physicalFileProvider.Root, moduleFile.FilePath), UriKind.Absolute) :
+                new Uri($"file-provider:" + GetFileProviderHint(moduleFile) + moduleFile.FilePath);
         }
 
         private readonly ILogger _logger;
@@ -77,9 +84,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             catch (Exception ex) { throw _logger.ReadingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
 
+        internal static ParserOptions CreateParserOptions()
+        {
+            return new ParserOptions() { AdaptRegexp = false, Comment = false, Tokens = false, Tolerant = false };
+        }
+
         private Program ParseModuleContent(ModuleData module)
         {
-            var parser = new JavaScriptParser(module.Content, new ParserOptions { Loc = true, Range = true, SourceType = SourceType.Module, Tolerant = true });
+            var parser = new JavaScriptParser(module.Content, module.ParserOptions);
             try { return parser.ParseModule(); }
             catch (Exception ex) { throw _logger.ParsingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
         }
@@ -90,7 +102,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             try
             {
+                module.ParserOptions = CreateParserOptions();
                 module.Ast = ParseModuleContent(module);
+                module.VariableScopes = new Dictionary<Node, VariableScope>();
                 module.ModuleRefs = new Dictionary<ModuleFile, string>();
                 module.ExportsRaw = new List<ExportData>();
                 module.Imports = new Dictionary<string, ImportData>();
@@ -146,7 +160,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 };
 
                 if (!FileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
-                    FileProviderPrefixes.Add(moduleFile.FileProvider, fileProviderId++.ToString() + ':');
+                    FileProviderPrefixes.Add(moduleFile.FileProvider, "$" + fileProviderId++);
 
                 var module = new ModuleData(moduleFile);
 

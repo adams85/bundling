@@ -1,6 +1,4 @@
-﻿using Esprima.Ast;
-
-namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
+﻿namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal partial class ModuleBundler
     {
@@ -24,16 +22,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
 
             public string LocalName { get; }
-        }
-
-        internal class DefaultExpressionExportData : ExportData
-        {
-            public DefaultExpressionExportData(IDeclaration expression) : base(ModuleBundler.DefaultExportName)
-            {
-                Expression = expression;
-            }
-
-            public IDeclaration Expression { get; }
         }
 
         internal class ReexportData : NamedExportData

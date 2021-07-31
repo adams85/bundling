@@ -12,7 +12,7 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
-    <PackageReference Include="System.Text.Json" Version="4.7.0" />
+    <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>
   
 </Project>

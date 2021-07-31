@@ -10,7 +10,7 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="WebMarkupMin.Core" Version="2.8.6" />
+    <PackageReference Include="WebMarkupMin.Core" Version="2.9.0" />
   </ItemGroup>
 
   <ItemGroup>
