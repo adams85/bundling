@@ -87,8 +87,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
         {
             var directoryInfo = new GlobbingDirectoryInfo(_fileProvider, string.Empty);
 
-            var n = _includes.Length;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = _includes.Length; i < n; i++)
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
@@ -104,8 +103,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
         protected virtual async Task ExecuteFiltersAsync(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context)
         {
-            var n = _fileFilters.Count;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = _fileFilters.Count; i < n; i++)
             {
                 IFileBundleSourceFilter filter = _fileFilters[i];
                 await filter.FilterAsync(fileList, context);
@@ -115,8 +113,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
         protected virtual async Task PostItemsAsync(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context, Action<IBundleSourceBuildItem> processor)
         {
-            var n = fileList.Count;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = fileList.Count; i < n; i++)
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 

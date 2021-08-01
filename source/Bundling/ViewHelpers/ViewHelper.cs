@@ -26,8 +26,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             UrlUtils.FromRelative(urlHelper.Content(pathString), out PathString path, out QueryString query, out _);
 
             string url = null;
-            var n = bundleManagerFactory.Instances.Count;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = bundleManagerFactory.Instances.Count; i < n; i++)
                 if ((url = await bundleManagerFactory.Instances[i].TryGenerateUrlAsync(path, query, httpContext)) != null)
                     break;
 
@@ -70,8 +69,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             await Task.WhenAll(generateTasks);
 
             var sb = new StringBuilder();
-            var n = generateTasks.Count;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = generateTasks.Count; i < n; i++)
             {
                 sb.AppendFormat(tagFormat, generateTasks[i].Result);
                 sb.AppendLine();

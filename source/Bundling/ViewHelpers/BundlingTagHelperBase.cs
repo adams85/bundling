@@ -49,8 +49,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             UrlUtils.FromRelative(urlHelper.Content(Url), out PathString path, out QueryString query, out _);
 
             string url = null;
-            var n = _bundleManagerFactory.Instances.Count;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = _bundleManagerFactory.Instances.Count; i < n; i++)
                 if ((url = await _bundleManagerFactory.Instances[i].TryGenerateUrlAsync(path, query, ViewContext.HttpContext)) != null)
                     break;
 

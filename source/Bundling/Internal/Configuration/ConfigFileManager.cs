@@ -54,8 +54,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 
             BundleData[] items = SerializationHelper.Deserialize<BundleData[]>(reader);
 
-            var n = items.Length;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = items.Length; i < n; i++)
             {
                 BundleData item = items[i];
 

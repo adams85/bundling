@@ -71,14 +71,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
             var builder = new QueryBuilder();
             foreach (KeyValuePair<string, StringValues> kvp in parsed.OrderBy(kvp => kvp.Key))
-            {
-                var n = kvp.Value.Count;
-                for (var i = 0; i < n; i++)
+                for (int i = 0, n = kvp.Value.Count; i < n; i++)
                 {
                     var value = kvp.Value[i];
                     builder.Add(kvp.Key, value);
                 }
-            }
 
             parsedQuery = parsed;
             return builder.ToQueryString();
@@ -165,8 +162,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             var chars = value.ToCharArray();
 
             char c;
-            var n = chars.Length;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = chars.Length; i < n; i++)
                 chars[i] = Array.IndexOf(s_illegalFileNameChars, c = chars[i]) < 0 ? char.ToLowerInvariant(c) : '_';
 
             return new string(chars);

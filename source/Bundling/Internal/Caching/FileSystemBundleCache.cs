@@ -468,8 +468,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             var metadataFileNamePostfix = MetadataFileNamePostfix;
             var files = Directory.GetFiles(PhysicalBasePath, "*" + metadataFileNamePostfix, SearchOption.AllDirectories);
 
-            var n = files.Length;
-            for (var i = 0; i < n; i++)
+            for (int i = 0, n = files.Length; i < n; i++)
             {
                 token.ThrowIfCancellationRequested();
 

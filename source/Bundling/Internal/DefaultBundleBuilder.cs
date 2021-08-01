@@ -72,8 +72,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             using (var errorCts = new CancellationTokenSource())
             using (context.UseExternalCancellationToken(errorCts.Token))
             {
-                var n = context.Bundle.Sources.Length;
-                for (var i = 0; i < n; i++)
+                for (int i = 0, n = context.Bundle.Sources.Length; i < n; i++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
