@@ -115,7 +115,10 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
 @"import * as bar from './bar';";
 
             var barContent =
-@"export default 3 * 7;";
+@"let x;
+
+export default x = 3 * 7;
+x = 0;";
 
             var fileProvider = new MemoryFileProvider();
             fileProvider.CreateFile("/bar.js", barContent);
@@ -130,7 +133,40 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$exports[\"default\"] = (3 * 7);",
+                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "let x;",
+                "var __es$default = x = 3 * 7;",
+                "x = 0;",
+            }, barLines);
+        }
+
+        [Fact]
+        public async Task Export_Default_Declaration()
+        {
+            var fooContent =
+@"import * as bar from './bar';
+export let x = 0;";
+
+            var barContent =
+@"import { x } from './foo';
+
+export default /***/ ( /***/ class { m() { return x } }  /***/ )";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/foo.js", fooContent);
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { new ModuleFile(fileProvider, "/foo.js") }, CancellationToken.None);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "var __es$default = ( /***/ class { m() { return __es$module_0.x } }  /***/ )",
             }, barLines);
         }
 
@@ -171,7 +207,7 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
 @"export * from './baz'";
 
             var bazContent =
-@"export var [myVar1, { a: myVar2, b: { c: myVar3, ...rest1} }, ...rest2] = [1, { a: 2, b: { c: 3.14 } }];";
+@"export /***/ var [myVar1, { a: myVar2, b: { c: myVar3, ...rest1} }, ...rest2] = [1, { a: 2, b: { c: 3.14 } }];";
 
             var fileProvider = new MemoryFileProvider();
             fileProvider.CreateFile("/bar.js", barContent);
@@ -567,8 +603,73 @@ class C3 {
         }
 
         [Fact]
+        public async Task VariableScoping()
+        {
+            var fooContent =
+@"import foo from './bar';
+
+function f1({[foo.key]: a} = {[foo.key]: foo.value}) {
+  { let foo = {key: 'k2', value: 'v2'}; }
+  console.log(a, foo);
+}
+function f2({[foo.key]: a} = {[foo.key]: foo.value}) {
+  { var foo = {key: 'k2', value: 'v2'}; }
+  console.log(a, foo);
+}
+function f3(foo = {key: 'k2', value: 'v2'}, {[foo.key]: a} = {[foo.key]: foo.value}) {
+  console.log(a, foo);
+}
+";
+
+            var barContent =
+@"let foo;
+export default foo = {key: 'k', value: 'v'};
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "function f1({[__es$module_0.default.key]: a} = {[__es$module_0.default.key]: __es$module_0.default.value}) {",
+                "  { let foo = {key: 'k2', value: 'v2'}; }",
+                "  console.log(a, __es$module_0.default);",
+                "}",
+                "function f2({[__es$module_0.default.key]: a} = {[__es$module_0.default.key]: __es$module_0.default.value}) {",
+                "  { var foo = {key: 'k2', value: 'v2'}; }",
+                "  console.log(a, foo);",
+                "}",
+                "function f3(foo = {key: 'k2', value: 'v2'}, {[foo.key]: a} = {[foo.key]: foo.value}) {",
+                "  console.log(a, foo);",
+                "}",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "let foo;",
+                "var __es$default = foo = {key: 'k', value: 'v'};",
+            }, barLines);
+        }
+
+        [Fact]
         public async Task Feature_AsyncAwait_And_DynamicImport()
         {
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/async_function
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#dynamic_imports
+
             var fooContent =
 @"import * as bar from './bar';
 (async () => await bar.myAsyncFunc3())();
@@ -614,7 +715,97 @@ export { myAsyncFunc3 }
                 "async function myAsyncFunc3() { return await myAsyncFunc2(); }",
             }, barLines);
         }
-    
+
+        [Fact]
+        public async Task Feature_Object_Rest_And_Spread_Properties()
+        {
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#spread_in_object_literals
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Object_initializer#spread_properties
+
+            var fooContent =
+@"import bar from './bar';
+export var {myVarKey = bar.myVarKey, [bar.myVarKey]: barVar, myFunc: barFunc, ...rest} = {...bar};
+";
+
+            var barContent =
+@"
+export default ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "__es$require.d(__es$exports, \"myVarKey\", function() { return myVarKey; });",
+                "__es$require.d(__es$exports, \"barVar\", function() { return barVar; });",
+                "__es$require.d(__es$exports, \"barFunc\", function() { return barFunc; });",
+                "__es$require.d(__es$exports, \"rest\", function() { return rest; });",
+                "var {myVarKey = __es$module_0.default.myVarKey, [__es$module_0.default.myVarKey]: barVar, myFunc: barFunc, ...rest} = {...__es$module_0.default};",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "var __es$default = ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });",
+            }, barLines);
+        }
+
+        [Fact]
+        public async Task Feature_ImportMeta()
+        {
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import.meta#using_import.meta
+
+            var fooContent =
+@"import { importUrl as barImportUrl } from './bar';
+console.log(barImportUrl);
+";
+
+            var barContent =
+@"
+export const importUrl = import/*x*/
+. /*y*/ meta.url;
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "console.log(__es$module_0.importUrl);",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$importMeta = { };",
+                "__es$require.d(__es$importMeta, \"url\", function() { return \"file-provider:MemoryFileProvider/bar.js\"; });",
+                "__es$require.d(__es$exports, \"importUrl\", function() { return importUrl; });",
+                "const importUrl = __es$importMeta.url;",
+            }, barLines);
+        }
+
         [Fact]
         public async Task Issue11_NRE_When_Variable_Has_No_Initializer()
         {
