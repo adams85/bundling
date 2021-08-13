@@ -40,7 +40,7 @@ namespace Karambolo.AspNetCore.Bundling.Tools
             {
                 if (ConfigSources.HasFlag(ConfigSources.OutputAssemblies))
                     assemblyFilePaths = Directory.EnumerateFiles(compilationBasePath, "*.dll", SearchOption.TopDirectoryOnly)
-                        .Where(path => !Path.GetFileName(path).StartsWith(BundleBuilderProxy.BundlingAssemblyName));
+                        .Where(path => !Path.GetFileName(path).StartsWith(BundleBuilderProxy.BundlingAssemblyName, StringComparison.Ordinal));
                 else
                     assemblyFilePaths = Enumerable.Empty<string>();
 

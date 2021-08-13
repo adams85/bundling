@@ -52,7 +52,7 @@ namespace Karambolo.AspNetCore.Bundling.Tools
             Reporter.WriteInformation(string.Empty);
         }
 
-        public static bool IsMetadata(string value) => value.StartsWith(MetadataTag);
+        public static bool IsMetadata(string value) => value.StartsWith(MetadataTag, StringComparison.Ordinal);
 
         private static Project FromMetadata(IReadOnlyDictionary<string, string> metadata, string file, string framework, string configuration, string runtime)
         {

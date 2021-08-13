@@ -66,8 +66,8 @@ namespace Karambolo.AspNetCore.Bundling.Sass
         protected virtual string GetBasePath(string sourceFilePath, SassCompilationContext context)
         {
             StringSegment pathSegment =
-                !sourceFilePath.StartsWith("/") ?
-                UrlUtils.NormalizePathSegment(context.RootPath + (!context.RootPath.EndsWith("/") ? "/" : string.Empty) + sourceFilePath, canonicalize: true) :
+                !sourceFilePath.StartsWith("/", StringComparison.Ordinal) ?
+                UrlUtils.NormalizePathSegment(context.RootPath + (!context.RootPath.EndsWith("/", StringComparison.Ordinal) ? "/" : string.Empty) + sourceFilePath, canonicalize: true) :
                 sourceFilePath;
 
             UrlUtils.GetFileNameSegment(pathSegment, out StringSegment basePathSegment);

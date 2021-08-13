@@ -8,8 +8,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
     {
         public static string RemoveQuotes(ref string value)
         {
-            if (value.StartsWith("'"))
-                if (value.EndsWith("'"))
+            if (value.StartsWith("'", StringComparison.Ordinal))
+                if (value.EndsWith("'", StringComparison.Ordinal))
                 {
                     value = value.Substring(1, value.Length - 2);
                     return "'";
@@ -17,8 +17,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
                 else
                     return null;
 
-            if (value.StartsWith("\""))
-                if (value.EndsWith("\""))
+            if (value.StartsWith("\"", StringComparison.Ordinal))
+                if (value.EndsWith("\"", StringComparison.Ordinal))
                 {
                     value = value.Substring(1, value.Length - 2);
                     return "\"";

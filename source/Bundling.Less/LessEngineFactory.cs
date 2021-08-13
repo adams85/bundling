@@ -40,7 +40,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
                     url = GetAdjustedFilePath(url, pathList);
 
                 url = 
-                    !url.StartsWith("/") ? 
+                    !url.StartsWith("/", StringComparison.Ordinal) ? 
                     new PathString(RootPath).Add(CurrentDirectory).Add("/" + url) : 
                     new PathString(RootPath).Add(url);
 

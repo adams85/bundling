@@ -50,7 +50,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public static bool IsRelative(string url)
         {
-            return !url.StartsWith("/") && !s_hasSchemeRegex.IsMatch(url);
+            return !url.StartsWith("/", StringComparison.Ordinal) && !s_hasSchemeRegex.IsMatch(url);
         }
 
         public static void FromRelative(string url, out PathString path, out QueryString query, out FragmentString fragment)

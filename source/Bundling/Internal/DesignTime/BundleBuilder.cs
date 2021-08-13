@@ -141,7 +141,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         {
             IEnumerable<string> wellKnownModuleAssemblies = typeof(BundleBuilder).Assembly.GetCustomAttributes<InternalsVisibleToAttribute>()
                 .Select(attribute => attribute.AssemblyName)
-                .Where(assemblyName => !assemblyName.EndsWith(".Test"));
+                .Where(assemblyName => !assemblyName.EndsWith(".Test", StringComparison.Ordinal));
 
             IEnumerable<string> localModuleAssemblies = Directory.EnumerateFiles(compilationBasePath, "Karambolo.AspNetCore.Bundling.*.dll", SearchOption.TopDirectoryOnly)
                 .Select(filePath => Path.ChangeExtension(Path.GetFileName(filePath), null));
