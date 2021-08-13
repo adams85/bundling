@@ -51,9 +51,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private Uri GetFileUrl(ModuleFile moduleFile)
         {
             return
-                moduleFile.FileProvider is PhysicalFileProvider physicalFileProvider ?
-                new Uri(Uri.UriSchemeFile + "://" + Path.Combine(physicalFileProvider.Root, moduleFile.FilePath), UriKind.Absolute) :
-                new Uri($"file-provider:" + GetFileProviderHint(moduleFile) + moduleFile.FilePath);
+                !moduleFile.FilePath.StartsWith("/", StringComparison.Ordinal) ? new Uri("transient:" + moduleFile.FilePath) :
+                moduleFile.FileProvider is PhysicalFileProvider physicalFileProvider ? new Uri(
+                    Uri.UriSchemeFile + "://" + Path.Combine(physicalFileProvider.Root, moduleFile.FilePath.Substring(1)),
+                    UriKind.Absolute) :
+                new Uri("provider-file:" + GetFileProviderHint(moduleFile) + moduleFile.FilePath);
         }
 
         private readonly ILogger _logger;
