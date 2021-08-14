@@ -36,9 +36,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public sealed class Function : FunctionBase
         {
-            // Esprima.NET doesn't set the Strict property in the case of arrow functions (bug?), so we need to look for the directive manually.
-            private static bool GetIsStrict(ArrowFunctionExpression arrowFunctionExpression) =>
-                arrowFunctionExpression.Body is BlockStatement body &&
+            // Strict mode tracking of functions is quite broken in Esprima.NET currently, so we need to look for the directive manually.
+            // TODO: This workaround can be removed after https://github.com/sebastienros/esprima-dotnet/issues/179 gets resolved.
+            private static bool GetIsStrict(IFunction function) =>
+                function.Body is BlockStatement body &&
                 body.Body.Count > 0 &&
                 body.Body[0] is ExpressionStatement expressionStatement &&
                 expressionStatement.Expression is Literal literal &&
@@ -48,10 +49,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 : base(arrowFunctionExpression, parentScope, parentScope.IsStrict || GetIsStrict(arrowFunctionExpression)) { }
 
             public Function(FunctionDeclaration functionDeclaration, VariableScope parentScope)
-                : base(functionDeclaration, parentScope, parentScope.IsStrict || functionDeclaration.Strict) { }
+                : base(functionDeclaration, parentScope, parentScope.IsStrict || GetIsStrict(functionDeclaration)) { }
 
             public Function(FunctionExpression functionExpression, VariableScope parentScope)
-                : base(functionExpression, parentScope, parentScope.IsStrict || functionExpression.Strict) { }
+                : base(functionExpression, parentScope, parentScope.IsStrict || GetIsStrict(functionExpression)) { }
 
             public void AddParamDeclaration(Identifier identifier)
             {

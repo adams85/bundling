@@ -800,7 +800,7 @@ export const importUrl = import/*x*/
             {
                 "'use strict';",
                 "var __es$importMeta = { };",
-                "__es$require.d(__es$importMeta, \"url\", function() { return \"file-provider:MemoryFileProvider/bar.js\"; });",
+                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js\"; });",
                 "__es$require.d(__es$exports, \"importUrl\", function() { return importUrl; });",
                 "const importUrl = __es$importMeta.url;",
             }, barLines);

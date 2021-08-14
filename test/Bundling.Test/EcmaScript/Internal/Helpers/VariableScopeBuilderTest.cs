@@ -487,7 +487,7 @@ function globalFunc3() { }
         public void FindIdentifer_Hoisting()
         {
             var moduleContent =
-@"import * as foo from './foo.js';
+@"const foo = 0;
 
 function f1(a = foo) {
   {
@@ -501,14 +501,21 @@ function f2(a = foo) {
   }
 }
 
-function f3(a = foo) {
+function f3(a) {
+  'use strict';
+  {
+    function foo() { return this; }
+  }
+}
+
+function f4(a = foo) {
   {
     class foo { }
   }
 }
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Script moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseScript();
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -565,6 +572,33 @@ function f3(a = foo) {
             Assert.IsType<VariableScope.Block>(functionBlockScope);
             Assert.Same(functionScope, functionBlockScope.ParentScope);
 
+            Assert.Same(functionBlockScope, functionBlockScope.FindIdentifier("foo"));
+
+            blockStatement = blockStatement.Body.OfType<BlockStatement>().Single();
+
+            nestedBlockScope = scopes[blockStatement];
+            Assert.IsType<VariableScope.Block>(nestedBlockScope);
+            Assert.Same(functionBlockScope, nestedBlockScope.ParentScope);
+
+            Assert.Same(functionBlockScope, nestedBlockScope.FindIdentifier("foo"));
+
+            // f3
+
+            functionDeclaration = moduleAst.Body
+                .OfType<FunctionDeclaration>().Single(d => d.Id?.Name == "f3");
+
+            functionScope = scopes[functionDeclaration];
+            Assert.IsType<VariableScope.Function>(functionScope);
+            Assert.Same(globalBlockScope, functionScope.ParentScope);
+
+            Assert.Same(globalBlockScope, functionScope.FindIdentifier("foo"));
+
+            blockStatement = functionDeclaration.Body.As<BlockStatement>();
+
+            functionBlockScope = scopes[blockStatement];
+            Assert.IsType<VariableScope.Block>(functionBlockScope);
+            Assert.Same(functionScope, functionBlockScope.ParentScope);
+
             Assert.Same(globalBlockScope, functionBlockScope.FindIdentifier("foo"));
 
             blockStatement = blockStatement.Body.OfType<BlockStatement>().Single();
@@ -575,10 +609,10 @@ function f3(a = foo) {
 
             Assert.Same(nestedBlockScope, nestedBlockScope.FindIdentifier("foo"));
 
-            // f3
+            // f4
 
             functionDeclaration = moduleAst.Body
-                .OfType<FunctionDeclaration>().Single(d => d.Id?.Name == "f2");
+                .OfType<FunctionDeclaration>().Single(d => d.Id?.Name == "f4");
 
             functionScope = scopes[functionDeclaration];
             Assert.IsType<VariableScope.Function>(functionScope);
