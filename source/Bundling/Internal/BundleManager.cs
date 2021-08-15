@@ -41,7 +41,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public BundleManager(int id, BundleCollection bundles, IBundlingContext bundlingContext, CancellationToken shutdownToken,
             IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper,
-            ILoggerFactory loggerFactory, ISystemClock clock, IOptions<BundleGlobalOptions> globalOptions)
+            ILogger<BundleManager> logger, ISystemClock clock, IOptions<BundleGlobalOptions> globalOptions)
         {
             Id = id;
             BundlingContext = bundlingContext;
@@ -53,7 +53,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             _versionProvider = versionProvider;
             _urlHelper = urlHelper;
 
-            _logger = loggerFactory.CreateLogger<BundleManager>();
+            _logger = logger;
             _clock = clock;
 
             _enableChangeDetection = globalOptions.Value.EnableChangeDetection;

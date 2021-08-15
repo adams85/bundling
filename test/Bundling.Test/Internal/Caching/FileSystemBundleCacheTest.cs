@@ -27,7 +27,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
             _cts = new CancellationTokenSource();
 
-            var cache = new FileSystemBundleCache(_cts.Token, null, loggerFactory, Clock,
+            var cache = new FileSystemBundleCache(_cts.Token, null, loggerFactory.CreateLogger<FileSystemBundleCache>(), Clock,
                 Options.Create(new FileSystemBundleCacheOptions
                 {
                     FileProvider = new PhysicalFileProvider(Environment.CurrentDirectory),

@@ -14,12 +14,12 @@ namespace Karambolo.AspNetCore.Bundling.Js
         private readonly ILogger _logger;
         private int _hasLoggedWarningFlag;
 
-        public NullJsMinifier(ILoggerFactory loggerFactory)
+        public NullJsMinifier(ILogger<NullJsMinifier> logger)
         {
-            if (loggerFactory == null)
-                throw new ArgumentNullException(nameof(loggerFactory));
+            if (logger == null)
+                throw new ArgumentNullException(nameof(logger));
 
-            _logger = loggerFactory.CreateLogger<NullJsMinifier>();
+            _logger = logger;
         }
 
         public string Process(string content, string filePath)

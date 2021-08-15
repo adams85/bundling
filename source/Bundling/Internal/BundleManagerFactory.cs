@@ -54,7 +54,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         {
             var result = new BundleManager(
                 _instances.Count, bundles, bundlingContext, _shutdownToken, _modelFactories, _cache, _versionProvider, _urlHelper,
-                _loggerFactory, _clock, _globalOptions);
+                _loggerFactory.CreateLogger<BundleManager>(), _clock, _globalOptions);
 
             _instances.Add(result);
             return result;

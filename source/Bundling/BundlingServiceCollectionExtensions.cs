@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(configurer));
 
             configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleCache>(sp => new FileSystemBundleCache(
-                sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping, sp.GetRequiredService<IWebHostEnvironment>(), sp.GetRequiredService<ILoggerFactory>(),
+                sp.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping, sp.GetRequiredService<IWebHostEnvironment>(), sp.GetRequiredService<ILogger<FileSystemBundleCache>>(),
                 sp.GetRequiredService<ISystemClock>(), sp.GetRequiredService<IOptions<FileSystemBundleCacheOptions>>())));
 
             if (configure != null)

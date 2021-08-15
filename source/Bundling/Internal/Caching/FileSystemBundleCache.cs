@@ -100,7 +100,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         private readonly ILogger _logger;
         private readonly AsyncKeyedLock<(int, PathString)> _bundleLock;
 
-        public FileSystemBundleCache(CancellationToken shutdownToken, IWebHostEnvironment env, ILoggerFactory loggerFactory, ISystemClock clock,
+        public FileSystemBundleCache(CancellationToken shutdownToken, IWebHostEnvironment env, ILogger<FileSystemBundleCache> logger, ISystemClock clock,
             IOptions<FileSystemBundleCacheOptions> options)
         {
             FileSystemBundleCacheOptions optionsUnwrapped = options.Value;
@@ -109,7 +109,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
             _shutdownToken = shutdownToken;
             _clock = clock;
-            _logger = loggerFactory.CreateLogger<FileSystemBundleCache>();
+            _logger = logger;
 
             _bundleLock = new AsyncKeyedLock<(int, PathString)>();
 
