@@ -10,6 +10,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
     public static class JsBundleConfiguration
     {
         public const string BundleType = "js";
+        public const string OutputMediaType = "text/javascript";
 
         internal class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
         {
@@ -39,6 +40,8 @@ namespace Karambolo.AspNetCore.Bundling.Js
             private readonly JsMinifyTransform _minifyTransform;
 
             public string Type => BundleType;
+            public string OutputMediaType => JsBundleConfiguration.OutputMediaType;
+            public bool CanRenderSourceIncludes => true;
 
             public Helper(IOptions<BundleGlobalOptions> globalOptions, IJsMinifier minifier)
             {

@@ -11,11 +11,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         PathString Path { get; }
         bool DependsOnParams { get; }
         string ConcatenationToken { get; }
+        string OutputMediaType { get; }
         Encoding OutputEncoding { get; }
         IBundleSourceModel[] Sources { get; }
         IBundleBuilder Builder { get; }
         IReadOnlyList<IBundleTransform> Transforms { get; }
         IBundleCacheOptions CacheOptions { get; }
+        IBundleHtmlRenderer HtmlRenderer { get; }
+        BundleSourceItemUrlResolver SourceItemUrlResolver { get; }
 
         event EventHandler Changed;
 

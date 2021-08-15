@@ -8,5 +8,11 @@ namespace Microsoft.AspNetCore.Builder
     {
         public JsBundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, bool caseSensitiveSourceFilePaths, IServiceProvider appServices)
             : base(bundle, sourceFileProvider, caseSensitiveSourceFilePaths, appServices) { }
+
+        public JsBundleConfigurer RenderSourceIncludes()
+        {
+            Bundle.RenderSourceIncludes = true;
+            return this;
+        }
     }
 }

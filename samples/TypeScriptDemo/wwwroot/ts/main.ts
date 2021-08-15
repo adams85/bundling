@@ -1,4 +1,4 @@
-﻿import { counter, incCounter, timeout } from './foo';
+﻿import { counter, incCounter, timeout } from './foo.js';
 
 class App {
     private _textBox: HTMLInputElement;
@@ -29,4 +29,3 @@ class App {
 }
 
 new App();
-

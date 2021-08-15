@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal;
-using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.TagHelpers;
@@ -38,27 +38,21 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         protected abstract string UrlAttributeName { get; }
         protected abstract string Url { get; }
 
-        public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
+        public override Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
-            if (Url == null)
-                return;
+            if (Url != null)
+            {
+                IUrlHelper urlHelper = _urlHelperFactory.GetUrlHelper(ViewContext);
+
+                if (ViewHelper.TryGetBundle(ViewContext.HttpContext, _bundleManagerFactory, urlHelper.Content(Url),
+                    out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle))
+                {
+                    return bundle.HtmlRenderer.RenderTagHelperAsync(context, output, urlHelper, bundleManager, bundle, query, UrlAttributeName);
+                }
+            }
 
             output.CopyHtmlAttribute(UrlAttributeName, context);
-
-            Microsoft.AspNetCore.Mvc.IUrlHelper urlHelper = _urlHelperFactory.GetUrlHelper(ViewContext);
-            UrlUtils.FromRelative(urlHelper.Content(Url), out PathString path, out QueryString query, out _);
-
-            string url = null;
-            for (int i = 0, n = _bundleManagerFactory.Instances.Count; i < n; i++)
-                if ((url = await _bundleManagerFactory.Instances[i].TryGenerateUrlAsync(path, query, ViewContext.HttpContext)) != null)
-                    break;
-
-            if (url != null)
-            {
-                var index = output.Attributes.IndexOfName(UrlAttributeName);
-                TagHelperAttribute existingAttribute = output.Attributes[index];
-                output.Attributes[index] = new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle);
-            }
+            return Task.CompletedTask;
         }
     }
 }

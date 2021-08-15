@@ -5,7 +5,6 @@ using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Caching;
 using Karambolo.AspNetCore.Bundling.Internal.Configuration;
-using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Versioning;
 using Karambolo.AspNetCore.Bundling.Js;
 using Microsoft.AspNetCore.Http;
@@ -140,6 +139,26 @@ namespace Microsoft.Extensions.DependencyInjection
             return configurer;
         }
 
+        public static BundlingConfigurer RenderSourceIncludesWhenPossible(this BundlingConfigurer configurer)
+        {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.RenderSourceIncludes = true);
+
+            return configurer;
+        }
+
+        public static BundlingConfigurer UseSourceItemUrlResolver(this BundlingConfigurer configurer, BundleSourceItemUrlResolver resolver)
+        {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.SourceItemUrlResolver = resolver);
+
+            return configurer;
+        }
+
         public static BundlingConfigurer AddCss(this BundlingConfigurer configurer, Action<BundleDefaultsOptions, IServiceProvider> configure = null)
         {
             if (configurer == null)
@@ -178,10 +197,14 @@ namespace Microsoft.Extensions.DependencyInjection
                 .UseHashVersioning()
                 .UseMemoryCaching();
 
-            if (!environment.IsDevelopment())
-                configurer.EnableMinification();
+            if (environment.IsDevelopment())
+            {
+                configurer
+                    .EnableChangeDetection()
+                    .RenderSourceIncludesWhenPossible();
+            }
             else
-                configurer.EnableChangeDetection();
+                configurer.EnableMinification();
 
             return configurer;
         }

@@ -1,4 +1,4 @@
-import { counter, incCounter, timeout } from './foo';
+import { counter, incCounter, timeout } from './foo.js';
 class App {
     constructor() {
         this._textBox = document.getElementById('textbox');

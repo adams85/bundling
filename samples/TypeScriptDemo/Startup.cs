@@ -26,7 +26,7 @@ namespace TypeScriptDemo
         {
             services.AddBundling()
                 .UseDefaults(_env)
-                .UseWebMarkupMin()
+                .UseNUglify()
                 // for the sake of demonstration we enable file system caching
                 .UseFileSystemCaching(options => options.AutoResetOnCreate = true)
                 // you need to add this if you need the ES6 module bundling feature

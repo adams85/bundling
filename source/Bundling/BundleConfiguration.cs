@@ -1,9 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling
 {
+#if NETSTANDARD2_0
+    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
+#else
+    using Microsoft.AspNetCore.Hosting;
+#endif
+
+    public delegate string BundleSourceItemUrlResolver(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper, IWebHostEnvironment environment);
+
     public interface IBundleGlobalConfiguration
     {
         IBundleBuilder Builder { get; }
@@ -12,12 +21,10 @@ namespace Karambolo.AspNetCore.Bundling
         IReadOnlyList<IBundleTransform> Transforms { get; }
     }
 
-    public abstract class BundleGlobalDefaultsOptions : IBundleGlobalConfiguration
+    public interface IRunTimeGlobalBundleConfiguration
     {
-        public IBundleBuilder Builder { get; set; }
-        public IReadOnlyList<IFileBundleSourceFilter> FileFilters { get; set; }
-        public IReadOnlyList<IBundleItemTransform> ItemTransforms { get; set; }
-        public IReadOnlyList<IBundleTransform> Transforms { get; set; }
+        bool? RenderSourceIncludes { get; }
+        BundleSourceItemUrlResolver SourceItemUrlResolver { get; }
     }
 
     public interface IBundleConfiguration : IBundleGlobalConfiguration
@@ -27,6 +34,17 @@ namespace Karambolo.AspNetCore.Bundling
         string ConcatenationToken { get; }
 
         IConfigurationHelper ConfigurationHelper { get; }
+    }
+
+    public abstract class BundleGlobalDefaultsOptions : IBundleGlobalConfiguration, IRunTimeGlobalBundleConfiguration
+    {
+        public IBundleBuilder Builder { get; set; }
+        public IReadOnlyList<IFileBundleSourceFilter> FileFilters { get; set; }
+        public IReadOnlyList<IBundleItemTransform> ItemTransforms { get; set; }
+        public IReadOnlyList<IBundleTransform> Transforms { get; set; }
+
+        public bool? RenderSourceIncludes { get; set; }
+        public BundleSourceItemUrlResolver SourceItemUrlResolver { get; set; }
     }
 
     public class BundleDefaultsOptions : BundleGlobalDefaultsOptions, IBundleConfiguration

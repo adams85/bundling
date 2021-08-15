@@ -6,7 +6,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal
 {
-    public class BundleBuilderContext : IBundleBuilderContext
+    public abstract class BundleBuildContext : IBundleBuildContext
     {
         public IBundlingContext BundlingContext { get; set; }
         public PathString AppBasePath { get; set; }
@@ -18,7 +18,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         /// Not null when change detection is enabled, otherwise null.
         /// </remarks>
         public ISet<IChangeSource> ChangeSources { get; set; }
+    }
 
+    public class BundleBuilderContext : BundleBuildContext, IBundleBuilderContext
+    {
         public string Result { get; set; }
 
         public IDisposable UseExternalCancellationToken(CancellationToken cancellationToken)

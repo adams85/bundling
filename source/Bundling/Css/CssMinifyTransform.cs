@@ -16,8 +16,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
         public override void Transform(IBundleTransformContext context)
         {
-            var filePath = context is IFileBundleItemTransformContext fileItemContext ? fileItemContext.FilePath : null;
-            context.Content = _minifier.Process(context.Content, filePath);
+            context.Content = _minifier.Process(context.Content, filePath: null);
         }
     }
 }

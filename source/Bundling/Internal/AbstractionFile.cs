@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
@@ -39,9 +38,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public bool Equals(AbstractionFile other)
         {
-            return other != null && 
-                FileProvider == other.FileProvider && 
-                PathComparer == other.PathComparer && 
+            return other != null &&
+                PathComparer == other.PathComparer &&
+                (FileProvider == other.FileProvider ||
+                 FileProvider is PhysicalFileProvider physicalFileProvider &&
+                    other.FileProvider is PhysicalFileProvider otherPhysicalFileProvider &&
+                    PathComparer.Equals(physicalFileProvider.Root, otherPhysicalFileProvider.Root)) &&
                 PathComparer.Equals(FilePath, other.FilePath);
         }
 
@@ -58,9 +60,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         public override int GetHashCode()
         {
             int hashCode = -1540411083;
-            hashCode = hashCode * -1521134295 + FileProvider.GetHashCode();
-            hashCode = hashCode * -1521134295 + (FilePath != null ? PathComparer.GetHashCode(FilePath) : 0);
             hashCode = hashCode * -1521134295 + PathComparer.GetHashCode();
+            hashCode = hashCode * -1521134295 + (FileProvider is PhysicalFileProvider physicalFileProvider ? PathComparer.GetHashCode(physicalFileProvider.Root) : FileProvider.GetHashCode());
+            hashCode = hashCode * -1521134295 + (FilePath != null ? PathComparer.GetHashCode(FilePath) : 0);
             return hashCode;
         }
     }

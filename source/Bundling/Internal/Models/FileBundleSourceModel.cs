@@ -113,16 +113,22 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
         protected virtual async Task PostItemsAsync(List<IFileBundleSourceFilterItem> fileList, IBundleBuildContext context, Action<IBundleSourceBuildItem> processor)
         {
+            var loadItemContent = (context as IBundleProvideBuildItemsContext)?.LoadItemContent ?? true;
+
             for (int i = 0, n = fileList.Count; i < n; i++)
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 var item = (BuildItem)fileList[i];
+
                 item.FileInfo = item.FileProvider.GetFileInfo(item.FilePath);
 
-                using (Stream stream = item.FileInfo.CreateReadStream())
-                using (var reader = new StreamReader(stream, item.Include.Encoding, item.Include.AutoDetectEncoding))
-                    item.Content = await reader.ReadToEndAsync();
+                if (loadItemContent)
+                {
+                    using (Stream stream = item.FileInfo.CreateReadStream())
+                    using (var reader = new StreamReader(stream, item.Include.Encoding, item.Include.AutoDetectEncoding))
+                        item.Content = await reader.ReadToEndAsync();
+                }
 
                 processor(item);
             }

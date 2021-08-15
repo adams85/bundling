@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\source\Bundling.EcmaScript\Bundling.EcmaScript.csproj" />
-    <ProjectReference Include="..\..\source\Bundling.WebMarkupMin\Bundling.WebMarkupMin.csproj" />
+    <ProjectReference Include="..\..\source\Bundling.NUglify\Bundling.NUglify.csproj" />
     <ProjectReference Include="..\..\source\Bundling\Bundling.csproj" />
   </ItemGroup>
 

@@ -119,6 +119,12 @@ namespace Microsoft.AspNetCore.Builder
             return (TConfigurer)this;
         }
 
+        public TConfigurer UseSourceItemUrlResolver(BundleSourceItemUrlResolver resolver)
+        {
+            Bundle.SourceItemUrlResolver = resolver;
+            return (TConfigurer)this;
+        }
+
         public TConfigurer EnableMinification()
         {
             IConfigurationHelper helper =

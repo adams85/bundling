@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Karambolo.AspNetCore.Bundling
 {
-    public class Bundle : IBundleConfiguration
+    public class Bundle : IBundleConfiguration, IRunTimeGlobalBundleConfiguration
     {
         public Bundle(PathString path, IBundleConfiguration defaults)
         {
@@ -35,28 +35,28 @@ namespace Karambolo.AspNetCore.Bundling
         private IBundleBuilder _builder;
         public IBundleBuilder Builder
         {
-            get => _builder ?? Defaults.Builder ?? Defaults.GlobalDefaults.Builder;
+            get => _builder ?? Defaults.Builder ?? GlobalDefaults.Builder;
             set => _builder = value;
         }
 
         private IReadOnlyList<IFileBundleSourceFilter> _fileFilters;
         public IReadOnlyList<IFileBundleSourceFilter> FileFilters
         {
-            get => _fileFilters ?? Defaults.FileFilters ?? Defaults.GlobalDefaults.FileFilters;
+            get => _fileFilters ?? Defaults.FileFilters ?? GlobalDefaults.FileFilters;
             set => _fileFilters = value;
         }
 
         private IReadOnlyList<IBundleItemTransform> _itemTransforms;
         public IReadOnlyList<IBundleItemTransform> ItemTransforms
         {
-            get => _itemTransforms ?? Defaults.ItemTransforms ?? Defaults.GlobalDefaults.ItemTransforms;
+            get => _itemTransforms ?? Defaults.ItemTransforms ?? GlobalDefaults.ItemTransforms;
             set => _itemTransforms = value;
         }
 
         private IReadOnlyList<IBundleTransform> _transforms;
         public IReadOnlyList<IBundleTransform> Transforms
         {
-            get => _transforms ?? Defaults.Transforms ?? Defaults.GlobalDefaults.Transforms;
+            get => _transforms ?? Defaults.Transforms ?? GlobalDefaults.Transforms;
             set => _transforms = value;
         }
 
@@ -69,6 +69,26 @@ namespace Karambolo.AspNetCore.Bundling
 
         public Encoding OutputEncoding { get; set; }
         public IBundleCacheOptions CacheOptions { get; set; }
+
+        private bool? _renderSourceIncludes;
+        public bool? RenderSourceIncludes
+        {
+            get =>
+                _renderSourceIncludes ??
+                (Defaults as IRunTimeGlobalBundleConfiguration)?.RenderSourceIncludes ??
+                (GlobalDefaults as IRunTimeGlobalBundleConfiguration)?.RenderSourceIncludes;
+            set => _renderSourceIncludes = value;
+        }
+
+        private BundleSourceItemUrlResolver _sourceItemUrlResolver;
+        public BundleSourceItemUrlResolver SourceItemUrlResolver
+        {
+            get =>
+                _sourceItemUrlResolver ??
+                (Defaults as IRunTimeGlobalBundleConfiguration)?.SourceItemUrlResolver ??
+                (GlobalDefaults as IRunTimeGlobalBundleConfiguration)?.SourceItemUrlResolver;
+            set => _sourceItemUrlResolver = value;
+        }
 
         public IConfigurationHelper ConfigurationHelper => Defaults.ConfigurationHelper;
     }

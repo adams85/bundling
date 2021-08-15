@@ -23,16 +23,19 @@ namespace Karambolo.AspNetCore.Bundling.Sass
         {
             string filePath;
             IFileProvider fileProvider;
+            bool caseSensitiveFilePaths;
 
             if (context is IFileBundleItemTransformContext fileItemContext)
             {
                 filePath = fileItemContext.FilePath;
                 fileProvider = fileItemContext.FileProvider;
+                caseSensitiveFilePaths = fileItemContext.CaseSensitiveFilePaths;
             }
             else
             {
                 filePath = null;
                 fileProvider = null;
+                caseSensitiveFilePaths = true;
             }
 
             PathString pathPrefix = context.BuildContext.BundlingContext.StaticFilesPathPrefix;
@@ -42,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
             context.Content = result.Content ?? string.Empty;
             if (result.Imports != null && result.Imports.Count > 0)
-                context.BuildContext.ChangeSources?.UnionWith(result.Imports.Select(import => new AbstractionFile(fileProvider, import)));
+                context.BuildContext.ChangeSources?.UnionWith(result.Imports.Select(import => new AbstractionFile(fileProvider, import, caseSensitiveFilePaths)));
         }
     }
 }

@@ -10,6 +10,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
     public static class CssBundleConfiguration
     {
         public const string BundleType = "css";
+        public const string OutputMediaType = "text/css";
 
         internal class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
         {
@@ -40,6 +41,8 @@ namespace Karambolo.AspNetCore.Bundling.Css
             private readonly CssMinifyTransform _minifyTransform;
 
             public string Type => BundleType;
+            public string OutputMediaType => CssBundleConfiguration.OutputMediaType;
+            public bool CanRenderSourceIncludes => true;
 
             public Helper(IOptions<BundleGlobalOptions> globalOptions, ICssMinifier minifier)
             {
