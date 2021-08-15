@@ -299,3 +299,6 @@ __pycache__/
 *.xsd.cs
 
 **/App_Data/Bundles/
+
+samples/QuickStartTemplate/wwwroot/lib
+samples/QuickStartTemplate/wwwroot/bundles

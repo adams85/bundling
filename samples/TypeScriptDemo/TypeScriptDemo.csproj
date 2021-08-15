@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>$(DefaultNetCoreTargetFramework)</TargetFramework>
-    <TypeScriptToolsVersion>3.8</TypeScriptToolsVersion>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TypeScriptToolsVersion>4.3</TypeScriptToolsVersion>
     <TypeScriptModuleKind>ES6</TypeScriptModuleKind>
-    <TypeScriptTarget>ES2017</TypeScriptTarget>
+    <TypeScriptTarget>ES2020</TypeScriptTarget>
   </PropertyGroup>
 
   <ItemGroup>

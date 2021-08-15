@@ -63,7 +63,7 @@ namespace VueDemo
                         .Include("/js/app.js");
                 });
 
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions { RequestPath = "/static" });
 
             app.UseRouting();
 

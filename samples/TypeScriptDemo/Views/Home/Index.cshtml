@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TypeScript + ES6 modules demo</title>
 
-    <link href="~/bundles/site.css" rel="stylesheet" />
+    @*<link href="~/bundles/site.css" rel="stylesheet" />*@
+    @* or: *@
+    @await Styles.RenderAsync("~/bundles/site.css")
 </head>
 
 <body>
@@ -18,6 +20,8 @@
         <a href="@await Scripts.UrlAsync("~/bundles/main.js")" target="_blank">Check out the generated javascript source</a>
     </p>
 
-    <script src="~/bundles/main.js"></script>
+    @*<script src="~/bundles/main.js"></script>*@
+    @* or: *@
+    @await Scripts.RenderAsync("~/bundles/main.js")
 </body>
 </html>

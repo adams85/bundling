@@ -6,8 +6,8 @@ class App {
         this._button = document.getElementById('button');
         this._button.onclick = () => this.click();
     }
-    // you may use post-ES2017 language features,
-    // just make sure that the TypeScript compiler targets ES2017
+    // you may use post-ES2020 language features,
+    // just make sure that the TypeScript compiler targets ES2020
     // (see TypeScriptDemo.csproj)
     async click() {
         this._textBox.value = 'Thinking hard...';
