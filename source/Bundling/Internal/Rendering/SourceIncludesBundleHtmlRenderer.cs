@@ -26,7 +26,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             if (JsBundleConfiguration.OutputMediaType.Equals(bundle.OutputMediaType, StringComparison.OrdinalIgnoreCase))
             {
                 return
-                    bundle.Transforms.Any(t =>
+                    bundle.Transforms != null && bundle.Transforms.Any(t =>
                         t is IAggregatorBundleTransform &&
                         t.GetType() is Type type &&
                         type.FullName == "Karambolo.AspNetCore.Bundling.EcmaScript.ModuleBundlingTransform" &&
