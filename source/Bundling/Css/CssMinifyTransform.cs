@@ -2,7 +2,7 @@
 
 namespace Karambolo.AspNetCore.Bundling.Css
 {
-    public class CssMinifyTransform : BundleTransform
+    public class CssMinifyTransform : BundleTransform, IAllowsSourceIncludes
     {
         private readonly ICssMinifier _minifier;
 

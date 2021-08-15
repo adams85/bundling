@@ -2,6 +2,8 @@
 
 namespace Karambolo.AspNetCore.Bundling
 {
+    public interface IAllowsSourceIncludes { }
+
     public interface IBundleTransform
     {
         void Transform(IBundleTransformContext context);

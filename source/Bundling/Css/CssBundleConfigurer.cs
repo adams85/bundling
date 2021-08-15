@@ -9,7 +9,13 @@ namespace Microsoft.AspNetCore.Builder
         public CssBundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, bool caseSensitiveSourceFilePaths, IServiceProvider appServices)
             : base(bundle, sourceFileProvider, caseSensitiveSourceFilePaths, appServices) { }
 
-        public CssBundleConfigurer RenderSourceIncludes()
+        public CssBundleConfigurer DisableSourceIncludes()
+        {
+            Bundle.RenderSourceIncludes = false;
+            return this;
+        }
+
+        public CssBundleConfigurer EnableSourceIncludes()
         {
             Bundle.RenderSourceIncludes = true;
             return this;

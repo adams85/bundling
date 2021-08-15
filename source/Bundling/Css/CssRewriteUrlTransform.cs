@@ -6,7 +6,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Css
 {
-    public class CssRewriteUrlTransform : BundleItemTransform
+    public class CssRewriteUrlTransform : BundleItemTransform, IAllowsSourceIncludes
     {
         private static readonly Regex s_rewriteUrlsRegex = new Regex(
             @"(?<before>url\()(?<url>'[^']+'|""[^""]+""|[^)]+)(?<after>\))|" +

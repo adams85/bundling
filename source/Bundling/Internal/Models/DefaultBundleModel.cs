@@ -5,28 +5,13 @@ using System.Text;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Rendering;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Models
 {
-#if NETSTANDARD2_0
-    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
-#else
-    using Microsoft.AspNetCore.Hosting;
-#endif
-
     public class DefaultBundleModel : ChangeObserver, IBundleModel
     {
-        private static readonly BundleSourceItemUrlResolver s_defaultSourceItemUrlResolver =
-            (IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper, IWebHostEnvironment environment) =>
-            item.ItemTransformContext is IFileBundleItemTransformContext fileItemContext &&
-                new AbstractionFile(fileItemContext.FileProvider, fileItemContext.FilePath, fileItemContext.CaseSensitiveFilePaths).Equals(
-                    new AbstractionFile(environment.WebRootFileProvider, fileItemContext.FilePath, fileItemContext.CaseSensitiveFilePaths)) ?
-            urlHelper.Content("~" + bundlingContext.StaticFilesPathPrefix.Add(UrlUtils.NormalizePath(fileItemContext.FilePath)).ToString()) :
-            null;
-
         private readonly IEnumerable<IBundleModelFactory> _modelFactories;
 
         public DefaultBundleModel(Bundle bundle, IEnumerable<IBundleModelFactory> modelFactories)
@@ -54,20 +39,22 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
             CacheOptions = bundle.CacheOptions != null ? new BundleCacheOptions(bundle.CacheOptions) : BundleCacheOptions.Default;
 
-            var renderSourceIncludes = bundle.ConfigurationHelper.CanRenderSourceIncludes && (bundle.RenderSourceIncludes ?? false);
+            var renderSourceIncludes =
+                (bundle.RenderSourceIncludes ?? false) &&
+                !bundle.DependsOnParams &&
+                (bundle.Transforms == null || bundle.Transforms.All(t => t is IAllowsSourceIncludes)) &&
+                bundle.Sources.All(s => s.ItemTransforms == null || s.ItemTransforms.All(t => t is IAllowsSourceIncludes));
+
             HtmlRenderer = CreateHtmlRenderer(renderSourceIncludes);
 
-            SourceItemUrlResolver = bundle.SourceItemUrlResolver ?? s_defaultSourceItemUrlResolver;
+            SourceItemUrlResolver = bundle.SourceItemUrlResolver ?? delegate { return null; };
 
             Sources = bundle.Sources.Select(CreateSourceModel).ToArray();
         }
 
         protected virtual IBundleHtmlRenderer CreateHtmlRenderer(bool renderSourceIncludes)
         {
-            if (renderSourceIncludes)
-                return SourceIncludesBundleHtmlRenderer.Instance;
-
-            return DefaultBundleHtmlRenderer.Instance;
+            return renderSourceIncludes ? SourceIncludesBundleHtmlRenderer.Instance : (IBundleHtmlRenderer)DefaultBundleHtmlRenderer.Instance;
         }
 
         protected virtual IBundleSourceModel CreateSourceModel(BundleSource bundleSource)

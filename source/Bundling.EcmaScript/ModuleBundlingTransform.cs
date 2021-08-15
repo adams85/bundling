@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript
 {
-    public class ModuleBundlingTransform : AggregatorBundleTransform
+    public class ModuleBundlingTransform : AggregatorBundleTransform, IAllowsSourceIncludes
     {
         private readonly IModuleBundlerFactory _moduleBundlerFactory;
         private readonly ModuleBundlerOptions _options;

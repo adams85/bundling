@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
@@ -7,6 +8,31 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 {
     public class AbstractionFile : IChangeSource, IEquatable<AbstractionFile>
     {
+        internal readonly struct FileProviderEqualityComparer : IEqualityComparer<IFileProvider>
+        {
+            private readonly StringComparer _pathComparer;
+
+            public FileProviderEqualityComparer(StringComparer pathComparer)
+            {
+                _pathComparer = pathComparer;
+            }
+
+            public FileProviderEqualityComparer(bool caseSensitiveFilePaths): this(GetPathComparer(caseSensitiveFilePaths)) { }
+
+            public bool Equals(IFileProvider fileProvider1, IFileProvider fileProvider2)
+            {
+                return 
+                    fileProvider1 == fileProvider2 ||
+                    fileProvider1 is PhysicalFileProvider physicalFileProvider1 && fileProvider2 is PhysicalFileProvider physicalFileProvider2 && 
+                        _pathComparer.Equals(physicalFileProvider1.Root, physicalFileProvider2.Root);
+            }
+
+            public int GetHashCode(IFileProvider fileProvider)
+            {
+                return fileProvider is PhysicalFileProvider physicalFileProvider ? _pathComparer.GetHashCode(physicalFileProvider.Root) : fileProvider.GetHashCode();
+            }
+        }
+
         public static readonly NullFileProvider NullFileProvider = new NullFileProvider();
 
         internal static bool GetDefaultCaseSensitiveFilePaths(IFileProvider fileProvider)
@@ -14,11 +40,16 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             return !(fileProvider is PhysicalFileProvider) || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
 
+        internal static StringComparer GetPathComparer(bool caseSensitiveFilePaths)
+        {
+            return caseSensitiveFilePaths ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        }
+
         public AbstractionFile(IFileProvider fileProvider, string filePath, bool caseSensitiveFilePaths = true)
         {
             FileProvider = fileProvider ?? NullFileProvider;
             FilePath = filePath;
-            PathComparer = caseSensitiveFilePaths ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+            PathComparer = GetPathComparer(caseSensitiveFilePaths);
         }
 
         public IFileProvider FileProvider { get; }
@@ -40,10 +71,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         {
             return other != null &&
                 PathComparer == other.PathComparer &&
-                (FileProvider == other.FileProvider ||
-                 FileProvider is PhysicalFileProvider physicalFileProvider &&
-                    other.FileProvider is PhysicalFileProvider otherPhysicalFileProvider &&
-                    PathComparer.Equals(physicalFileProvider.Root, otherPhysicalFileProvider.Root)) &&
+                new FileProviderEqualityComparer(PathComparer).Equals(FileProvider, other.FileProvider) &&
                 PathComparer.Equals(FilePath, other.FilePath);
         }
 
@@ -61,7 +89,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         {
             int hashCode = -1540411083;
             hashCode = hashCode * -1521134295 + PathComparer.GetHashCode();
-            hashCode = hashCode * -1521134295 + (FileProvider is PhysicalFileProvider physicalFileProvider ? PathComparer.GetHashCode(physicalFileProvider.Root) : FileProvider.GetHashCode());
+            hashCode = hashCode * -1521134295 + new FileProviderEqualityComparer(PathComparer).GetHashCode(FileProvider);
             hashCode = hashCode * -1521134295 + (FilePath != null ? PathComparer.GetHashCode(FilePath) : 0);
             return hashCode;
         }

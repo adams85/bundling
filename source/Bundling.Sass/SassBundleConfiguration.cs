@@ -42,7 +42,6 @@ namespace Karambolo.AspNetCore.Bundling.Sass
 
             public string Type => BundleType;
             public string OutputMediaType => CssBundleConfiguration.OutputMediaType;
-            public bool CanRenderSourceIncludes => false;
 
             public Helper(IOptions<BundleGlobalOptions> globalOptions, ISassCompiler compiler, ICssMinifier minifier)
             {

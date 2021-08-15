@@ -12,12 +12,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
 {
-#if NETSTANDARD2_0
-    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
-#else
-    using Microsoft.AspNetCore.Hosting;
-#endif
-
     public class SourceIncludesBundleHtmlRenderer : IBundleHtmlRenderer
     {
         public static readonly SourceIncludesBundleHtmlRenderer Instance = new SourceIncludesBundleHtmlRenderer();
@@ -51,10 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             if (tagFormat == null)
                 return HtmlString.Empty;
 
-            HttpContext httpContext = urlHelper.ActionContext.HttpContext;
-            IWebHostEnvironment environment = httpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
-
-            IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(httpContext, bundle, query, loadItemContent: false);
+            IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(urlHelper.ActionContext.HttpContext, bundle, query, loadItemContent: false);
 
             var builder = new HtmlContentBuilder(items.Length * 2 - 1);
 
@@ -63,7 +54,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
 
             for (int i = 0, n = items.Length; i < n; i++)
             {
-                string url = bundle.SourceItemUrlResolver(items[i], bundleManager.BundlingContext, urlHelper, environment);
+                string url = bundle.SourceItemUrlResolver(items[i], bundleManager.BundlingContext, urlHelper);
                 if (url == null)
                 {
                     unresolvedUrlFound = true;
@@ -81,7 +72,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             if (unresolvedUrlFound)
             {
                 ILogger logger = urlHelper.ActionContext.HttpContext.RequestServices.GetRequiredService<ILogger<SourceIncludesBundleHtmlRenderer>>();
-                logger.LogWarning($"The URL of one or more source items could not be resolved during rendering HTML includes for bundle '{{PATH}}'. You may set a custom URL resolver by the {nameof(BundlingServiceCollectionExtensions.UseSourceItemUrlResolver)} method of the configuration builders.", bundle.Path);
+                logger.LogWarning($"URL of one or more source items could not be resolved during rendering HTML includes for bundle '{{PATH}}'. You may set a custom URL resolver by the {nameof(BundlingServiceCollectionExtensions.UseSourceItemUrlResolver)} method of the configuration builders.", bundle.Path);
             }
 
             return builder;

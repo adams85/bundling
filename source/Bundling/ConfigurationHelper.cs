@@ -6,7 +6,6 @@ namespace Karambolo.AspNetCore.Bundling
     {
         string Type { get; }
         string OutputMediaType { get; }
-        bool CanRenderSourceIncludes { get; }
 
         IReadOnlyList<IBundleItemTransform> SetDefaultItemTransforms(IReadOnlyList<IBundleItemTransform> itemTransforms);
         IReadOnlyList<IBundleTransform> SetDefaultTransforms(IReadOnlyList<IBundleTransform> transforms);

@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return configurer;
         }
 
-        public static BundlingConfigurer RenderSourceIncludesWhenPossible(this BundlingConfigurer configurer)
+        public static BundlingConfigurer EnableSourceIncludes(this BundlingConfigurer configurer)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
@@ -201,7 +201,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 configurer
                     .EnableChangeDetection()
-                    .RenderSourceIncludesWhenPossible();
+                    .EnableSourceIncludes();
             }
             else
                 configurer.EnableMinification();

@@ -5,13 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling
 {
-#if NETSTANDARD2_0
-    using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
-#else
-    using Microsoft.AspNetCore.Hosting;
-#endif
-
-    public delegate string BundleSourceItemUrlResolver(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper, IWebHostEnvironment environment);
+    public delegate string BundleSourceItemUrlResolver(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper);
 
     public interface IBundleGlobalConfiguration
     {

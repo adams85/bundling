@@ -41,7 +41,6 @@ namespace Karambolo.AspNetCore.Bundling.Js
 
             public string Type => BundleType;
             public string OutputMediaType => JsBundleConfiguration.OutputMediaType;
-            public bool CanRenderSourceIncludes => true;
 
             public Helper(IOptions<BundleGlobalOptions> globalOptions, IJsMinifier minifier)
             {
