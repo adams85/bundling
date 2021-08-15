@@ -160,15 +160,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal
                 httpContext.RequestAborted, bundle.CacheOptions, lockFile);
         }
 
-        private PathString GetPathPrefix(HttpContext httpContext)
-        {
-            return httpContext.Request.PathBase + BundlingContext.BundlesPathPrefix;
-        }
-
         public bool TryGetBundle(HttpContext httpContext, PathString path, out IBundleModel bundle)
         {
-            if (path.StartsWithSegments(GetPathPrefix(httpContext), out PathString bundlePath) && Bundles.TryGetValue(bundlePath, out bundle))
+            if (path.StartsWithSegments(httpContext.Request.PathBase, out path) &&
+                path.StartsWithSegments(BundlingContext.BundlesPathPrefix, out path) &&
+                Bundles.TryGetValue(path, out bundle))
+            {
                 return true;
+            }
 
             bundle = default;
             return false;
@@ -214,7 +213,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             _urlHelper.AddVersion(cacheItem.Version, ref bundlePath, ref query);
 
-            return GetPathPrefix(httpContext) + bundlePath + query;
+            return httpContext.Request.PathBase + BundlingContext.BundlesPathPrefix + bundlePath + query;
         }
 
         public async Task<bool> TryEnsureUrlAsync(HttpContext httpContext)

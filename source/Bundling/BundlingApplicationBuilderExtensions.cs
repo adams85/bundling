@@ -22,6 +22,14 @@ namespace Microsoft.AspNetCore.Builder
 
     public static class BundlingApplicationBuilderExtensions
     {
+        public static IApplicationBuilder InitializeBundling(this IApplicationBuilder builder)
+        {
+            if (HttpContextStatic.Current == null)
+                HttpContextStatic.Initialize(builder.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
+
+            return builder;
+        }
+
         public static IApplicationBuilder UseBundling(this IApplicationBuilder builder, Action<BundleCollectionConfigurer> configureBundles = null)
         {
             return builder.UseBundling(new BundlingOptions(), configureBundles);
@@ -35,8 +43,7 @@ namespace Microsoft.AspNetCore.Builder
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
 
-            if (HttpContextStatic.Current == null)
-                HttpContextStatic.Initialize(builder.ApplicationServices.GetRequiredService<IHttpContextAccessor>());
+            builder.InitializeBundling();
 
             IFileProvider sourceFileProvider = options.SourceFileProvider ?? builder.ApplicationServices.GetRequiredService<IWebHostEnvironment>().WebRootFileProvider;
 
