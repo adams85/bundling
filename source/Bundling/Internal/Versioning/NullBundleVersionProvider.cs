@@ -2,10 +2,6 @@
 {
     public class NullBundleVersionProvider : IBundleVersionProvider
     {
-        public static readonly NullBundleVersionProvider Instance = new NullBundleVersionProvider();
-
-        private NullBundleVersionProvider() { }
-
         public void Provide(IBundleVersionProviderContext context) { }
     }
 }

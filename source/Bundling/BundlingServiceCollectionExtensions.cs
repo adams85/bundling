@@ -53,7 +53,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
             services.TryAddSingleton<IBundleManagerFactory, BundleManagerFactory>();
-            services.TryAddSingleton<IBundleVersionProvider>(NullBundleVersionProvider.Instance);
+            services.TryAddSingleton<IBundleCache, NullBundleCache>();
+            services.TryAddSingleton<IBundleVersionProvider, NullBundleVersionProvider>();
             services.TryAddSingleton<IBundleUrlHelper, DefaultBundleUrlHelper>();
 
             return services.AddBundlingCore(configure);

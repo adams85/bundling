@@ -25,7 +25,13 @@ namespace QuickStartTemplate
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Set the UseDesignTimeBundling property to true in the csproj file to enable bundling on build.
+
+#if USE_DESIGNTIME_BUNDLING
+            services.AddBundling();
+#else
             Bundles.ConfigureServices(services, Environment);
+#endif
 
             services.AddRazorPages();
         }

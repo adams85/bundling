@@ -14,12 +14,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
     public class MemoryBundleCache : IBundleCache, IDisposable
     {
-        private class Item : IBundleCacheItem
+        internal class Item : IBundleCacheItem
         {
-            public Item(IFileInfo fileInfo, BundleCacheData metadata)
+            public Item(IFileInfo fileInfo, BundleCacheData data)
             {
                 FileInfo = fileInfo;
-                Version = metadata.Version;
+                Version = data.Version;
             }
 
             public IFileInfo FileInfo { get; }
