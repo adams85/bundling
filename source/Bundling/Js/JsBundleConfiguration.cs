@@ -12,7 +12,7 @@ namespace Karambolo.AspNetCore.Bundling.Js
         public const string BundleType = "js";
         public const string OutputMediaType = "text/javascript";
 
-        internal class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
+        internal sealed class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
         {
             public Configurer(Action<BundleDefaultsOptions, IServiceProvider> action, IServiceProvider serviceProvider)
                 : base(action, serviceProvider) { }

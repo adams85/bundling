@@ -4,27 +4,24 @@
     {
         internal abstract class ExportData
         {
-            public ExportData(string exportName)
+            public ExportData(string exportName, string localName)
             {
                 ExportName = exportName;
-            }
-
-            public string ExportName { get; }
-        }
-
-        internal class NamedExportData : ExportData
-        {
-            public NamedExportData(string localName) : this(localName, localName) { }
-
-            public NamedExportData(string exportName, string localName) : base(exportName)
-            {
                 LocalName = localName;
             }
 
+            public string ExportName { get; }
             public string LocalName { get; }
         }
 
-        internal class ReexportData : NamedExportData
+        internal sealed class NamedExportData : ExportData
+        {
+            public NamedExportData(string localName) : this(localName, localName) { }
+
+            public NamedExportData(string exportName, string localName) : base(exportName, localName) { }
+        }
+
+        internal sealed class ReexportData : ExportData
         {
             public ReexportData(ModuleFile moduleFile) : this(moduleFile, null, null) { }
 

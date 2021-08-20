@@ -21,7 +21,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
     public class LessEngineFactory : ILessEngineFactory
     {
-        internal class EnhancedImporter : Importer, IImporter
+        internal sealed class EnhancedImporter : Importer, IImporter
         {
             private readonly PathString _outputPath;
 

@@ -12,7 +12,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
     {
         public const string BundleType = "sass";
 
-        internal class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
+        internal sealed class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
         {
             public Configurer(Action<BundleDefaultsOptions, IServiceProvider> action, IServiceProvider serviceProvider)
                 : base(action, serviceProvider) { }

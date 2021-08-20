@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
@@ -15,7 +16,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
-    internal partial class ModuleBundler : IModuleBundler
+    internal sealed partial class ModuleBundler : IModuleBundler
     {
         public const string DefaultExportName = "default";
 
@@ -155,14 +156,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 rootFiles[i] = moduleFile = new ModuleFile(
                     moduleFile.FileProvider,
-                    moduleFile.FilePath != null ? NormalizePath(moduleFile.FilePath) : $"<root{i}>",
+                    moduleFile.FilePath != null ? NormalizePath(moduleFile.FilePath) : "<root" + i.ToString(CultureInfo.InvariantCulture) + ">",
                     moduleFile.CaseSensitiveFilePaths)
                 {
                     Content = moduleFile.Content
                 };
 
                 if (!FileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
-                    FileProviderPrefixes.Add(moduleFile.FileProvider, "$" + fileProviderId++);
+                    FileProviderPrefixes.Add(moduleFile.FileProvider, "$" + (fileProviderId++).ToString(CultureInfo.InvariantCulture));
 
                 var module = new ModuleData(moduleFile);
 

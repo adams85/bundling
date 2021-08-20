@@ -50,10 +50,10 @@ namespace Karambolo.AspNetCore.Bundling.Tools
             base.Validate();
 
             if (!_sourcesOption.TryParse(ConfigSources.Default, out _configSources))
-                throw new CommandParsingException(Command, $"Value is invalid for the '{"--sources"}' option.");
+                throw new CommandParsingException(Command, string.Format("Value is invalid for the '{0}' option.", "--sources"));
 
             if (!_modeOption.TryParse(BundlingMode.Production, out _bundlingMode))
-                throw new CommandParsingException(Command, $"Value is invalid for the '{"--mode"}' option.");
+                throw new CommandParsingException(Command, string.Format("Value is invalid for the '{0}' option.", "--mode"));
         }
     }
 }

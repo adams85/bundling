@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,7 +77,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
             public bool IsExpired { get; }
         }
 
-        private class Item : IBundleCacheItem
+        private sealed class Item : IBundleCacheItem
         {
             private readonly StoreItem _storeItem;
 
@@ -144,7 +145,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected virtual string GetItemsBasePath(int managerId, string path)
         {
-            return Path.Combine(BasePath, managerId.ToString(), UrlUtils.PathToFileName(path));
+            return Path.Combine(BasePath, managerId.ToString(CultureInfo.InvariantCulture), UrlUtils.PathToFileName(path));
         }
 
         protected virtual string GetItemFileName(BundleCacheKey key)
@@ -207,7 +208,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         {
             using (var ms = new MemoryStream())
             {
-                using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true))
                     await fs.CopyToAsync(ms, CopyBufferSize, token);
 
                 ms.Position = 0;
@@ -251,7 +252,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
                 writer.Flush();
 
                 ms.Position = 0;
-                using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                using (var fs = new FileStream(physicalItemMetadataPath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, useAsync: true))
                 {
                     await ms.CopyToAsync(fs, CopyBufferSize, token);
                     await fs.FlushAsync(token);
@@ -282,7 +283,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
                 await SaveItemMetadataAsync(physicalItemMetadataPath, metadata, token);
 
-                using (var fs = new FileStream(physicalItemPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                using (var fs = new FileStream(physicalItemPath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, useAsync: true))
                 {
                     await fs.WriteAsync(data.Content, 0, data.Content.Length, token);
                     await fs.FlushAsync(token);

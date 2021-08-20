@@ -14,7 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 {
     public class MemoryBundleCache : IBundleCache, IDisposable
     {
-        internal class Item : IBundleCacheItem
+        internal sealed class Item : IBundleCacheItem
         {
             public Item(IFileInfo fileInfo, BundleCacheData data)
             {

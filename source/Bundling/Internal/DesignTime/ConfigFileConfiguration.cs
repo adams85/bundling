@@ -6,7 +6,7 @@ using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 {
-    internal class ConfigFileConfiguration : DesignTimeBundlingConfiguration
+    internal sealed class ConfigFileConfiguration : DesignTimeBundlingConfiguration
     {
         public ConfigFileConfiguration()
         {

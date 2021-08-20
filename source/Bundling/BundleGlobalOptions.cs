@@ -16,7 +16,7 @@ namespace Karambolo.AspNetCore.Bundling
 
     public class BundleGlobalOptions : BundleGlobalDefaultsOptions
     {
-        internal class Configurer : BundleDefaultsConfigurerBase<BundleGlobalOptions>
+        internal sealed class Configurer : BundleDefaultsConfigurerBase<BundleGlobalOptions>
         {
             private static string DefaultResolveSourceItemUrl(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper, IWebHostEnvironment env)
             {

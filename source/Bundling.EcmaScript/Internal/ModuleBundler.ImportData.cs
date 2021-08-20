@@ -14,12 +14,12 @@
             public string LocalName { get; }
         }
 
-        internal class NamespaceImportData : ImportData
+        internal sealed class NamespaceImportData : ImportData
         {
             public NamespaceImportData(ModuleFile moduleFile, string localName) : base(moduleFile, localName) { }
         }
 
-        internal class NamedImportData : ImportData
+        internal sealed class NamedImportData : ImportData
         {
             public NamedImportData(ModuleFile moduleFile, string localName, string importName) : base(moduleFile, localName)
             {

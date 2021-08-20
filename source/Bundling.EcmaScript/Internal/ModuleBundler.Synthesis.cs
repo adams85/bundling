@@ -292,7 +292,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private class DescendingRangeComparer : IComparer<Range>
+        private sealed class DescendingRangeComparer : IComparer<Range>
         {
             public static readonly DescendingRangeComparer Instance = new DescendingRangeComparer();
 
@@ -304,7 +304,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private class RewriteModuleLocals
+        private sealed class RewriteModuleLocals
         {
             public HashSet<ModuleData> VisitedModules { get; } = new HashSet<ModuleData>();
             public Dictionary<string, ExportData> Exports { get; } = new Dictionary<string, ExportData>();

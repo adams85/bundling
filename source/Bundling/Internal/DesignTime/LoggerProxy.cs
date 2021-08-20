@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 {
-    internal class LoggerProxy : ILogger
+    internal sealed class LoggerProxy : ILogger
     {
         private static int TranslateLogLevel(LogLevel logLevel)
         {
@@ -62,7 +62,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         }
     }
 
-    internal class LoggerProxyProvider : ILoggerProvider
+    internal sealed class LoggerProxyProvider : ILoggerProvider
     {
         private readonly ConcurrentDictionary<string, LoggerProxy> _loggers;
         private readonly Action<int, string> _logger;

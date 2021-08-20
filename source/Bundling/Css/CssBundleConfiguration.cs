@@ -12,7 +12,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
         public const string BundleType = "css";
         public const string OutputMediaType = "text/css";
 
-        internal class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
+        internal sealed class Configurer : BundleDefaultsConfigurerBase<BundleDefaultsOptions>
         {
             public Configurer(Action<BundleDefaultsOptions, IServiceProvider> action, IServiceProvider serviceProvider)
                 : base(action, serviceProvider) { }

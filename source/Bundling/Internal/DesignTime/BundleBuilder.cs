@@ -24,9 +24,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
     using Microsoft.Extensions.Hosting;
 #endif
 
-    internal class BundleBuilder
+    internal sealed class BundleBuilder
     {
-        private class HostingEnvironment : IWebHostEnvironment
+        private sealed class HostingEnvironment : IWebHostEnvironment
         {
             public HostingEnvironment(PhysicalFileProvider outputFileProvider, string mode)
             {
@@ -63,7 +63,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
         // DefaultBundleModelFactory schedules disposal of the bundle models for application shutdown;
         // we fake app shutdown using the cancellation token we get from the CLI tools
         // TODO: roll out a less ugly solution like introducing a dedicated interface?
-        private class Lifetime : IHostApplicationLifetime, IDisposable
+        private sealed class Lifetime : IHostApplicationLifetime, IDisposable
         {
             private readonly CancellationTokenSource _lifetimeCts;
             private readonly CancellationTokenSource _linkedCts;

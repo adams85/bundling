@@ -7,7 +7,7 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-    internal class GlobbingDirectoryInfo : DirectoryInfoBase
+    internal sealed class GlobbingDirectoryInfo : DirectoryInfoBase
     {
         private readonly IFileProvider _fileProvider;
         private readonly string _path, _name;
@@ -70,7 +70,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         public override DirectoryInfoBase ParentDirectory => new GlobbingDirectoryInfo(_fileProvider, _path);
     }
 
-    internal class GlobbingFileInfo : FileInfoBase
+    internal sealed class GlobbingFileInfo : FileInfoBase
     {
         private readonly IFileProvider _fileProvider;
         private readonly string _path, _name;

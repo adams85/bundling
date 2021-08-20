@@ -10,7 +10,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
     using Microsoft.Extensions.Hosting;
 #endif
 
-    internal class NullDisposable : IDisposable
+    internal sealed class NullDisposable : IDisposable
     {
         public static readonly NullDisposable Instance = new NullDisposable();
 

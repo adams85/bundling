@@ -7,7 +7,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal partial class ModuleBundler
     {
-        internal class ModuleData
+        internal sealed class ModuleData
         {
             public ModuleData(ModuleFile file)
             {

@@ -6,9 +6,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
     /// Based on <see cref="https://blogs.msdn.microsoft.com/pfxteam/2012/02/12/building-async-coordination-primitives-part-7-asyncreaderwriterlock/"/>
     /// TODO: support cancellation?
-    internal class AsyncKeyedLock<TKey>
+    internal sealed class AsyncKeyedLock<TKey>
     {
-        private class LockState
+        private sealed class LockState
         {
             public Queue<TaskCompletionSource<IDisposable>> WaitingWriters;
             public TaskCompletionSource<IDisposable> WaitingReader;
