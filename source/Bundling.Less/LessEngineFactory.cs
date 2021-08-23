@@ -7,6 +7,7 @@ using dotless.Core.Input;
 using dotless.Core.Loggers;
 using dotless.Core.Parser;
 using dotless.Core.Stylizers;
+using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
@@ -39,17 +40,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
                 if (pathList.Count > 0)
                     url = GetAdjustedFilePath(url, pathList);
 
-                url = 
-                    !url.StartsWith("/", StringComparison.Ordinal) ? 
-                    new PathString(RootPath).Add(CurrentDirectory).Add("/" + url) : 
-                    new PathString(RootPath).Add(url);
-
-                url = UrlUtils.NormalizePath(url, canonicalize: true);
-
-                if (_outputPath.HasValue)
-                    url = UrlUtils.MakeRelativePath(_outputPath, url);
-
-                return url;
+                return CssRewriteUrlTransform.RebaseUrlCore(url, CurrentDirectory, RootPath, _outputPath);
             }
         }
 

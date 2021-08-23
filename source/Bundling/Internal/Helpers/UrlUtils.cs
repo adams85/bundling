@@ -28,7 +28,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         // https://stackoverflow.com/questions/3641722/valid-characters-for-uri-schemes
         private static readonly Regex s_hasSchemeRegex = new Regex(@"^[a-zA-Z][a-zA-Z0-9+\-.]*:", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        private static readonly Uri s_dummyBaseUri = new Uri("xx://");
+        private static readonly Uri s_dummyBaseUri = new Uri("xx:", UriKind.Absolute);
 
         private static Func<string, string> s_getCanonicalPath;
 
@@ -50,13 +50,45 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public static bool IsRelative(string url)
         {
-            return !url.StartsWith("/", StringComparison.Ordinal) && !s_hasSchemeRegex.IsMatch(url);
+            return !string.IsNullOrWhiteSpace(url) && !url.StartsWith("/", StringComparison.Ordinal) && !s_hasSchemeRegex.IsMatch(url);
         }
 
         public static void FromRelative(string url, out PathString path, out QueryString query, out FragmentString fragment)
         {
-            var uri = new Uri(s_dummyBaseUri, url);
-            UriHelper.FromAbsolute(uri.ToString(), out _, out _, out path, out query, out fragment);
+            char c;
+            var index = 0;
+
+            for (; index < url.Length; index++)
+                if ((c = url[index]) == '#')
+                {
+                    path = PathString.FromUriComponent(NormalizePathSegment(new StringSegment(url, 0, index)).Value);
+                    query = default;
+                    fragment = FragmentString.FromUriComponent(url.Substring(index));
+                    return;
+                }
+                else if (c == '?')
+                {
+                    path = PathString.FromUriComponent(NormalizePathSegment(new StringSegment(url, 0, index)).Value);
+                    goto hasQuery;
+                }
+
+            path = PathString.FromUriComponent(NormalizePathSegment(url).Value);
+            query = default;
+            fragment = default;
+            return;
+
+hasQuery:
+            var queryIndex = index++;
+            for (; index < url.Length; index++)
+                if (url[index] == '#')
+                {
+                    query = QueryString.FromUriComponent(url.Substring(queryIndex, index - queryIndex));
+                    fragment = FragmentString.FromUriComponent(url.Substring(index));
+                    return;
+                }
+
+            query = QueryString.FromUriComponent(url.Substring(queryIndex));
+            fragment = default;
         }
 
         public static QueryString NormalizeQuery(QueryString query, out IDictionary<string, StringValues> parsedQuery)

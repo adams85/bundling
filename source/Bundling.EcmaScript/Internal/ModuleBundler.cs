@@ -10,6 +10,7 @@ using Esprima;
 using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,11 +30,16 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private static string NormalizeModulePath(string basePath, string path)
         {
+            var isAbsolutePath = path.StartsWith("/", StringComparison.Ordinal);
+
+            UrlUtils.FromRelative(path, out PathString pathString, out QueryString _, out FragmentString _);
+            path = pathString.Value;
+
             var index = path.LastIndexOfAny(s_slashAndDot);
             if (index < 0 || path[index] != '.')
                 path += ".js";
 
-            return NormalizePath(path.StartsWith("/", StringComparison.Ordinal) ? path : basePath + path);
+            return NormalizePath(isAbsolutePath ? path : basePath + path);
         }
 
         private string GetFileProviderPrefix(ModuleFile moduleFile)

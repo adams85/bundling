@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Css
@@ -9,7 +10,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
     public class CssRewriteUrlTransform : BundleItemTransform, IAllowsSourceIncludes
     {
         private static readonly Regex s_rewriteUrlsRegex = new Regex(
-            @"(?<before>url\()(?<url>'[^']+'|""[^""]+""|[^)]+)(?<after>\))|" +
+            @"(?<before>url\(\s*)(?<url>'[^']+'|""[^""]+""|[^)]*[^)\s])(?<after>\s*\))|" +
             @"(?<before>@import\s+)(?<url>'[^']+'|""[^""]+"")(?<after>(?:\s[^;]+)?\s*;)",
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -18,7 +19,11 @@ namespace Karambolo.AspNetCore.Bundling.Css
             if (!UrlUtils.IsRelative(value))
                 return value;
 
-            value = UrlUtils.NormalizePath(virtualPathPrefix.Add(basePath).Add("/" + value), canonicalize: true);
+            UrlUtils.FromRelative(value, out PathString path, out QueryString query, out FragmentString fragment);
+
+            value = UrlUtils.NormalizePath(virtualPathPrefix.Add(basePath).Add(path), canonicalize: true);
+
+            value = UriHelper.BuildRelative(default, value, query, fragment);
 
             if (outputPath.HasValue)
                 value = UrlUtils.MakeRelativePath(outputPath, value);

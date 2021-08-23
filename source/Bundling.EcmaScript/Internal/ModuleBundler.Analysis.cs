@@ -21,7 +21,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _module = module;
 
                 UrlUtils.GetFileNameSegment(module.FilePath, out StringSegment basePathSegment);
-                _basePath = basePathSegment.Value;
+                _basePath = UrlUtils.NormalizePathSegment(basePathSegment, leadingNormalization: PathNormalization.None, trailingNormalization: PathNormalization.ExcludeSlash).Value;
             }
 
             public void Analyze() => Visit(_module.Ast);
