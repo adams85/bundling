@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 {
     [HtmlTargetElement("script", Attributes = UrlAttributeNameConst)]
+#if NETCOREAPP3_0_OR_GREATER
+    [HtmlTargetElement("script", Attributes = AddVersionAttributeName)]
+#endif
     public class BundlingScriptTagHelper : BundlingTagHelperBase
     {
         private const string UrlAttributeNameConst = "src";
@@ -15,7 +18,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         [HtmlAttributeName(UrlAttributeNameConst)]
         public string Src { get; set; }
 
-        protected override string UrlAttributeName => UrlAttributeNameConst;
-        protected override string Url => Src;
+        protected internal override string UrlAttributeName => UrlAttributeNameConst;
+        protected internal override string Url => Src;
     }
 }

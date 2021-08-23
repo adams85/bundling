@@ -27,11 +27,14 @@ namespace QuickStartTemplate
         {
             // Set the UseDesignTimeBundling property to true in the csproj file to enable bundling on build.
 
-#if USE_DESIGNTIME_BUNDLING
-            services.AddBundling();
-#else
-            Bundles.ConfigureServices(services, Environment);
-#endif
+            if (Program.UsesDesignTimeBundling)
+            {
+                services.AddBundling();
+            }
+            else
+            {
+                Bundles.ConfigureServices(services, Environment);
+            }
 
             services.AddRazorPages();
         }
@@ -52,11 +55,14 @@ namespace QuickStartTemplate
 
             app.UseHttpsRedirection();
 
-#if USE_DESIGNTIME_BUNDLING
-            app.InitializeBundling();
-#else
-            app.UseBundling(new Bundles());
-#endif
+            if (Program.UsesDesignTimeBundling)
+            {
+                app.InitializeBundling();
+            }
+            else
+            {
+                app.UseBundling(new Bundles());
+            }
 
             app.UseStaticFiles();
 

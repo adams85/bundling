@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Js;
+using Karambolo.AspNetCore.Bundling.ViewHelpers;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,19 +32,24 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
                         t.GetType() is Type type &&
                         type.FullName == "Karambolo.AspNetCore.Bundling.EcmaScript.ModuleBundlingTransform" &&
                         type.Assembly.GetName().Name == "Karambolo.AspNetCore.Bundling.EcmaScript") ?
-                    "<script src=\"{0}\" type=\"module\"></script>" :
-                    "<script src=\"{0}\"></script>";
+                            "<script src=\"{0}\" type=\"module\"></script>" :
+                            "<script src=\"{0}\"></script>";
             }
 
             return null;
         }
 
-        public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager,
-            IBundleModel bundle, QueryString query, string tagFormat)
+        public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
+            QueryString query, string tagFormat, bool? addVersion)
         {
             tagFormat = GetTagFormat(bundle);
             if (tagFormat == null)
                 return HtmlString.Empty;
+
+            HttpContext httpContext = urlHelper.ActionContext.HttpContext;
+
+            Func<object, PathString, string, string> fileVersionAppender =
+                ViewHelper.GetFileVersionAppender(httpContext, addVersion ?? true, out object fileVersionAppenderState);
 
             IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(urlHelper.ActionContext.HttpContext, bundle, query, loadItemContent: false);
 
@@ -60,6 +66,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
                     unresolvedUrlFound = true;
                     continue;
                 }
+
+                url = fileVersionAppender(fileVersionAppenderState, httpContext.Request.PathBase, url);
 
                 if (isFirstAppend)
                     isFirstAppend = false;
@@ -78,11 +86,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             return builder;
         }
 
-        public async Task RenderTagHelperAsync(TagHelperContext tagHelperContext, TagHelperOutput tagHelperOutput, IUrlHelper urlHelper, IBundleManager bundleManager,
-            IBundleModel bundle, QueryString query, string urlAttributeName)
+        public async Task RenderTagHelperAsync(TagHelperContext tagHelperContext, TagHelperOutput tagHelperOutput, IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
+            QueryString query, BundlingTagHelperBase tagHelper)
         {
             tagHelperOutput.SuppressOutput();
-            tagHelperOutput.Content.SetHtmlContent(await RenderHtmlAsync(urlHelper, bundleManager, bundle, query, null));
+            tagHelperOutput.Content.SetHtmlContent(await RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat: null, tagHelper.AddVersion));
         }
     }
 }

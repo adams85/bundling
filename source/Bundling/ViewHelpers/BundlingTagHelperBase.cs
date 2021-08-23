@@ -31,27 +31,49 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 
         public override int Order => -10000;
 
+#if NETCOREAPP3_0_OR_GREATER
+        internal const string AddVersionAttributeName = "bundling-add-version";
+
+        [HtmlAttributeName(AddVersionAttributeName)]
+        public bool? AddVersion { get; set; }
+#else
+        internal bool? AddVersion => null;
+#endif
+
         [HtmlAttributeNotBound]
         [ViewContext]
         public ViewContext ViewContext { get; set; }
 
-        protected abstract string UrlAttributeName { get; }
-        protected abstract string Url { get; }
+        protected internal abstract string UrlAttributeName { get; }
+        protected internal abstract string Url { get; }
 
         public override Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
             if (Url != null)
             {
                 IUrlHelper urlHelper = _urlHelperFactory.GetUrlHelper(ViewContext);
+                string url = urlHelper.Content(Url);
 
-                if (ViewHelper.TryGetBundle(ViewContext.HttpContext, _bundleManagerFactory, urlHelper.Content(Url),
+                if (ViewHelper.TryGetBundle(ViewContext.HttpContext, _bundleManagerFactory, url,
                     out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle))
                 {
-                    return bundle.HtmlRenderer.RenderTagHelperAsync(context, output, urlHelper, bundleManager, bundle, query, UrlAttributeName);
+                    return bundle.HtmlRenderer.RenderTagHelperAsync(context, output, urlHelper, bundleManager, bundle, query, this);
                 }
+
+                if (AddVersion ?? true)
+                {
+                    Func<object, PathString, string, string> fileVersionAppender =
+                        ViewHelper.GetFileVersionAppender(ViewContext.HttpContext, addVersion: true, out object fileVersionAppenderState);
+
+                    url = fileVersionAppender(fileVersionAppenderState, ViewContext.HttpContext.Request.PathBase, url);
+
+                    TagHelperAttribute existingAttribute = context.AllAttributes[UrlAttributeName];
+                    output.Attributes.SetAttribute(new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle));
+                }
+                else
+                    output.CopyHtmlAttribute(UrlAttributeName, context);
             }
 
-            output.CopyHtmlAttribute(UrlAttributeName, context);
             return Task.CompletedTask;
         }
     }

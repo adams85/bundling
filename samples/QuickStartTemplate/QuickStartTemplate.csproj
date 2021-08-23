@@ -8,7 +8,7 @@
   <Choose>
     <When Condition="'$(UseDesignTimeBundling)' == 'true'">
       <PropertyGroup>
-        <DefineConstants>USE_DESIGNTIME_BUNDLING;$(DefineConstants)</DefineConstants>
+        <DefineConstants>USES_DESIGNTIME_BUNDLING;$(DefineConstants)</DefineConstants>
         <BundleOnBuild>true</BundleOnBuild>
         <BundlingConfigSources>AppAssembly</BundlingConfigSources>
         <BundlingMode>Production</BundlingMode>
@@ -20,6 +20,7 @@
   </Choose>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.9" />
     <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.113" />
     <PackageReference Include="Karambolo.AspNetCore.Bundling" Version="3.5.0" />
     <PackageReference Include="Karambolo.AspNetCore.Bundling.Sass" Version="3.5.0" />

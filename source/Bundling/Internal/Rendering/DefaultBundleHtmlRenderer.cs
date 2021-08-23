@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
+using Karambolo.AspNetCore.Bundling.ViewHelpers;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
@@ -14,23 +14,20 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
         protected internal DefaultBundleHtmlRenderer() { }
 
         public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string tagFormat)
+            QueryString query, string tagFormat, bool? addVersion)
         {
-            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query);
+            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, addVersion ?? true);
 
             return new HtmlString(string.Format(tagFormat, url));
         }
 
         public async Task RenderTagHelperAsync(TagHelperContext tagHelperContext, TagHelperOutput tagHelperOutput, IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string urlAttributeName)
+            QueryString query, BundlingTagHelperBase tagHelper)
         {
-            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query);
+            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, tagHelper.AddVersion ?? true);
 
-            tagHelperOutput.CopyHtmlAttribute(urlAttributeName, tagHelperContext);
-
-            var index = tagHelperOutput.Attributes.IndexOfName(urlAttributeName);
-            TagHelperAttribute existingAttribute = tagHelperOutput.Attributes[index];
-            tagHelperOutput.Attributes[index] = new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle);
+            TagHelperAttribute existingAttribute = tagHelperContext.AllAttributes[tagHelper.UrlAttributeName];
+            tagHelperOutput.Attributes.SetAttribute(new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle));
         }
     }
 }

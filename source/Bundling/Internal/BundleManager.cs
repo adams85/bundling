@@ -22,7 +22,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         bool TryGetBundle(HttpContext httpContext, PathString path, out IBundleModel bundle);
         Task<IBundleSourceBuildItem[]> GetBuildItemsAsync(HttpContext httpContext, IBundleModel bundle, QueryString query, bool loadItemContent = true);
-        Task<string> GenerateUrlAsync(HttpContext httpContext, IBundleModel bundle, QueryString query);
+        Task<string> GenerateUrlAsync(HttpContext httpContext, IBundleModel bundle, QueryString query, bool addVersion = true);
         Task<bool> TryEnsureUrlAsync(HttpContext httpContext);
         IFileInfo GetFileInfo(HttpContext httpContext);
     }
@@ -200,7 +200,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             return items.ToArray();
         }
 
-        public async Task<string> GenerateUrlAsync(HttpContext httpContext, IBundleModel bundle, QueryString query)
+        public async Task<string> GenerateUrlAsync(HttpContext httpContext, IBundleModel bundle, QueryString query, bool addVersion = true)
         {
             query = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> @params);
             if (!bundle.DependsOnParams)
@@ -208,10 +208,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             PathString bundlePath = bundle.Path;
 
-            var cacheKey = new BundleCacheKey(Id, bundlePath, query);
-            IBundleCacheItem cacheItem = await GetBundleCacheItemAsync(cacheKey, bundle, query, @params, httpContext, lockFile: false);
+            if (addVersion)
+            {
+                var cacheKey = new BundleCacheKey(Id, bundlePath, query);
+                IBundleCacheItem cacheItem = await GetBundleCacheItemAsync(cacheKey, bundle, query, @params, httpContext, lockFile: false);
 
-            _urlHelper.AddVersion(cacheItem.Version, ref bundlePath, ref query);
+                _urlHelper.AddVersion(cacheItem.Version, ref bundlePath, ref query);
+            }
 
             return httpContext.Request.PathBase + BundlingContext.BundlesPathPrefix + bundlePath + query;
         }

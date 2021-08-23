@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,15 +39,15 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             return false;
         }
 
-        private static Task<string> GenerateUrlCoreAsync(HttpContext httpContext, IBundleManagerFactory bundleManagerFactory, string absolutePath)
+        private static Task<string> GenerateUrlCoreAsync(HttpContext httpContext, IBundleManagerFactory bundleManagerFactory, string absolutePath, bool? addVersion)
         {
             return
                 TryGetBundle(httpContext, bundleManagerFactory, absolutePath, out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle) ?
-                bundleManager.GenerateUrlAsync(httpContext, bundle, query) :
+                bundleManager.GenerateUrlAsync(httpContext, bundle, query, addVersion ?? true) :
                 Task.FromResult(absolutePath);
         }
 
-        public static async Task<IHtmlContent> UrlAsync(string path)
+        public static async Task<IHtmlContent> UrlAsync(string path, bool? addVersion)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -58,20 +59,20 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             IBundleManagerFactory bundleManagerFactory = httpContext.RequestServices.GetRequiredService<IBundleManagerFactory>();
             IUrlHelper urlHelper = CreateUrlHelperFrom(httpContext);
 
-            string url = await GenerateUrlCoreAsync(httpContext, bundleManagerFactory, urlHelper.Content(path));
+            string url = await GenerateUrlCoreAsync(httpContext, bundleManagerFactory, urlHelper.Content(path), addVersion);
             
             return new HtmlString(url);
         }
 
-        private static Task<IHtmlContent> RenderFormatCoreAsync(IUrlHelper urlHelper, IBundleManagerFactory bundleManagerFactory, string absolutePath, string tagFormat)
+        private static Task<IHtmlContent> RenderFormatCoreAsync(IUrlHelper urlHelper, IBundleManagerFactory bundleManagerFactory, string absolutePath, string tagFormat, bool? addVersion)
         {
             return
                 TryGetBundle(urlHelper.ActionContext.HttpContext, bundleManagerFactory, absolutePath, out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle) ?
-                bundle.HtmlRenderer.RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat) :
+                bundle.HtmlRenderer.RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat, addVersion) :
                 Task.FromResult<IHtmlContent>(new HtmlString(string.Format(tagFormat, absolutePath)));
         }
 
-        public static async Task<IHtmlContent> RenderFormatAsync(string tagFormat, params string[] paths)
+        public static async Task<IHtmlContent> RenderFormatAsync(string tagFormat, bool? addVersion, params string[] paths)
         {
             if (paths == null)
                 throw new ArgumentNullException(nameof(paths));
@@ -91,7 +92,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
                 var renderTasks = new List<Task<IHtmlContent>>(paths.Length);
 
                 foreach (string path in paths)
-                    renderTasks.Add(RenderFormatCoreAsync(urlHelper, bundleManagerFactory, urlHelper.Content(path), tagFormat));
+                    renderTasks.Add(RenderFormatCoreAsync(urlHelper, bundleManagerFactory, urlHelper.Content(path), tagFormat, addVersion));
 
                 await Task.WhenAll(renderTasks);
 
@@ -107,9 +108,23 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
                 return builder;
             }
             else if (paths.Length > 0)
-                return await RenderFormatCoreAsync(urlHelper, bundleManagerFactory, urlHelper.Content(paths[0]), tagFormat);
+                return await RenderFormatCoreAsync(urlHelper, bundleManagerFactory, urlHelper.Content(paths[0]), tagFormat, addVersion);
             else
                 return HtmlString.Empty;
+        }
+
+        internal static Func<object, PathString, string, string> GetFileVersionAppender(HttpContext httpContext, bool addVersion, out object state)
+        {
+#if NETCOREAPP3_0_OR_GREATER
+            if (addVersion)
+            {
+                state = httpContext.RequestServices.GetRequiredService<IFileVersionProvider>();
+                return (s, requestPathBase, path) => ((IFileVersionProvider)s).AddFileVersionToPath(requestPathBase, path);
+            }
+#endif
+
+            state = null;
+            return (s, requestPathBase, path) => path;
         }
     }
 }

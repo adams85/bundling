@@ -11,6 +11,13 @@ namespace QuickStartTemplate
 {
     public class Program
     {
+        public static readonly bool UsesDesignTimeBundling =
+#if USES_DESIGNTIME_BUNDLING
+            true;
+#else
+            false;
+#endif
+
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
