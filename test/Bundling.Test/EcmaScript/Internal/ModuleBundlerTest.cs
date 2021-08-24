@@ -245,6 +245,40 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
         }
 
         [Fact]
+        public async Task Reexport_Nothing()
+        {
+            var fooContent =
+@"export { } from './bar';";
+
+            var barContent =
+@"export * from './foo'";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/foo.js", fooContent);
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js");
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+            }, barLines);
+        }
+
+        [Fact]
         public async Task Reexport_Clause()
         {
             var fooContent =
@@ -286,6 +320,34 @@ export { myVar1 as default, rest };";
                 "__es$require.d(__es$exports, \"rest\", function() { return rest; });",
                 "var [myVar1, {a: myVar2, b: [myVar3, ...rest]}] = [1, {a: 2, b: [3.14]}];",
             }, bazLines);
+        }
+
+        [Fact]
+        public async Task Import_SideEffects()
+        {
+            var fooContent =
+@"import './bar';
+";
+
+            var barContent =
+@"export var myVar1 = '1';
+alert(myVar1);";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, null) { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+            }, fooLines);
         }
 
         [Fact]

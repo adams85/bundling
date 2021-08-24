@@ -77,21 +77,15 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     // export { default as defaultAlias, a as alias, b } from 'bar.js';
                     else
                     {
-                        string modulePath;
-                        ModuleFile moduleRefFile;
+                        var modulePath = NormalizeModulePath(_basePath, exportNamedDeclaration.Source.StringValue);
+                        var moduleRefFile = new ModuleFile(_module.File, modulePath);
 
                         for (int i = 0, n = exportNamedDeclaration.Specifiers.Count; i < n; i++)
                         {
                             ExportSpecifier exportSpecifier = exportNamedDeclaration.Specifiers[i];
 
-                            modulePath = NormalizeModulePath(_basePath, exportNamedDeclaration.Source.StringValue);
-                            moduleRefFile = new ModuleFile(_module.File, modulePath);
-
                             _module.ExportsRaw.Add(new ReexportData(moduleRefFile, exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
                         }
-
-                        modulePath = NormalizeModulePath(_basePath, exportNamedDeclaration.Source.StringValue);
-                        moduleRefFile = new ModuleFile(_module.File, modulePath);
 
                         if (!_module.ModuleRefs.ContainsKey(moduleRefFile))
                             _module.ModuleRefs[moduleRefFile] = GetModuleName(_moduleIndex++);
