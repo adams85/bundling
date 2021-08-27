@@ -33,7 +33,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 IModuleResource source = ResolveImportSource(exportAllDeclaration.Source.StringValue);
 
-                _module.ExportsRaw.Add(new ReexportData(source));
+                _module.ExportsRaw.Add(new ExportAllData(source));
 
                 if (!_module.ModuleRefs.ContainsKey(source))
                     _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);

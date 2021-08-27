@@ -375,7 +375,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
                     .Append(ImportMetaId).Append(", ")
                     .Append('"').Append("url").Append('"').Append(", ")
-                    .Append("function() { return ").Append('"').Append(module.Resource.Url).Append('"').Append("; }").Append(')').Append(';').Append(_br);
+                    .Append("function() { return ").Append('"').Append(module.Resource.SecureUrl).Append('"').Append("; }").Append(')').Append(';').Append(_br);
             }
         }
 
@@ -428,32 +428,31 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         }
 
         private void ExpandExports(Dictionary<string, ExportData> exports, HashSet<ModuleData> visitedModules, ModuleData module,
-            ModuleData rootModule, IModuleResource importResource = null)
+            ModuleData rootModule, IModuleResource exportAllSource = null)
         {
+            // TODO: wildcard re-exports may cause redeclarations ()
+
             for (int i = 0, n = module.ExportsRaw.Count; i < n; i++)
-                switch (module.ExportsRaw[i])
+            {
+                ExportData export = module.ExportsRaw[i];
+
+                // wildcard re-exports (export * from '...';)
+                if (export is ExportAllData exportAll)
                 {
-                    // wildcard re-exports (export * from '...';)
-                    case ReexportData reexport when reexport.ExportName == null:
-                        ModuleData reexportedModule = Modules[reexport.Source];
+                    ModuleData reexportedModule = Modules[exportAll.Source];
 
-                        if (importResource == null)
-                            visitedModules.Clear();
-
-                        if (visitedModules.Add(reexportedModule))
-                            ExpandExports(exports, visitedModules, reexportedModule, rootModule, importResource ?? reexport.Source);
-                        break;
-                    // locals and named re-exports when expanding a wildcard re-export (except for circular references)
-                    case NamedExportData namedExport when importResource != null && rootModule != module:
-                        exports[namedExport.ExportName] = new ReexportData(importResource, namedExport.ExportName, namedExport.ExportName);
-                        break;
-                    // rest
-                    case ExportData export:
-                        // default exports skipped when expanding a wildcard re-export
-                        if (importResource == null || export.ExportName != DefaultExportName)
-                            exports[export.ExportName] = export;
-                        break;
+                    // detecting circular references
+                    if (visitedModules.Add(reexportedModule))
+                        ExpandExports(exports, visitedModules, reexportedModule, rootModule, exportAllSource ?? exportAll.Source);
                 }
+                // normal exports of the root module
+                else if (exportAllSource == null)
+                    exports[export.ExportName] = export;
+                // normal exports of other modules when expanding a wildcard re-export
+                // (except for default exports, which aren't visible in this case)
+                else if (export.ExportName != DefaultExportName)
+                    exports[export.ExportName] = new ReexportData(exportAllSource, export.ExportName, export.ExportName);
+            }
         }
 
         private RewriteModuleLocals RewriteModule(ModuleData module, ParallelLoopState loopState, RewriteModuleLocals locals)

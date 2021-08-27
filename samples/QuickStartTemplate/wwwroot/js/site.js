@@ -1,5 +1,6 @@
 ﻿// Write your JavaScript code as ES6 modules. The bundler will take care of the rest.
 
-import * as messages from './messages.js';
-
-$(document).ready(messages.sayHello);
+// Even imports with parameters are supported.
+// (But please note that every distinct parameter combination means a separate import.)
+// See also https://flaming.codes/posts/es6-import-with-parameters
+import './messages.js?hello=visitor';

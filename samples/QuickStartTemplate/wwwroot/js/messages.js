@@ -1,3 +1,10 @@
-﻿export function sayHello() {
-    alert("Welcome, visitor!");
+﻿export function sayHello(name) {
+    alert("Welcome, " + name +"!");
+}
+
+var importUrl = new URL(import.meta.url);
+
+var name = importUrl.searchParams.get("hello");
+if (name) {
+    $(document).ready(function () { sayHello(name); });
 }

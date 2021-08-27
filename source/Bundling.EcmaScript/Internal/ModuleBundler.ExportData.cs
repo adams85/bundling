@@ -26,9 +26,17 @@
 
         internal sealed class ReexportData : NamedExportData
         {
-            public ReexportData(IModuleResource source) : this(source, null, null) { }
-
             public ReexportData(IModuleResource source, string exportName, string localName) : base(exportName, localName)
+            {
+                Source = source;
+            }
+
+            public IModuleResource Source { get; }
+        }
+
+        internal sealed class ExportAllData : ExportData
+        {
+            public ExportAllData(IModuleResource source) : base(null)
             {
                 Source = source;
             }

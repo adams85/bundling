@@ -19,6 +19,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
     {
         string Id { get; }
         Uri Url { get; }
+        Uri SecureUrl { get; }
 
         Task<string> LoadContentAsync(CancellationToken token = default);
         IModuleResource Resolve<TState>(string url, TState state, ModuleResourceResolveErrorHandler<TState> errorHandler);
@@ -54,6 +55,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         public string Id => _id ?? (_id = "<root" + _idNumber.ToString(CultureInfo.InvariantCulture) + ">");
 
         public Uri Url => new Uri("transient:" + Id);
+
+        public Uri SecureUrl => Url;
 
         public Task<string> LoadContentAsync(CancellationToken token = default)
         {
@@ -141,10 +144,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private string _id;
         public string Id => _id ?? (_id = _fileProviderPrefix + FilePath + _normalizedParamPart);
 
-        public Uri Url => new Uri(
+        public Uri Url =>
             FileProvider is PhysicalFileProvider physicalFileProvider ?
-                Uri.UriSchemeFile + "://" + Path.Combine(physicalFileProvider.Root, FilePath.Substring(1)) + _normalizedParamPart :
-                "provider-file:" + FileProvider.GetType().Name + _fileProviderPrefix + FilePath + _normalizedParamPart);
+            new Uri(Uri.UriSchemeFile + "://" + Path.Combine(physicalFileProvider.Root, FilePath.Substring(1)) + _normalizedParamPart) :
+            SecureUrl;
+
+        public Uri SecureUrl => new Uri("provider-file:" + FileProvider.GetType().Name + _fileProviderPrefix + FilePath + _normalizedParamPart);
 
         public async Task<string> LoadContentAsync(CancellationToken token = default)
         {

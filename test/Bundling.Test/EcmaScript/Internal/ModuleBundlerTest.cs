@@ -465,6 +465,36 @@ console.log({fooVar, barVar})";
         }
 
         [Fact]
+        public async Task Import_CircularReference_Self()
+        {
+            var fooContent =
+@"export { x }
+var x = 0;
+import { x as y } from './foo.js';
+console.log(y);
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/foo.js", fooContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js");
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "__es$require.d(__es$exports, \"x\", function() { return x; });",
+                "var x = 0;",
+                "console.log(__es$module_0.x);",
+            }, fooLines);
+        }
+
+        [Fact]
         public async Task Import_CircularReference_With_Reexports()
         {
             var fooContent =
