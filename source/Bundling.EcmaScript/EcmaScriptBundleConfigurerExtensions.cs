@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.AspNetCore.Builder
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using Microsoft.AspNetCore.Hosting;
     using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 #else

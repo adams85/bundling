@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
 #else
     using Microsoft.Extensions.Hosting;

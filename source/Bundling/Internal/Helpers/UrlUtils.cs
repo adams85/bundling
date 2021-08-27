@@ -214,13 +214,21 @@ hasQuery:
 
         public static string PathToFileName(string value)
         {
-            var chars = value.ToCharArray();
-
-            char c;
-            for (int i = 0, n = chars.Length; i < n; i++)
-                chars[i] = Array.IndexOf(s_illegalFileNameChars, c = chars[i]) < 0 ? char.ToLowerInvariant(c) : '_';
-
+#if !NETCOREAPP3_0_OR_GREATER
+            var chars = new char[value.Length];
+            var source = value;
+#else
+            return string.Create(value.Length, value, (chars, source) =>
+            {
+#endif
+                char c;
+                for (int i = 0; i < source.Length; i++)
+                    chars[i] = Array.IndexOf(s_illegalFileNameChars, c = source[i]) < 0 ? char.ToLowerInvariant(c) : '_';
+#if NETCOREAPP3_0_OR_GREATER
+            });
+#else
             return new string(chars);
+#endif
         }
 
         public static string QueryToFileName(string value)
@@ -229,17 +237,25 @@ hasQuery:
             // as the file system may be case-insensitive
 
             var bytes = Encoding.UTF8.GetBytes(value);
-            var n = bytes.Length;
 
-            var chars = new char[n << 1]; // * 2
-            var j = 0;
-            for (var i = 0; i < n; i++)
+#if !NETCOREAPP3_0_OR_GREATER
+            var chars = new char[bytes.Length * 2];
+            var source = bytes;
+#else
+            return string.Create(bytes.Length * 2, bytes, (chars, source) =>
             {
-                chars[j++] = HexChars[bytes[i] >> 4 & 0xF];
-                chars[j++] = HexChars[bytes[i] & 0xF];
-            }
-
+#endif
+                var j = 0;
+                for (var i = 0; i < source.Length; i++)
+                {
+                    chars[j++] = HexChars[source[i] >> 4 & 0xF];
+                    chars[j++] = HexChars[source[i] & 0xF];
+                }
+#if NETCOREAPP3_0_OR_GREATER
+            });
+#else
             return new string(chars);
+#endif
         }
     }
 }

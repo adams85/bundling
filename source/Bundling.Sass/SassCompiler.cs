@@ -71,8 +71,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
                 sourceFilePath;
 
             UrlUtils.GetFileNameSegment(pathSegment, out StringSegment basePathSegment);
-            basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
-            return basePathSegment.Value;
+            return UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash).Value;
         }
 
         protected virtual string RebaseUrl(string value, string basePath, SassCompilationContext context)
@@ -115,8 +114,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             {
                 filePath = UrlUtils.NormalizePath(UrlUtils.NormalizeDirectorySeparators(filePath));
                 UrlUtils.GetFileNameSegment(filePath, out StringSegment basePathSegment);
-                basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
-                fileBasePath = basePathSegment.Value;
+                fileBasePath = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash).Value;
             }
             else
                 filePath = fileBasePath = "/";

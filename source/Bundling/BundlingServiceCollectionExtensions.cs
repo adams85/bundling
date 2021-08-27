@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using Microsoft.AspNetCore.Hosting;
     using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
     using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;

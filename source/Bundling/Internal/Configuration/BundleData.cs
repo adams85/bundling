@@ -2,7 +2,7 @@
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using JsonPropertyNameAttribute = Newtonsoft.Json.JsonPropertyAttribute;
 #else
     using System.Text.Json.Serialization;

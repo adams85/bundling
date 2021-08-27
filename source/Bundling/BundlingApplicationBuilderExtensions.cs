@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Builder
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 #else
     using Microsoft.AspNetCore.Hosting;

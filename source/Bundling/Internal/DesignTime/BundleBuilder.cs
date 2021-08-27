@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
     using IHostApplicationLifetime = Microsoft.AspNetCore.Hosting.IApplicationLifetime;
 #else

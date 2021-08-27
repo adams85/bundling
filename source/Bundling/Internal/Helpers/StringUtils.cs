@@ -53,5 +53,45 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
             return stringBuilder;
         }
+
+#if !NETCOREAPP3_0_OR_GREATER
+        public static ReadOnlySpan<char> AsSpan(this StringSegment segment)
+        {
+            return segment.Buffer.AsSpan(segment.Offset, segment.Length);
+        }
+#endif
+
+#if NETCOREAPP3_0_OR_GREATER
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public static string Concat(this ReadOnlySpan<char> str0, ReadOnlySpan<char> str1)
+        {
+#if NETCOREAPP3_0_OR_GREATER
+            return string.Concat(str0, str1);
+#else
+            var buffer = new char[str0.Length + str1.Length];
+            Span<char> span = buffer;
+            str0.CopyTo(span);
+            str1.CopyTo(span.Slice(str0.Length));
+            return new string(buffer);
+#endif
+        }
+
+#if NETCOREAPP3_0_OR_GREATER
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+#endif
+        public static string Concat(this ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2)
+        {
+#if NETCOREAPP3_0_OR_GREATER
+            return string.Concat(str0, str1, str2);
+#else
+            var buffer = new char[str0.Length + str1.Length + str2.Length];
+            Span<char> span = buffer;
+            str0.CopyTo(span);
+            str1.CopyTo(span = span.Slice(str0.Length));
+            str2.CopyTo(span.Slice(str1.Length));
+            return new string(buffer);
+#endif
+        }
     }
 }

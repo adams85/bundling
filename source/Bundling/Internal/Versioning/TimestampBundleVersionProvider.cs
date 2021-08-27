@@ -9,7 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Versioning
         {
             var ticks = context.Timestamp.Ticks;
 
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
             var bytes = new byte[sizeof(long)];
 #else
             Span<byte> bytes = stackalloc byte[sizeof(long)];

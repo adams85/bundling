@@ -165,7 +165,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             if (index < 0 || path[index] != '.')
                 path += ".js";
 
-            return UrlUtils.NormalizePath(isRelativePath ? basePath + path : path, canonicalize: true);
+            return UrlUtils.NormalizePath(isRelativePath ? basePath.AsSpan().Concat(path.AsSpan()) : path, canonicalize: true);
         }
 
         public IModuleResource Resolve<TState>(string url, TState state, ModuleResourceResolveErrorHandler<TState> errorHandler)

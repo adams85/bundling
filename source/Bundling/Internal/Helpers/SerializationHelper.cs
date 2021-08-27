@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
     using Newtonsoft.Json;
 #else
     using System.Text.Json;
@@ -13,7 +13,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
     internal static class SerializationHelper
     {
-#if NETSTANDARD2_0
+#if !NETCOREAPP3_0_OR_GREATER
         private static readonly JsonSerializer s_serializer = JsonSerializer.CreateDefault();
 
         public static void Serialize<T>(TextWriter writer, T obj)
