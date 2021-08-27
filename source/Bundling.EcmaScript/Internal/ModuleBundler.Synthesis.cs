@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Esprima;
@@ -16,7 +15,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
     internal partial class ModuleBundler
     {
-        private delegate void SubstitutionAdjuster(Identifier identifier, ref StringSegment value);
+        private delegate void SubstitutionAdjuster(Identifier identifier, ref string value);
 
         private sealed class SubstitutionCollector : ImprovedAstVisitor
         {
@@ -67,14 +66,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     !(_currentVariableScope.FindIdentifier(identifier.Name) is VariableScope.GlobalBlock))
                     return;
 
-                StringSegment value;
+                string value;
                 switch (import)
                 {
                     case NamedImportData namedImport:
-                        value = GetModuleVariableName(_module.ModuleRefs[import.ModuleFile], namedImport.ImportName);
+                        value = GetModuleVariableRef(_module.ModuleRefs[import.Source], namedImport.ImportName);
                         break;
                     case NamespaceImportData _:
-                        value = _module.ModuleRefs[import.ModuleFile];
+                        value = _module.ModuleRefs[import.Source];
                         break;
                     default:
                         return;
@@ -249,7 +248,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 if (property.Shorthand)
                 {
                     var identifier = (Identifier)property.Value;
-                    AddSubstitutionIfImported(identifier, delegate (Identifier id, ref StringSegment value) { value = id.Name + ": " + value; });
+                    AddSubstitutionIfImported(identifier, delegate (Identifier id, ref string value) { value = id.Name + ": " + value; });
                     return;
                 }
 
@@ -264,7 +263,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override void VisitUnknownNode(Node node)
             {
                 Range range = node.Range;
-                throw _bundler._logger.RewritingModuleFileFailed(_module.FilePath, _bundler.GetFileProviderHint(_module.File), node.Location.Start,
+                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), node.Location.Start,
                     $"'{_module.Content.Substring(range.Start, range.End - range.Start)}' is not supported currently.");
             }
 
@@ -287,7 +286,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override void VisitWithStatement(WithStatement withStatement)
             {
                 // Modules are always in strict mode, which doesn't allow with statements.
-                throw _bundler._logger.RewritingModuleFileFailed(_module.FilePath, _bundler.GetFileProviderHint(_module.File), withStatement.Location.Start,
+                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), withStatement.Location.Start,
                     "With statements are not supported in ES6 modules.");
             }
         }
@@ -349,12 +348,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             return sb.Substitute(offset + range.Start, endIndex - range.Start, segment);
         }
 
-        private static string GetModuleName(int uniqueId)
+        private static string GetModuleRef(int uniqueId)
         {
             return ModuleIdPrefix + uniqueId;
         }
 
-        private static string GetModuleVariableName(string moduleRef, string localName)
+        private static string GetModuleVariableRef(string moduleRef, string localName)
         {
             return moduleRef + "." + localName;
         }
@@ -376,7 +375,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
                     .Append(ImportMetaId).Append(", ")
                     .Append('"').Append("url").Append('"').Append(", ")
-                    .Append("function() { return ").Append('"').Append(GetFileUrl(module.File)).Append('"').Append("; }").Append(')').Append(';').Append(_br);
+                    .Append("function() { return ").Append('"').Append(module.Resource.Url).Append('"').Append("; }").Append(')').Append(';').Append(_br);
             }
         }
 
@@ -390,9 +389,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     sb.Append("/* Imports */").Append(_br);
             }
 
-            foreach (KeyValuePair<ModuleFile, string> moduleRef in module.ModuleRefs)
-                sb.Append("var ").Append(moduleRef.Value).Append(" = ").Append(RequireId).Append('(')
-                    .Append('"').Append(GetFileProviderPrefix(moduleRef.Key)).Append(moduleRef.Key.FilePath).Append('"').Append(')').Append(';').Append(_br);
+            foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
+                sb.Append("var ").Append(moduleRef).Append(" = ").Append(RequireId).Append('(')
+                    .Append('"').Append(resource.Id).Append('"').Append(')').Append(';').Append(_br);
         }
 
         private StringBuilder AppendNamedExportDefinition(StringBuilder sb, string exportName, string localExpression)
@@ -418,7 +417,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 switch (export)
                 {
                     case ReexportData reexport:
-                        AppendNamedExportDefinition(sb, reexport.ExportName, GetModuleVariableName(module.ModuleRefs[reexport.ModuleFile], reexport.LocalName));
+                        AppendNamedExportDefinition(sb, reexport.ExportName, GetModuleVariableRef(module.ModuleRefs[reexport.Source], reexport.LocalName));
                         break;
                     case NamedExportData namedExport:
                         AppendNamedExportDefinition(sb, namedExport.ExportName, namedExport.LocalName);
@@ -429,29 +428,29 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         }
 
         private void ExpandExports(Dictionary<string, ExportData> exports, HashSet<ModuleData> visitedModules, ModuleData module,
-            ModuleFile rootModuleFile, ModuleFile importModuleFile = null)
+            ModuleData rootModule, IModuleResource importResource = null)
         {
             for (int i = 0, n = module.ExportsRaw.Count; i < n; i++)
                 switch (module.ExportsRaw[i])
                 {
                     // wildcard re-exports (export * from '...';)
                     case ReexportData reexport when reexport.ExportName == null:
-                        ModuleData reexportedModule = Modules[reexport.ModuleFile];
+                        ModuleData reexportedModule = Modules[reexport.Source];
 
-                        if (importModuleFile == null)
+                        if (importResource == null)
                             visitedModules.Clear();
 
                         if (visitedModules.Add(reexportedModule))
-                            ExpandExports(exports, visitedModules, reexportedModule, rootModuleFile, importModuleFile ?? reexport.ModuleFile);
+                            ExpandExports(exports, visitedModules, reexportedModule, rootModule, importResource ?? reexport.Source);
                         break;
                     // locals and named re-exports when expanding a wildcard re-export (except for circular references)
-                    case NamedExportData namedExport when importModuleFile != null && rootModuleFile != module.File:
-                        exports[namedExport.ExportName] = new ReexportData(importModuleFile, namedExport.ExportName, namedExport.ExportName);
+                    case NamedExportData namedExport when importResource != null && rootModule != module:
+                        exports[namedExport.ExportName] = new ReexportData(importResource, namedExport.ExportName, namedExport.ExportName);
                         break;
                     // rest
                     case ExportData export:
                         // default exports skipped when expanding a wildcard re-export
-                        if (importModuleFile == null || export.ExportName != DefaultExportName)
+                        if (importResource == null || export.ExportName != DefaultExportName)
                             exports[export.ExportName] = export;
                         break;
                 }
@@ -461,6 +460,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         {
             locals.Reset();
 
+            HashSet<ModuleData> visitedModules = locals.VisitedModules;
             Dictionary<string, ExportData> exports = locals.Exports;
             SortedDictionary<Range, StringSegment> substitutions = locals.Substitutions;
             StringBuilder sb = locals.StringBuilder;
@@ -479,7 +479,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             // define exports
 
-            ExpandExports(exports, locals.VisitedModules, module, module.File);
+            visitedModules.Add(module);
+            ExpandExports(exports, visitedModules, module, module);
 
             if (exports.Count > 0)
                 AppendExports(sb, module, exports);
@@ -495,15 +496,15 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             sb.Append(module.Content);
 
-            foreach (KeyValuePair<Range, StringSegment> substitution in substitutions)
-                ReplaceRange(sb, module.Content, offset, substitution.Key, substitution.Value);
+            foreach ((Range range, StringSegment segment) in substitutions)
+                ReplaceRange(sb, module.Content, offset, range, in segment);
 
             module.Content = sb.ToString();
 
             return locals;
         }
 
-        private ModuleBundlingResult BuildResult(ModuleFile[] rootModules)
+        private ModuleBundlingResult BuildResult(ModuleData[] rootModules)
         {
             var sb = new StringBuilder(
 $@"(function (modules) {{
@@ -530,22 +531,28 @@ $@"(function (modules) {{
 
             for (int i = 0, n = rootModules.Length; i < n; i++)
             {
-                ModuleFile moduleFile = rootModules[i];
-                sb.Append(' ', 4).Append($"{RequireId}(\"{GetFileProviderPrefix(moduleFile)}{moduleFile.FilePath}\");").Append(_br);
+                ModuleData module = rootModules[i];
+                sb.Append(' ', 4).Append($"{RequireId}(\"{module.Resource.Id}\");").Append(_br);
             }
 
-            sb
-                .Append("})({").Append(_br);
+            sb.Append("})({");
+
+            var isFirstAppend = true;
 
             foreach (ModuleData module in Modules.Values)
             {
-                sb.Append(' ', 4).Append($"\"{GetFileProviderPrefix(module.File)}{module.FilePath}\": function ({RequireId}, {ExportsId}) {{").Append(_br);
+                if (isFirstAppend)
+                    isFirstAppend = false;
+                else
+                    sb.Append(',');
+
+                sb.Append(_br).Append(' ', 4).Append($"\"{module.Resource.Id}\": function ({RequireId}, {ExportsId}) {{").Append(_br);
 
                 if (_developmentMode)
                 {
                     var index = sb.Length;
                     sb.Append('/').Append('*', 3)
-                        .Append($" MODULE: {GetFileUrl(module.File)} ")
+                        .Append($" MODULE: {module.Resource.Url} ")
                         .Append('*', Math.Max(78 - (sb.Length - index), 0)).Append('*').Append('/')
                         .Append(_br);
                 }
@@ -555,20 +562,16 @@ $@"(function (modules) {{
                 if (_developmentMode)
                     sb.Append('/').Append('*', 78).Append('/').Append(_br);
 
-                sb.Append(' ', 4).Append("},").Append(_br);
+                sb.Append(' ', 4).Append('}');
             }
 
-            sb
-                .Append("});").Append(_br);
+            sb.Append(_br).Append("});").Append(_br);
 
             var imports = new HashSet<AbstractionFile>();
 
-            foreach (ModuleFile moduleFile in Modules.Keys)
-                if (!rootModules.Contains(moduleFile))
-                {
-                    moduleFile.Content = null;
-                    imports.Add(moduleFile);
-                }
+            foreach ((FileModuleResource fileResource, (bool isRoot, _)) in Files)
+                if (!isRoot)
+                    imports.Add(new AbstractionFile(fileResource.FileProvider, fileResource.FilePath, fileResource.CaseSensitiveFilePaths));
 
             return new ModuleBundlingResult(sb.ToString(), imports);
         }

@@ -77,7 +77,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public bool Equals(IChangeSource other)
         {
-            return Equals(other as AbstractionFile);
+            return Equals((object)other);
         }
 
         public override bool Equals(object obj)

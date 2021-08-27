@@ -45,7 +45,7 @@ export class MyClass { method() { return myFunc(); } }";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -89,7 +89,7 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -129,7 +129,7 @@ x = 0;";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -160,7 +160,7 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
 
             await moduleBundler.BundleCoreAsync(new[] { new ModuleFile(fileProvider, "/foo.js") }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -188,7 +188,7 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -219,7 +219,7 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -231,7 +231,7 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
                 "__es$require.d(__es$exports, \"rest2\", function() { return __es$module_0.rest2; });",
             }, barLines);
 
-            var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/baz.js").Value.Content);
+            var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/baz.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -263,14 +263,14 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -301,7 +301,7 @@ export { myVar1 as default, rest };";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -312,7 +312,7 @@ export { myVar1 as default, rest };";
                 "__es$require.d(__es$exports, \"restAlias\", function() { return __es$module_0.rest; });",
             }, barLines);
 
-            var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/baz.js").Value.Content);
+            var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/baz.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -342,7 +342,7 @@ alert(myVar1);";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root0>").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -374,7 +374,7 @@ export default 3.14;";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root0>").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -409,7 +409,7 @@ export default 3.14;";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root0>").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -443,7 +443,7 @@ console.log({fooVar, barVar})";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -453,7 +453,7 @@ console.log({fooVar, barVar})";
                 "console.log({fooVar, barVar: __es$module_0.barVar})",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                  "'use strict';",
@@ -496,7 +496,7 @@ console.log(foo.fooVar + foo.barVar + foo.bazVar)";
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -508,7 +508,7 @@ console.log(foo.fooVar + foo.barVar + foo.bazVar)";
                 "console.log(__es$module_0.fooVar + __es$module_0.barVar + __es$module_0.bazVar)",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -520,7 +520,7 @@ console.log(foo.fooVar + foo.barVar + foo.bazVar)";
                 "console.log(__es$module_0.fooVar + __es$module_0.barVar + __es$module_0.bazVar)",
             }, barLines);
 
-            var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/baz.js").Value.Content);
+            var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/baz.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -572,7 +572,7 @@ export default 3.14;";
 
             await moduleBundler.BundleCoreAsync(new[] { foo1File, foo2File }, CancellationToken.None);
 
-            var foo1Lines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            var foo1Lines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root0>").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -581,7 +581,7 @@ export default 3.14;";
                  "console.log(__es$module_1.default(__es$module_0.myVar1, __es$module_0.myVar2));",
             }, foo1Lines);
 
-            var foo2Lines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root1>").Value.Content);
+            var foo2Lines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root1>").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -595,6 +595,60 @@ export default 3.14;";
                 "}",
                 "new MyClass().myMethod(__es$module_0);",
             }, foo2Lines);
+        }
+
+        [Fact]
+        public async Task Import_Parameterized()
+        {
+            var fooContent =
+@"import barUrl1 from './bar?param=1';
+import barUrl2 from './bar?param=2';
+console.log(barUrl1, barUrl2)";
+
+            var barContent =
+@"export default import.meta.url;";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/foo.js", fooContent);
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js");
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            Assert.Equal(2, moduleBundler.Files.Count);
+            Assert.Equal(3, moduleBundler.Modules.Count);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js?param=1\");",
+                "var __es$module_1 = __es$require(\"/bar.js?param=2\");",
+                "console.log(__es$module_0.default, __es$module_1.default)",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js?param=1").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$importMeta = { };",
+                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js?param=1\"; });",
+                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "var __es$default = __es$importMeta.url;",
+            }, barLines);
+
+            barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js?param=2").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$importMeta = { };",
+                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js?param=2\"; });",
+                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "var __es$default = __es$importMeta.url;",
+            }, barLines);
         }
 
         [Fact]
@@ -636,7 +690,7 @@ class C3 {
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "<root0>").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root0>").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -697,7 +751,7 @@ export default foo = {key: 'k', value: 'v'};
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -715,7 +769,7 @@ export default foo = {key: 'k', value: 'v'};
                 "}",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -755,7 +809,7 @@ export { myAsyncFunc3 }
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -763,7 +817,7 @@ export { myAsyncFunc3 }
                 "(async () => await __es$module_0.myAsyncFunc3())();",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -803,7 +857,7 @@ export default ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -815,7 +869,7 @@ export default ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });
                 "var {myVarKey = __es$module_0.default.myVarKey, [__es$module_0.default.myVarKey]: barVar, myFunc: barFunc, ...rest} = {...__es$module_0.default};",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -849,7 +903,7 @@ export const importUrl = import/*x*/
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -857,7 +911,7 @@ export const importUrl = import/*x*/
                 "console.log(__es$module_0.importUrl);",
             }, fooLines);
 
-            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/bar.js").Value.Content);
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
@@ -885,7 +939,7 @@ i = 1;
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
-            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.FilePath == "/foo.js").Value.Content);
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",

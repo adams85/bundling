@@ -4,24 +4,24 @@
     {
         internal abstract class ImportData
         {
-            public ImportData(ModuleFile moduleFile, string localName)
+            protected ImportData(IModuleResource source, string localName)
             {
-                ModuleFile = moduleFile;
+                Source = source;
                 LocalName = localName;
             }
 
-            public ModuleFile ModuleFile { get; }
+            public IModuleResource Source { get; }
             public string LocalName { get; }
         }
 
         internal sealed class NamespaceImportData : ImportData
         {
-            public NamespaceImportData(ModuleFile moduleFile, string localName) : base(moduleFile, localName) { }
+            public NamespaceImportData(IModuleResource source, string localName) : base(source, localName) { }
         }
 
         internal sealed class NamedImportData : ImportData
         {
-            public NamedImportData(ModuleFile moduleFile, string localName, string importName) : base(moduleFile, localName)
+            public NamedImportData(IModuleResource source, string localName, string importName) : base(source, localName)
             {
                 ImportName = importName;
             }

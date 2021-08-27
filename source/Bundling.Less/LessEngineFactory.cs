@@ -34,7 +34,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
 
             string IImporter.AlterUrl(string url, List<string> pathList)
             {
-                if (IsUrlRewritingDisabled || !UrlUtils.IsRelative(url))
+                if (IsUrlRewritingDisabled || !UrlUtils.IsRelativePath(url))
                     return url;
 
                 if (pathList.Count > 0)

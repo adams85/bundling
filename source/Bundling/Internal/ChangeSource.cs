@@ -11,11 +11,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
     public class FactoryChangeSource : IChangeSource
     {
+        private static readonly Func<IChangeToken> s_nullChangeTokenFactory = () => NullChangeToken.Singleton;
+
         private readonly Func<IChangeToken> _factory;
 
         public FactoryChangeSource(Func<IChangeToken> factory)
         {
-            _factory = factory ?? (() => NullChangeToken.Singleton);
+            _factory = factory ?? s_nullChangeTokenFactory;
         }
 
         public IChangeToken CreateChangeToken()
@@ -25,12 +27,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public bool Equals(IChangeSource other)
         {
-            return other is FactoryChangeSource otherSource && _factory == otherSource._factory;
+            return Equals((object)other);
         }
 
         public override bool Equals(object obj)
         {
-            return Equals(obj as FactoryChangeSource);
+            return obj is FactoryChangeSource otherSource && _factory == otherSource._factory;
         }
 
         public override int GetHashCode()

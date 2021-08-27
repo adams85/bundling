@@ -3,7 +3,7 @@ using Microsoft.Extensions.FileProviders;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript
 {
-    public sealed class ModuleFile : AbstractionFile
+    public class ModuleFile : AbstractionFile
     {
         public ModuleFile()
             : this(NullFileProvider, null) { }
@@ -14,7 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript
         public ModuleFile(ModuleFile other, string filePath) : this(other.FileProvider, filePath, other.CaseSensitiveFilePaths) { }
 
         /// <remarks>
-        /// This property is not included in the equality check. It can be safely changed even when the instance is used a dictionary key.
+        /// This property is not included in the equality check. It can be safely changed even when the instance is used as a dictionary key.
         /// </remarks>
         public string Content { get; set; }
     }

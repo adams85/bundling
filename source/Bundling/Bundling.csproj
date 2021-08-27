@@ -19,20 +19,35 @@
       <PackagePath>\build\</PackagePath>
     </Content>
   </ItemGroup>
- 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(DefaultNetCoreTargetFramework)'">
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+
+  <ItemGroup>
+    <Compile Remove="Compatibility.*.cs"></Compile>
+    <None Include="Compatibility.*.cs"></None>
   </ItemGroup>
   
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.TagHelpers" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="2.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+      <ItemGroup>
+        <Compile Include="Compatibility.Netstd20.cs"></Compile>
+      </ItemGroup>
+
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.TagHelpers" Version="2.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
+        <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="2.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="2.0.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
+      </ItemGroup>
+    </When>
+
+    <Otherwise>
+      <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
 </Project>

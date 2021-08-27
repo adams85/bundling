@@ -12,6 +12,15 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 {
+    internal enum UrlKind
+    {
+        Invalid,
+        Absolute,
+        RelativeWithAuthority,
+        RelativeAndAbsolutePath,
+        RelativeAndRelativePath
+    }
+
     internal enum PathNormalization
     {
         None,
@@ -28,7 +37,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         // https://stackoverflow.com/questions/3641722/valid-characters-for-uri-schemes
         private static readonly Regex s_hasSchemeRegex = new Regex(@"^[a-zA-Z][a-zA-Z0-9+\-.]*:", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        private static readonly Uri s_dummyBaseUri = new Uri("xx:", UriKind.Absolute);
+        private static readonly Uri s_dummyBaseUri = new Uri("xx:");
 
         private static Func<string, string> s_getCanonicalPath;
 
@@ -48,12 +57,24 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             })(path);
         }
 
-        public static bool IsRelative(string url)
+        // https://stackoverflow.com/questions/904046/absolute-urls-relative-urls-and#answer-904066
+        public static UrlKind ClassifyUrl(string url)
         {
-            return !string.IsNullOrWhiteSpace(url) && !url.StartsWith("/", StringComparison.Ordinal) && !s_hasSchemeRegex.IsMatch(url);
+            if (url.StartsWith("/", StringComparison.Ordinal))
+                return url.Length > 1 && url[1] == '/' ? UrlKind.RelativeWithAuthority : UrlKind.RelativeAndAbsolutePath;
+
+            if (!s_hasSchemeRegex.IsMatch(url))
+                return !string.IsNullOrWhiteSpace(url) ? UrlKind.RelativeAndRelativePath : UrlKind.Invalid;
+
+            return UrlKind.Absolute;
         }
 
-        public static void FromRelative(string url, out PathString path, out QueryString query, out FragmentString fragment)
+        public static bool IsRelativePath(string url)
+        {
+            return ClassifyUrl(url) == UrlKind.RelativeAndRelativePath;
+        }
+
+        public static void DeconstructPath(string url, out PathString path, out QueryString query, out FragmentString fragment)
         {
             char c;
             var index = 0;
@@ -102,12 +123,9 @@ hasQuery:
             Dictionary<string, StringValues> parsed = QueryHelpers.ParseQuery(query.ToString());
 
             var builder = new QueryBuilder();
-            foreach (KeyValuePair<string, StringValues> kvp in parsed.OrderBy(kvp => kvp.Key))
-                for (int i = 0, n = kvp.Value.Count; i < n; i++)
-                {
-                    var value = kvp.Value[i];
-                    builder.Add(kvp.Key, value);
-                }
+            foreach ((string key, StringValues values) in parsed.OrderBy(kvp => kvp.Key))
+                for (int i = 0, n = values.Count; i < n; i++)
+                    builder.Add(key, values[i]);
 
             parsedQuery = parsed;
             return builder.ToQueryString();
@@ -164,6 +182,11 @@ hasQuery:
             }
 
             return path;
+        }
+
+        public static string NormalizeDirectorySeparators(string path)
+        {
+            return path.Replace('\\', '/');
         }
 
         public static string MakeRelativePath(string basePath, string path)

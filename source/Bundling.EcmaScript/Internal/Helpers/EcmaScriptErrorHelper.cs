@@ -7,31 +7,43 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
     internal static class EcmaScriptErrorHelper
     {
-        public static BundlingErrorException ReadingModuleFileFailed(this ILogger logger, string moduleFilePath, string fileProviderHint, Exception ex)
+        internal const string CannotResolveNonRelativePathReason = "Only relative import paths are supported currently.";
+        internal const string CannotResolveRelativePathWithoutFileProviderReason = "Relative import paths cannot be resolved without an associated file provider.";
+
+        public static BundlingErrorException ResolvingImportSourceFailed(this ILogger logger, string moduleUrl, string sourceUrl, string reason)
         {
-            const string messageFormat = "Failed to read file '{0}' via {1}.";
+            const string messageFormat = "Failed to resolve import source '{1}' in the context of module '{0}'.";
 
-            logger.LogError(string.Format(messageFormat, "{FILEPATH}", "{FILEPROVIDER}") + Environment.NewLine + "{REASON}", moduleFilePath, fileProviderHint, ex.Message);
+            logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{SOURCEURL}") + Environment.NewLine + "{REASON}", moduleUrl, sourceUrl, reason);
 
-            return new BundlingErrorException(string.Format(messageFormat, moduleFilePath, fileProviderHint), ex);
+            return new BundlingErrorException(string.Format(messageFormat, moduleUrl, sourceUrl));
         }
 
-        public static BundlingErrorException ParsingModuleFileFailed(this ILogger logger, string moduleFilePath, string fileProviderHint, Exception ex)
+        public static BundlingErrorException LoadingModuleFailed(this ILogger logger, string moduleUrl, Exception ex)
         {
-            const string messageFormat = "Failed to parse file '{0}' provided by {1}.";
+            const string messageFormat = "Failed to load module '{0}'.";
 
-            logger.LogError(string.Format(messageFormat, "{FILEPATH}", "{FILEPROVIDER}") + Environment.NewLine + "{REASON}", moduleFilePath, fileProviderHint, ex.Message);
+            logger.LogError(string.Format(messageFormat, "{MODULEURL}") + Environment.NewLine + "{REASON}", moduleUrl, ex.Message);
 
-            return new BundlingErrorException(string.Format(messageFormat, moduleFilePath, fileProviderHint), ex);
+            return new BundlingErrorException(string.Format(messageFormat, moduleUrl), ex);
         }
 
-        public static BundlingErrorException RewritingModuleFileFailed(this ILogger logger, string moduleFilePath, string fileProviderHint, in Position position, string reason)
+        public static BundlingErrorException ParsingModuleFailed(this ILogger logger, string moduleUrl, Exception ex)
         {
-            string messageFormat = "Failed to rewrite file '{0}' provided by {1}." + Environment.NewLine + "Error at {2}: {3}";
+            const string messageFormat = "Failed to parse module '{0}'.";
 
-            logger.LogError(string.Format(messageFormat, "{FILEPATH}", "{FILEPROVIDER}", "{POSITION}", "{REASON}"), moduleFilePath, fileProviderHint, position, reason);
+            logger.LogError(string.Format(messageFormat, "{MODULEURL}") + Environment.NewLine + "{REASON}", moduleUrl, ex.Message);
 
-            return new BundlingErrorException(string.Format(messageFormat, moduleFilePath, fileProviderHint, position, reason));
+            return new BundlingErrorException(string.Format(messageFormat, moduleUrl), ex);
+        }
+
+        public static BundlingErrorException RewritingModuleFailed(this ILogger logger, string moduleUrl, in Position position, string reason)
+        {
+            string messageFormat = "Failed to rewrite module '{0}'." + Environment.NewLine + "Error at {1}: {2}";
+
+            logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, position, reason);
+
+            return new BundlingErrorException(string.Format(messageFormat, moduleUrl, position, reason));
         }
     }
 }

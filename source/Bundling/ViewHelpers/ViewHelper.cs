@@ -28,7 +28,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         internal static bool TryGetBundle(HttpContext httpContext, IBundleManagerFactory bundleManagerFactory, string absolutePath,
             out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle)
         {
-            UrlUtils.FromRelative(absolutePath, out PathString path, out query, out _);
+            UrlUtils.DeconstructPath(absolutePath, out PathString path, out query, out _);
 
             for (int i = 0, n = bundleManagerFactory.Instances.Count; i < n; i++)
                 if ((bundleManager = bundleManagerFactory.Instances[i]).TryGetBundle(httpContext, path, out bundle))

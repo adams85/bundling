@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -10,7 +9,6 @@ using Esprima;
 using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -20,50 +18,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
     internal sealed partial class ModuleBundler : IModuleBundler
     {
         public const string DefaultExportName = "default";
-
-        private static readonly char[] s_slashAndDot = new[] { '/', '.' };
-
-        private static string NormalizePath(string path)
-        {
-            return UrlUtils.NormalizePath(path, canonicalize: true);
-        }
-
-        private static string NormalizeModulePath(string basePath, string path)
-        {
-            var isAbsolutePath = path.StartsWith("/", StringComparison.Ordinal);
-
-            UrlUtils.FromRelative(path, out PathString pathString, out QueryString _, out FragmentString _);
-            path = pathString.Value;
-
-            var index = path.LastIndexOfAny(s_slashAndDot);
-            if (index < 0 || path[index] != '.')
-                path += ".js";
-
-            return NormalizePath(isAbsolutePath ? path : basePath + path);
-        }
-
-        private string GetFileProviderPrefix(ModuleFile moduleFile)
-        {
-            return FileProviderPrefixes[moduleFile.FileProvider];
-        }
-
-        private string GetFileProviderHint(ModuleFile moduleFile)
-        {
-            return
-                moduleFile.FileProvider is PhysicalFileProvider physicalFileProvider ?
-                $"{physicalFileProvider.GetType().Name}[{physicalFileProvider.Root}]" :
-                $"{moduleFile.FileProvider.GetType().Name}{GetFileProviderPrefix(moduleFile)}";
-        }
-
-        private Uri GetFileUrl(ModuleFile moduleFile)
-        {
-            return
-                !moduleFile.FilePath.StartsWith("/", StringComparison.Ordinal) ? new Uri("transient:" + moduleFile.FilePath) :
-                moduleFile.FileProvider is PhysicalFileProvider physicalFileProvider ? new Uri(
-                    Uri.UriSchemeFile + "://" + Path.Combine(physicalFileProvider.Root, moduleFile.FilePath.Substring(1)),
-                    UriKind.Absolute) :
-                new Uri("provider-file:" + GetFileProviderHint(moduleFile) + moduleFile.FilePath);
-        }
 
         private readonly ILogger _logger;
         private readonly string _br;
@@ -75,22 +29,31 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             _br = options?.NewLine ?? Environment.NewLine;
             _developmentMode = options?.DevelopmentMode ?? false;
 
-            Modules = new Dictionary<ModuleFile, ModuleData>();
-            FileProviderPrefixes = new Dictionary<IFileProvider, string>();
+            Files = new Dictionary<FileModuleResource, (bool, Task<string>)>(new FileModuleResource.AbstractionFileComparer());
+            Modules = new Dictionary<IModuleResource, ModuleData>();
         }
 
-        internal Dictionary<ModuleFile, ModuleData> Modules { get; }
-        internal Dictionary<IFileProvider, string> FileProviderPrefixes { get; }
+        internal Dictionary<FileModuleResource, (bool IsRoot, Task<string> Content)> Files { get; }
+        internal Dictionary<IModuleResource, ModuleData> Modules { get; }
 
-        private async Task LoadModuleContent(ModuleData module)
+        private async Task LoadModuleContentAsync(ModuleData module, CancellationToken token)
         {
             try
             {
-                using (Stream stream = module.File.GetFileInfo().CreateReadStream())
-                using (var reader = new StreamReader(stream))
-                    module.Content = await reader.ReadToEndAsync().ConfigureAwait(false);
+                if (module.Resource is FileModuleResource fileResource)
+                {
+                    (bool IsRoot, Task<string> Content) fileData;
+
+                    lock (Files)
+                        if (!Files.TryGetValue(fileResource, out fileData))
+                            Files.Add(fileResource, fileData = (IsRoot: false, Content: fileResource.LoadContentAsync(token)));
+
+                    module.Content = await fileData.Content.ConfigureAwait(false);
+                }
+                else
+                    module.Content = await module.Resource.LoadContentAsync(token);
             }
-            catch (Exception ex) { throw _logger.ReadingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
+            catch (Exception ex) { throw _logger.LoadingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
 
         internal static ParserOptions CreateParserOptions()
@@ -102,39 +65,48 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         {
             var parser = new JavaScriptParser(module.Content, module.ParserOptions);
             try { return parser.ParseModule(); }
-            catch (Exception ex) { throw _logger.ParsingModuleFileFailed(module.FilePath, GetFileProviderHint(module.File), ex); }
+            catch (Exception ex) { throw _logger.ParsingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
 
-        private async Task LoadModuleCoreAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken token)
+        private async Task LoadModuleAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             try
             {
+                await LoadModuleContentAsync(module, token).ConfigureAwait(false);
+
                 module.ParserOptions = CreateParserOptions();
                 module.Ast = ParseModuleContent(module);
                 module.VariableScopes = new Dictionary<Node, VariableScope>();
-                module.ModuleRefs = new Dictionary<ModuleFile, string>();
+                module.ModuleRefs = new Dictionary<IModuleResource, string>();
                 module.ExportsRaw = new List<ExportData>();
                 module.Imports = new Dictionary<string, ImportData>();
 
                 AnalyzeDeclarations(module);
 
-                if (module.ModuleRefs.Count == 0)
-                    return;
-
-                var loadModuleTasks = new List<Task>();
-                foreach (ModuleFile moduleFile in module.ModuleRefs.Keys)
+                if (module.ModuleRefs.Count > 0)
                 {
-                    lock (Modules)
-                        if (!Modules.ContainsKey(moduleFile))
-                            Modules.Add(moduleFile, module = new ModuleData(moduleFile));
-                        else
-                            continue;
+                    var modulesToLoad = new List<ModuleData>();
 
-                    loadModuleTasks.Add(LoadModuleAsync(module, errorCts, token));
+                    var normalizedModuleRefs = new Dictionary<IModuleResource, string>(module.ModuleRefs.Count);
+
+                    lock (Modules)
+                        foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
+                        {
+                            if (!Modules.TryGetValue(resource, out ModuleData knownModule))
+                            {
+                                Modules.Add(resource, knownModule = new ModuleData(resource));
+                                modulesToLoad.Add(knownModule);
+                            }
+
+                            normalizedModuleRefs.Add(knownModule.Resource, moduleRef);
+                        }
+
+                    module.ModuleRefs = normalizedModuleRefs;
+
+                    await LoadModulesAsync(modulesToLoad, errorCts, token).ConfigureAwait(false);
                 }
-                await Task.WhenAll(loadModuleTasks).ConfigureAwait(false);
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
@@ -143,50 +115,80 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private async Task LoadModuleAsync(ModuleData module, CancellationTokenSource errorCts, CancellationToken token)
+        private Task LoadModulesAsync(IEnumerable<ModuleData> modules, CancellationTokenSource errorCts, CancellationToken token)
         {
-            await LoadModuleContent(module).ConfigureAwait(false);
-            await LoadModuleCoreAsync(module, errorCts, token).ConfigureAwait(false);
+            return Task.WhenAll(modules.Select(module => LoadModuleAsync(module, errorCts, token)));
         }
 
-        internal async Task BundleCoreAsync(ModuleFile[] rootFiles, CancellationToken token)
+        private ModuleData[] GetRootModules(ModuleFile[] rootFiles, CancellationToken token)
         {
+            var fileProviderPrefixes = new Dictionary<IFileProvider, string>();
             int fileProviderId = 0;
 
             for (int i = 0, n = rootFiles.Length; i < n; i++)
             {
                 ModuleFile moduleFile = rootFiles[i];
 
-                if (Modules.ContainsKey(moduleFile))
-                    continue;
+                if (moduleFile == null)
+                    throw ErrorHelper.ArrayCannotContainNull(nameof(rootFiles));
 
-                rootFiles[i] = moduleFile = new ModuleFile(
-                    moduleFile.FileProvider,
-                    moduleFile.FilePath != null ? NormalizePath(moduleFile.FilePath) : "<root" + i.ToString(CultureInfo.InvariantCulture) + ">",
-                    moduleFile.CaseSensitiveFilePaths)
-                {
-                    Content = moduleFile.Content
-                };
-
-                if (!FileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
-                    FileProviderPrefixes.Add(moduleFile.FileProvider, "$" + (fileProviderId++).ToString(CultureInfo.InvariantCulture));
-
-                var module = new ModuleData(moduleFile);
-
-                if (module.Content == null)
-                    await LoadModuleContent(module).ConfigureAwait(false);
-
-                Modules.Add(moduleFile, module);
+                if (moduleFile.FileProvider != null && !fileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
+                    fileProviderPrefixes.Add(moduleFile.FileProvider, "$" + (fileProviderId++).ToString(CultureInfo.InvariantCulture));
             }
 
-            if (FileProviderPrefixes.Count == 1)
-                FileProviderPrefixes[FileProviderPrefixes.Keys.First()] = string.Empty;
+            if (fileProviderPrefixes.Count == 1)
+                fileProviderPrefixes[fileProviderPrefixes.Keys.First()] = string.Empty;
+
+            var duplicateRootFiles = false;
+            var rootModules = new ModuleData[rootFiles.Length];
+
+            for (int i = 0, n = rootFiles.Length; i < n; i++)
+            {
+                ModuleFile moduleFile = rootFiles[i];
+
+                ref ModuleData module = ref rootModules[i];
+                IModuleResource resource;
+
+                if (moduleFile.FileProvider != null && moduleFile.FilePath != null)
+                {
+                    var fileResource = new FileModuleResource(fileProviderPrefixes[moduleFile.FileProvider], moduleFile)
+                    {
+                        Content = moduleFile.Content
+                    };
+
+                    if (Files.ContainsKey(fileResource))
+                    {
+                        duplicateRootFiles = true;
+                        continue;
+                    }
+
+                    Files.Add(fileResource, (IsRoot: true, Content: fileResource.LoadContentAsync(token)));
+
+                    resource = fileResource;
+                }
+                else
+                    resource = new TransientModuleResource(i, moduleFile.Content, moduleFile.FileProvider != null ? fileProviderPrefixes[moduleFile.FileProvider] : null, moduleFile);
+
+                module = new ModuleData(resource);
+
+                Modules.Add(resource, module);
+            }
+
+            if (duplicateRootFiles)
+                rootModules = rootModules.Where(module => module != null).ToArray();
+
+            return rootModules;
+        }
+
+        internal async Task<ModuleData[]> BundleCoreAsync(ModuleFile[] rootFiles, CancellationToken token)
+        {
+            ModuleData[] rootModules = GetRootModules(rootFiles, token);
 
             // analyze
 
             using (var errorCts = new CancellationTokenSource())
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(errorCts.Token, token))
-                await Task.WhenAll(Modules.Values.ToArray().Select(module => LoadModuleCoreAsync(module, errorCts, linkedCts.Token))).ConfigureAwait(false);
+                await LoadModulesAsync(rootModules, errorCts, linkedCts.Token).ConfigureAwait(false);
 
             // rewrite
 
@@ -202,6 +204,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // unwrap and re-throw aggregate exception
                 ExceptionDispatchInfo.Capture(ex.Flatten().InnerException).Throw();
             }
+
+            return rootModules;
         }
 
         public async Task<ModuleBundlingResult> BundleAsync(ModuleFile[] rootFiles, CancellationToken token = default)
@@ -209,22 +213,20 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             if (rootFiles == null)
                 throw new ArgumentNullException(nameof(rootFiles));
 
-            rootFiles = rootFiles.ToArray();
-
             try
             {
-                await BundleCoreAsync(rootFiles, token).ConfigureAwait(false);
+                ModuleData[] rootModules = await BundleCoreAsync(rootFiles, token).ConfigureAwait(false);
 
                 // aggregate
 
                 token.ThrowIfCancellationRequested();
 
-                return BuildResult(rootFiles);
+                return BuildResult(rootModules);
             }
             finally
             {
+                Files.Clear();
                 Modules.Clear();
-                FileProviderPrefixes.Clear();
             }
         }
     }

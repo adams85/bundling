@@ -45,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
             string fileBasePath, fileName;
             if (filePath != null)
             {
-                filePath = UrlUtils.NormalizePath(filePath.Replace('\\', '/'));
+                filePath = UrlUtils.NormalizePath(UrlUtils.NormalizeDirectorySeparators(filePath));
                 fileName = UrlUtils.GetFileNameSegment(filePath, out StringSegment basePathSegment).Value;
                 basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
                 fileBasePath = basePathSegment.Value;

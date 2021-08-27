@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Esprima.Ast;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers

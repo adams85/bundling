@@ -1,7 +1,5 @@
 ﻿using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
-using Karambolo.AspNetCore.Bundling.Internal.Helpers;
-using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
@@ -12,32 +10,33 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private readonly ModuleBundler _bundler;
             private readonly ModuleData _module;
 
-            private readonly string _basePath;
             private int _moduleIndex;
 
             public VariableDeclarationAnalyzer(ModuleBundler bundler, ModuleData module) : base(module.VariableScopes)
             {
                 _bundler = bundler;
                 _module = module;
-
-                UrlUtils.GetFileNameSegment(module.FilePath, out StringSegment basePathSegment);
-                _basePath = UrlUtils.NormalizePathSegment(basePathSegment, leadingNormalization: PathNormalization.None, trailingNormalization: PathNormalization.ExcludeSlash).Value;
             }
 
             public void Analyze() => Visit(_module.Ast);
 
             protected override VariableScope.GlobalBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
-                throw _bundler._logger.RewritingModuleFileFailed(_module.FilePath, _bundler.GetFileProviderHint(_module.File), importDeclaration.Location.Start, defaultErrorMessage);
+                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), importDeclaration.Location.Start, defaultErrorMessage);
+
+            private IModuleResource ResolveImportSource(string url)
+            {
+                return _module.Resource.Resolve(url, this, (analyzer, sourceUrl, reason) =>
+                    throw analyzer._bundler._logger.ResolvingImportSourceFailed(analyzer._module.Resource.Url.ToString(), sourceUrl, reason));
+            }
 
             private void ExtractExports(ExportAllDeclaration exportAllDeclaration)
             {
-                var modulePath = NormalizeModulePath(_basePath, exportAllDeclaration.Source.StringValue);
-                var moduleRefFile = new ModuleFile(_module.File, modulePath);
+                IModuleResource source = ResolveImportSource(exportAllDeclaration.Source.StringValue);
 
-                _module.ExportsRaw.Add(new ReexportData(moduleRefFile));
+                _module.ExportsRaw.Add(new ReexportData(source));
 
-                if (!_module.ModuleRefs.ContainsKey(moduleRefFile))
-                    _module.ModuleRefs[moduleRefFile] = GetModuleName(_moduleIndex++);
+                if (!_module.ModuleRefs.ContainsKey(source))
+                    _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
             }
 
             private void ExtractExports(ExportDefaultDeclaration exportDefaultDeclaration)
@@ -77,18 +76,17 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     // export { default as defaultAlias, a as alias, b } from 'bar.js';
                     else
                     {
-                        var modulePath = NormalizeModulePath(_basePath, exportNamedDeclaration.Source.StringValue);
-                        var moduleRefFile = new ModuleFile(_module.File, modulePath);
+                        IModuleResource source = ResolveImportSource(exportNamedDeclaration.Source.StringValue);
 
                         for (int i = 0, n = exportNamedDeclaration.Specifiers.Count; i < n; i++)
                         {
                             ExportSpecifier exportSpecifier = exportNamedDeclaration.Specifiers[i];
 
-                            _module.ExportsRaw.Add(new ReexportData(moduleRefFile, exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
+                            _module.ExportsRaw.Add(new ReexportData(source, exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
                         }
 
-                        if (!_module.ModuleRefs.ContainsKey(moduleRefFile))
-                            _module.ModuleRefs[moduleRefFile] = GetModuleName(_moduleIndex++);
+                        if (!_module.ModuleRefs.ContainsKey(source))
+                            _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
                     }
                 }
                 // export var { a: alias, b } = { a: 0, b: 1 };
@@ -115,29 +113,28 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void ExtractImports(ImportDeclaration importDeclaration)
             {
-                var modulePath = NormalizeModulePath(_basePath, importDeclaration.Source.StringValue);
-                var moduleRefFile = new ModuleFile(_module.File, modulePath);
+                IModuleResource source = ResolveImportSource(importDeclaration.Source.StringValue);
 
                 for (int i = 0, n = importDeclaration.Specifiers.Count; i < n; i++)
                     switch (importDeclaration.Specifiers[i])
                     {
                         //  import localName from 'src/my_lib';
                         case ImportDefaultSpecifier importDefaultSpecifier:
-                            _module.Imports[importDefaultSpecifier.Local.Name] = new NamedImportData(moduleRefFile, importDefaultSpecifier.Local.Name, DefaultExportName);
+                            _module.Imports[importDefaultSpecifier.Local.Name] = new NamedImportData(source, importDefaultSpecifier.Local.Name, DefaultExportName);
                             break;
                         // import * as my_lib from 'src/my_lib';
                         case ImportNamespaceSpecifier importNamespaceSpecifier:
-                            _module.Imports[importNamespaceSpecifier.Local.Name] = new NamespaceImportData(moduleRefFile, importNamespaceSpecifier.Local.Name);
+                            _module.Imports[importNamespaceSpecifier.Local.Name] = new NamespaceImportData(source, importNamespaceSpecifier.Local.Name);
                             break;
                         // import { name1 } from 'src/my_lib';
                         // import { default as foo } from 'src/my_lib';
                         case ImportSpecifier importSpecifier:
-                            _module.Imports[importSpecifier.Local.Name] = new NamedImportData(moduleRefFile, importSpecifier.Local.Name, importSpecifier.Imported.Name);
+                            _module.Imports[importSpecifier.Local.Name] = new NamedImportData(source, importSpecifier.Local.Name, importSpecifier.Imported.Name);
                             break;
                     }
 
-                if (!_module.ModuleRefs.ContainsKey(moduleRefFile))
-                    _module.ModuleRefs[moduleRefFile] = GetModuleName(_moduleIndex++);
+                if (!_module.ModuleRefs.ContainsKey(source))
+                    _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
             }
 
             protected override void VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)

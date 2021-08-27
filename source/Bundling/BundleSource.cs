@@ -5,7 +5,7 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public abstract class BundleSource
     {
-        public BundleSource(Bundle bundle)
+        protected BundleSource(Bundle bundle)
         {
             if (bundle == null)
                 throw new ArgumentNullException(nameof(bundle));

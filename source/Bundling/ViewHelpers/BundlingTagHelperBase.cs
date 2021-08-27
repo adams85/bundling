@@ -16,7 +16,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         private readonly IBundleManagerFactory _bundleManagerFactory;
         private readonly IUrlHelperFactory _urlHelperFactory;
 
-        public BundlingTagHelperBase(IBundleManagerFactory bundleManagerFactory, IUrlHelperFactory urlHelperFactory)
+        protected BundlingTagHelperBase(IBundleManagerFactory bundleManagerFactory, IUrlHelperFactory urlHelperFactory)
         {
             if (bundleManagerFactory == null)
                 throw new ArgumentNullException(nameof(bundleManagerFactory));

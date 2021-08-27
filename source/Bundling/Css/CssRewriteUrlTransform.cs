@@ -16,10 +16,10 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
         internal static string RebaseUrlCore(string value, string basePath, PathString virtualPathPrefix, PathString outputPath)
         {
-            if (!UrlUtils.IsRelative(value))
+            if (!UrlUtils.IsRelativePath(value))
                 return value;
 
-            UrlUtils.FromRelative(value, out PathString path, out QueryString query, out FragmentString fragment);
+            UrlUtils.DeconstructPath(value, out PathString path, out QueryString query, out FragmentString fragment);
 
             value = UrlUtils.NormalizePath(virtualPathPrefix.Add(basePath).Add(path), canonicalize: true);
 
@@ -61,7 +61,7 @@ namespace Karambolo.AspNetCore.Bundling.Css
         {
             if (context is IFileBundleItemTransformContext fileItemContext)
             {
-                StringSegment filePathSegment = UrlUtils.NormalizePathSegment(fileItemContext.FilePath.Replace('\\', '/'));
+                StringSegment filePathSegment = UrlUtils.NormalizePathSegment(UrlUtils.NormalizeDirectorySeparators(fileItemContext.FilePath));
                 UrlUtils.GetFileNameSegment(filePathSegment, out StringSegment basePathSegment);
                 basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
 
