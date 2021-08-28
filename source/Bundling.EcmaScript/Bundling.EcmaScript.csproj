@@ -10,6 +10,10 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
+    <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Esprima" Version="2.0.2" />
   </ItemGroup>
 

@@ -51,7 +51,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     module.Content = await fileData.Content.ConfigureAwait(false);
                 }
                 else
-                    module.Content = await module.Resource.LoadContentAsync(token);
+                    module.Content = await module.Resource.LoadContentAsync(token).ConfigureAwait(false);
             }
             catch (Exception ex) { throw _logger.LoadingModuleFailed(module.Resource.Url.ToString(), ex); }
         }

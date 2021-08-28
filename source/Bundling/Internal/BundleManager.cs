@@ -78,7 +78,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         private async void InvalidateBundleCache(IBundleModel bundle)
         {
-            try { await _cache.RemoveAllAsync(Id, bundle.Path, _shutdownToken).ConfigureAwait(false); }
+            try { await _cache.RemoveAllAsync(Id, bundle.Path, _shutdownToken); }
             catch (Exception ex) { _logger.LogError(ex, "Unexpected error occurred during updating cache."); }
         }
 

@@ -1,4 +1,6 @@
-﻿using System;
+﻿#pragma warning disable CAC001 // ConfigureAwaitChecker
+
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
