@@ -60,6 +60,8 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
                     return bundle.HtmlRenderer.RenderTagHelperAsync(context, output, urlHelper, bundleManager, bundle, query, this);
                 }
 
+                output.CopyHtmlAttribute(UrlAttributeName, context);
+
                 if (AddVersion ?? true)
                 {
                     Func<object, PathString, string, string> fileVersionAppender =
@@ -68,10 +70,9 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
                     url = fileVersionAppender(fileVersionAppenderState, ViewContext.HttpContext.Request.PathBase, url);
 
                     TagHelperAttribute existingAttribute = context.AllAttributes[UrlAttributeName];
-                    output.Attributes.SetAttribute(new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle));
+                    var index = output.Attributes.IndexOfName(UrlAttributeName);
+                    output.Attributes[index] = new TagHelperAttribute(existingAttribute.Name, url, existingAttribute.ValueStyle);
                 }
-                else
-                    output.CopyHtmlAttribute(UrlAttributeName, context);
             }
 
             return Task.CompletedTask;

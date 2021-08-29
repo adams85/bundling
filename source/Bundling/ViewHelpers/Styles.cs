@@ -7,12 +7,12 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
     {
         public static string DefaultTagFormat { get; set; } = "<link href=\"{0}\" rel=\"stylesheet\"/>";
 
-        public static Task<IHtmlContent> UrlAsync(string path)
+        public static Task<string> UrlAsync(string path)
         {
             return ViewHelper.UrlAsync(path, addVersion: null);
         }
 
-        public static Task<IHtmlContent> UrlAsync(string path, bool addVersion)
+        public static Task<string> UrlAsync(string path, bool addVersion)
         {
             return ViewHelper.UrlAsync(path, addVersion);
         }

@@ -74,7 +74,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
                 else
                     builder.AppendLine();
 
-                builder.AppendHtml(new HtmlString(string.Format(tagFormat, url)));
+                builder.AppendHtml(new HtmlFormattableString(tagFormat, url));
             }
 
             if (unresolvedUrlFound)

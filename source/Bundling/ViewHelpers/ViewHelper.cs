@@ -47,7 +47,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
                 Task.FromResult(absolutePath);
         }
 
-        public static async Task<IHtmlContent> UrlAsync(string path, bool? addVersion)
+        public static async Task<string> UrlAsync(string path, bool? addVersion)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -59,9 +59,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             IBundleManagerFactory bundleManagerFactory = httpContext.RequestServices.GetRequiredService<IBundleManagerFactory>();
             IUrlHelper urlHelper = CreateUrlHelperFrom(httpContext);
 
-            string url = await GenerateUrlCoreAsync(httpContext, bundleManagerFactory, urlHelper.Content(path), addVersion);
-            
-            return new HtmlString(url);
+            return await GenerateUrlCoreAsync(httpContext, bundleManagerFactory, urlHelper.Content(path), addVersion);
         }
 
         private static Task<IHtmlContent> RenderFormatCoreAsync(IUrlHelper urlHelper, IBundleManagerFactory bundleManagerFactory, string absolutePath, string tagFormat, bool? addVersion)
@@ -69,7 +67,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             return
                 TryGetBundle(urlHelper.ActionContext.HttpContext, bundleManagerFactory, absolutePath, out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle) ?
                 bundle.HtmlRenderer.RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat, addVersion) :
-                Task.FromResult<IHtmlContent>(new HtmlString(string.Format(tagFormat, absolutePath)));
+                Task.FromResult<IHtmlContent>(new HtmlFormattableString(tagFormat, absolutePath));
         }
 
         public static async Task<IHtmlContent> RenderFormatAsync(string tagFormat, bool? addVersion, params string[] paths)
