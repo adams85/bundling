@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Karambolo.AspNetCore.Bundling;
 using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Internal;
+using Karambolo.AspNetCore.Bundling.Internal.CacheBusting;
 using Karambolo.AspNetCore.Bundling.Internal.Caching;
 using Karambolo.AspNetCore.Bundling.Internal.Configuration;
-using Karambolo.AspNetCore.Bundling.Internal.Versioning;
 using Karambolo.AspNetCore.Bundling.Js;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -54,8 +54,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.TryAddSingleton<IBundleManagerFactory, BundleManagerFactory>();
             services.TryAddSingleton<IBundleCache, NullBundleCache>();
-            services.TryAddSingleton<IBundleVersionProvider, NullBundleVersionProvider>();
-            services.TryAddSingleton<IBundleUrlHelper, DefaultBundleUrlHelper>();
+            services.TryAddSingleton<IBundleVersionProvider, HashBundleVersionProvider>();
+            services.TryAddSingleton<IBundleUrlHelper, FileNameVersioningBundleUrlHelper>();
 
             return services.AddBundlingCore(configure);
         }
@@ -82,6 +82,26 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (configure != null)
                 configurer.Services.Configure(configure);
+
+            return configurer;
+        }
+
+        public static BundlingConfigurer UseFileNameVersioning(this BundlingConfigurer configurer)
+        {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleUrlHelper, FileNameVersioningBundleUrlHelper>());
+
+            return configurer;
+        }
+
+        public static BundlingConfigurer UseQueryStringVersioning(this BundlingConfigurer configurer)
+        {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Replace(ServiceDescriptor.Singleton<IBundleUrlHelper, QueryStringVersioningBundleUrlHelper>());
 
             return configurer;
         }
@@ -122,6 +142,16 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(configurer));
 
             configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableChangeDetection = true);
+
+            return configurer;
+        }
+
+        public static BundlingConfigurer DisableCacheBusting(this BundlingConfigurer configurer)
+        {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableCacheBusting = false);
 
             return configurer;
         }
@@ -195,7 +225,6 @@ namespace Microsoft.Extensions.DependencyInjection
             configurer
                 .AddCss()
                 .AddJs()
-                .UseHashVersioning()
                 .UseMemoryCaching();
 
             if (environment.IsDevelopment())

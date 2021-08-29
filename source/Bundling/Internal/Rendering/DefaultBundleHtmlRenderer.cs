@@ -15,9 +15,9 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
         protected internal DefaultBundleHtmlRenderer() { }
 
         public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string tagFormat, bool? addVersion)
+            QueryString query, string tagFormat, bool addVersion)
         {
-            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, addVersion ?? true);
+            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, addVersion);
 
             return new HtmlFormattableString(tagFormat, url);
         }
@@ -25,7 +25,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
         public async Task RenderTagHelperAsync(TagHelperContext tagHelperContext, TagHelperOutput tagHelperOutput, IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
             QueryString query, BundlingTagHelperBase tagHelper)
         {
-            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, tagHelper.AddVersion ?? true);
+            string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, tagHelper.ActualAddVersion);
 
             tagHelperOutput.CopyHtmlAttribute(tagHelper.UrlAttributeName, tagHelperContext);
 

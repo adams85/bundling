@@ -15,6 +15,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal
     public interface IBundleManagerFactory
     {
         IBundleManager Create(BundleCollection bundles, IBundlingContext bundlingContext);
+
+        IOptions<BundleGlobalOptions> GlobalOptions { get; }
         IReadOnlyList<IBundleManager> Instances { get; }
     }
 
@@ -28,7 +30,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         private readonly ISystemClock _clock;
         private readonly List<IBundleManager> _instances;
         private readonly CancellationToken _shutdownToken;
-        private readonly IOptions<BundleGlobalOptions> _globalOptions;
 
         public BundleManagerFactory(IEnumerable<IBundleModelFactory> modelFactories, IBundleCache cache, IBundleVersionProvider versionProvider, IBundleUrlHelper urlHelper,
             ILoggerFactory loggerFactory, ISystemClock clock, IHostApplicationLifetime applicationLifetime, IOptions<BundleGlobalOptions> globalOptions)
@@ -43,18 +44,18 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             _shutdownToken = applicationLifetime.ApplicationStopping;
 
-            _globalOptions = globalOptions;
-
+            GlobalOptions = Options.Create(globalOptions.Value);
             _instances = new List<IBundleManager>();
         }
 
+        public IOptions<BundleGlobalOptions> GlobalOptions { get; }
         public IReadOnlyList<IBundleManager> Instances => _instances;
 
         public IBundleManager Create(BundleCollection bundles, IBundlingContext bundlingContext)
         {
             var result = new BundleManager(
                 _instances.Count, bundles, bundlingContext, _shutdownToken, _modelFactories, _cache, _versionProvider, _urlHelper,
-                _loggerFactory.CreateLogger<BundleManager>(), _clock, _globalOptions);
+                _loggerFactory.CreateLogger<BundleManager>(), _clock, GlobalOptions);
 
             _instances.Add(result);
             return result;

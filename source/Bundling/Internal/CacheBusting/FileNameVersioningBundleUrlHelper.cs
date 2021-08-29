@@ -5,9 +5,9 @@ using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
-namespace Karambolo.AspNetCore.Bundling.Internal
+namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
 {
-    public class DefaultBundleUrlHelper : IBundleUrlHelper
+    public class FileNameVersioningBundleUrlHelper : IBundleUrlHelper
     {
         private const string VersionPrefix = ".v";
 

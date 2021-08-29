@@ -21,13 +21,23 @@ namespace Karambolo.AspNetCore.Bundling
             CaseSensitiveSourceFilePaths = configuration.CaseSensitiveSourceFilePaths ?? options.CaseSensitiveSourceFilePaths;
             StaticFilesRequestPath = configuration.StaticFilesPathPrefix ?? options.StaticFilesRequestPath;
 
-            ContentTypeProvider = options.ContentTypeProvider;
-            DefaultContentType = options.DefaultContentType;
-            ServeUnknownFileTypes = options.ServeUnknownFileTypes;
-            OnPrepareResponse = options.OnPrepareResponse;
+            options.CopyTo(this);
 
             RequestPath = configuration.BundlesPathPrefix ?? options.RequestPath;
-            FileProvider = options.FileProvider;
+        }
+
+        internal void CopyTo(StaticFileOptions staticFileOptions)
+        {
+            staticFileOptions.ContentTypeProvider = ContentTypeProvider;
+            staticFileOptions.DefaultContentType = DefaultContentType;
+            staticFileOptions.FileProvider = FileProvider;
+            staticFileOptions.OnPrepareResponse = OnPrepareResponse;
+            staticFileOptions.RequestPath = RequestPath;
+            staticFileOptions.ServeUnknownFileTypes = ServeUnknownFileTypes;
+
+#if NETCOREAPP3_0_OR_GREATER
+            staticFileOptions.HttpsCompression = HttpsCompression;
+#endif
         }
 
         public IBundleManager BundleManager { get; set; }

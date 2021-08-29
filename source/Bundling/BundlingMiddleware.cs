@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Internal;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
@@ -50,6 +51,7 @@ namespace Karambolo.AspNetCore.Bundling
 
             _next = next;
 
+            BundleGlobalOptions globalOptionsUnwrapped = globalOptions.Value;
             BundlingOptions optionsUnwrapped = options.Value;
 
             _bundleManager = optionsUnwrapped.BundleManager ?? bundleManagerFactory.Create(bundles, new BundlingContext
@@ -58,13 +60,16 @@ namespace Karambolo.AspNetCore.Bundling
                 StaticFilesPathPrefix = optionsUnwrapped.StaticFilesRequestPath
             });
 
-            optionsUnwrapped.FileProvider = optionsUnwrapped.FileProvider ?? new BundleFileProvider(_bundleManager, httpContextAccessor);
+            var staticFileOptions = new StaticFileOptions();
 
-            BundleGlobalOptions globalOptionsUnwrapped = globalOptions.Value;
+            optionsUnwrapped.CopyTo(staticFileOptions);
+
+            staticFileOptions.FileProvider = staticFileOptions.FileProvider ?? new BundleFileProvider(_bundleManager, httpContextAccessor);
+
             if (globalOptionsUnwrapped.EnableCacheHeader)
             {
-                Action<StaticFileResponseContext> originalPrepareResponse = optionsUnwrapped.OnPrepareResponse;
-                optionsUnwrapped.OnPrepareResponse = ctx =>
+                Action<StaticFileResponseContext> originalPrepareResponse = staticFileOptions.OnPrepareResponse;
+                staticFileOptions.OnPrepareResponse = ctx =>
                 {
                     Microsoft.AspNetCore.Http.Headers.ResponseHeaders headers = ctx.Context.Response.GetTypedHeaders();
                     headers.CacheControl = new CacheControlHeaderValue { MaxAge = globalOptionsUnwrapped.CacheHeaderMaxAge };
@@ -72,7 +77,7 @@ namespace Karambolo.AspNetCore.Bundling
                 };
             }
 
-            _staticFileMiddleware = new StaticFileMiddleware(next, env, options, loggerFactory);
+            _staticFileMiddleware = new StaticFileMiddleware(next, env, Options.Create(staticFileOptions), loggerFactory);
         }
 
         public async Task Invoke(HttpContext context)

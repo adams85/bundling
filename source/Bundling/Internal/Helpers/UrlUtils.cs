@@ -114,20 +114,18 @@ hasQuery:
 
         public static QueryString NormalizeQuery(QueryString query, out IDictionary<string, StringValues> parsedQuery)
         {
-            if (!query.HasValue)
+            if (!query.HasValue || (parsedQuery = QueryHelpers.ParseNullableQuery(query.ToString())) == null)
             {
                 parsedQuery = null;
                 return query;
             }
 
-            Dictionary<string, StringValues> parsed = QueryHelpers.ParseQuery(query.ToString());
-
             var builder = new QueryBuilder();
-            foreach ((string key, StringValues values) in parsed.OrderBy(kvp => kvp.Key))
+
+            foreach ((string key, StringValues values) in parsedQuery.OrderBy(kvp => kvp.Key))
                 for (int i = 0, n = values.Count; i < n; i++)
                     builder.Add(key, values[i]);
 
-            parsedQuery = parsed;
             return builder.ToQueryString();
         }
 

@@ -8,10 +8,11 @@ using Microsoft.Extensions.Options;
 namespace Karambolo.AspNetCore.Bundling
 {
 #if !NETCOREAPP3_0_OR_GREATER
+    using Microsoft.AspNetCore.Hosting;
     using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 #else
     using Microsoft.AspNetCore.Hosting;
-    using Microsoft.Extensions.FileProviders;
+    using Microsoft.Extensions.Hosting;
 #endif
 
     public class BundleGlobalOptions : BundleGlobalDefaultsOptions
@@ -36,6 +37,8 @@ namespace Karambolo.AspNetCore.Bundling
             {
                 IWebHostEnvironment env = ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
+                options.EnableCacheBusting = !env.IsDevelopment();
+
                 options.Builder = new DefaultBundleBuilder();
                 options.SourceItemUrlResolver = (item, bundlingContext, urlHelper) => DefaultResolveSourceItemUrl(item, bundlingContext, urlHelper, env);
             }
@@ -43,6 +46,7 @@ namespace Karambolo.AspNetCore.Bundling
 
         public bool EnableMinification { get; set; }
         public bool EnableChangeDetection { get; set; }
+        public bool EnableCacheBusting { get; set; }
         public bool EnableCacheHeader { get; set; }
         public TimeSpan? CacheHeaderMaxAge { get; set; }
 

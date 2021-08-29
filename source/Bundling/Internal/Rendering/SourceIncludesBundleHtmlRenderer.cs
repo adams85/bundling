@@ -40,7 +40,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
         }
 
         public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string tagFormat, bool? addVersion)
+            QueryString query, string tagFormat, bool addVersion)
         {
             tagFormat = GetTagFormat(bundle);
             if (tagFormat == null)
@@ -49,7 +49,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             HttpContext httpContext = urlHelper.ActionContext.HttpContext;
 
             Func<object, PathString, string, string> fileVersionAppender =
-                ViewHelper.GetFileVersionAppender(httpContext, addVersion ?? true, out object fileVersionAppenderState);
+                ViewHelper.GetFileVersionAppender(httpContext, addVersion, out object fileVersionAppenderState);
 
             IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(urlHelper.ActionContext.HttpContext, bundle, query, loadItemContent: false);
 
@@ -90,7 +90,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             QueryString query, BundlingTagHelperBase tagHelper)
         {
             tagHelperOutput.SuppressOutput();
-            tagHelperOutput.Content.SetHtmlContent(await RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat: null, tagHelper.AddVersion));
+            tagHelperOutput.Content.SetHtmlContent(await RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat: null, tagHelper.ActualAddVersion));
         }
     }
 }

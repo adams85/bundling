@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace Karambolo.AspNetCore.Bundling.Internal.Versioning
+namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
 {
     public class HashBundleVersionProvider : IBundleVersionProvider
     {

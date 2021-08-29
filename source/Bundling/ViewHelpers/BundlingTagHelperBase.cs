@@ -41,6 +41,9 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 #endif
 
         [HtmlAttributeNotBound]
+        internal bool ActualAddVersion => AddVersion ?? _bundleManagerFactory.GlobalOptions.Value.EnableCacheBusting;
+
+        [HtmlAttributeNotBound]
         [ViewContext]
         public ViewContext ViewContext { get; set; }
 
@@ -62,7 +65,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 
                 output.CopyHtmlAttribute(UrlAttributeName, context);
 
-                if (AddVersion ?? true)
+                if (ActualAddVersion)
                 {
                     Func<object, PathString, string, string> fileVersionAppender =
                         ViewHelper.GetFileVersionAppender(ViewContext.HttpContext, addVersion: true, out object fileVersionAppenderState);

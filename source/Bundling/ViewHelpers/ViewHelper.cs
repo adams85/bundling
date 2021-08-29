@@ -43,7 +43,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         {
             return
                 TryGetBundle(httpContext, bundleManagerFactory, absolutePath, out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle) ?
-                bundleManager.GenerateUrlAsync(httpContext, bundle, query, addVersion ?? true) :
+                bundleManager.GenerateUrlAsync(httpContext, bundle, query, addVersion ?? bundleManagerFactory.GlobalOptions.Value.EnableCacheBusting) :
                 Task.FromResult(absolutePath);
         }
 
@@ -66,7 +66,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
         {
             return
                 TryGetBundle(urlHelper.ActionContext.HttpContext, bundleManagerFactory, absolutePath, out QueryString query, out IBundleManager bundleManager, out IBundleModel bundle) ?
-                bundle.HtmlRenderer.RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat, addVersion) :
+                bundle.HtmlRenderer.RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat, addVersion ?? bundleManagerFactory.GlobalOptions.Value.EnableCacheBusting) :
                 Task.FromResult<IHtmlContent>(new HtmlFormattableString(tagFormat, absolutePath));
         }
 

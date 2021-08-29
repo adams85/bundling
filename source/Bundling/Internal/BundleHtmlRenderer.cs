@@ -10,7 +10,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
     public interface IBundleHtmlRenderer
     {
         Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string tagFormat, bool? addVersion);
+            QueryString query, string tagFormat, bool addVersion);
 
         Task RenderTagHelperAsync(TagHelperContext tagHelperContext, TagHelperOutput tagHelperOutput, IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
             QueryString query, BundlingTagHelperBase tagHelper);
