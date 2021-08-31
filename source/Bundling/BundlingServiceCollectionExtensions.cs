@@ -56,6 +56,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<IBundleCache, NullBundleCache>();
             services.TryAddSingleton<IBundleVersionProvider, HashBundleVersionProvider>();
             services.TryAddSingleton<IBundleUrlHelper, FileNameVersioningBundleUrlHelper>();
+            services.TryAddSingleton<IStaticFileUrlHelper, DefaultStaticFileUrlHelper>();
 
             return services.AddBundlingCore(configure);
         }
@@ -126,66 +127,115 @@ namespace Microsoft.Extensions.DependencyInjection
             return configurer;
         }
 
-        public static BundlingConfigurer EnableMinification(this BundlingConfigurer configurer)
+        public static BundlingConfigurer EnableMinification(this BundlingConfigurer configurer, bool value = true)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableMinification = true);
+            Action<BundleGlobalOptions> configure;
+            if (value)
+                configure = o => o.EnableMinification = true;
+            else
+                configure = o => o.EnableMinification = false;
+
+            configurer.Services.Configure(configure);
 
             return configurer;
         }
 
-        public static BundlingConfigurer EnableChangeDetection(this BundlingConfigurer configurer)
+        public static BundlingConfigurer EnableChangeDetection(this BundlingConfigurer configurer, bool value = true)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableChangeDetection = true);
+            Action<BundleGlobalOptions> configure;
+            if (value)
+                configure = o => o.EnableChangeDetection = true;
+            else
+                configure = o => o.EnableChangeDetection = false;
+
+            configurer.Services.Configure(configure);
 
             return configurer;
         }
 
-        public static BundlingConfigurer DisableCacheBusting(this BundlingConfigurer configurer)
+        public static BundlingConfigurer EnableCacheBusting(this BundlingConfigurer configurer, bool value = true)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            configurer.Services.Configure<BundleGlobalOptions>(o => o.EnableCacheBusting = false);
+            Action<BundleGlobalOptions> configure;
+            if (value)
+                configure = o => o.EnableCacheBusting = true;
+            else
+                configure = o => o.EnableCacheBusting = false;
+
+            configurer.Services.Configure(configure);
 
             return configurer;
         }
 
-        public static BundlingConfigurer EnableCacheHeader(this BundlingConfigurer configurer, TimeSpan? maxAge = null)
+        public static BundlingConfigurer EnableCacheHeader(this BundlingConfigurer configurer, bool value = true, TimeSpan? maxAge = null)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            configurer.Services.Configure<BundleGlobalOptions>(o =>
-            {
-                o.EnableCacheHeader = true;
-                o.CacheHeaderMaxAge = maxAge;
-            });
+            Action<BundleGlobalOptions> configure;
+            if (value)
+                configure = o =>
+                {
+                    o.EnableCacheHeader = true;
+                    o.CacheHeaderMaxAge = maxAge;
+                };
+            else
+                configure = o =>
+                {
+                    o.EnableCacheHeader = false;
+                    o.CacheHeaderMaxAge = null;
+                };
+
+            configurer.Services.Configure(configure);
 
             return configurer;
         }
 
-        public static BundlingConfigurer EnableSourceIncludes(this BundlingConfigurer configurer)
+        public static BundlingConfigurer EnableCacheHeader(this BundlingConfigurer configurer, TimeSpan? maxAge)
+        {
+            return configurer.EnableCacheHeader(value: true, maxAge);
+        }
+
+        public static BundlingConfigurer EnableSourceIncludes(this BundlingConfigurer configurer, bool value = true)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            configurer.Services.Configure<BundleGlobalOptions>(o => o.RenderSourceIncludes = true);
+            Action<BundleGlobalOptions> configure;
+            if (value)
+                configure = o => o.RenderSourceIncludes = true;
+            else
+                configure = o => o.RenderSourceIncludes = false;
+
+            configurer.Services.Configure(configure);
 
             return configurer;
         }
 
-        public static BundlingConfigurer UseSourceItemUrlResolver(this BundlingConfigurer configurer, BundleSourceItemUrlResolver resolver)
+        public static BundlingConfigurer UseSourceItemToUrlMapper(this BundlingConfigurer configurer, BundleSourceItemToUrlMapper mapper)
         {
             if (configurer == null)
                 throw new ArgumentNullException(nameof(configurer));
 
-            configurer.Services.Configure<BundleGlobalOptions>(o => o.SourceItemUrlResolver = resolver);
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.SourceItemToUrlMapper = mapper);
+
+            return configurer;
+        }
+
+        public static BundlingConfigurer UseStaticFileUrlToFileMapper(this BundlingConfigurer configurer, StaticFileUrlToFileMapper mapper)
+        {
+            if (configurer == null)
+                throw new ArgumentNullException(nameof(configurer));
+
+            configurer.Services.Configure<BundleGlobalOptions>(o => o.StaticFileUrlToFileMapper = mapper);
 
             return configurer;
         }

@@ -11,7 +11,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
     {
         private const string VersionKey = "v";
 
-        public void AddVersion(string version, ref PathString path, ref QueryString query)
+        internal static void AddVersion(string version, ref QueryString query)
         {
             var builder = new QueryBuilder();
 
@@ -29,7 +29,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
             query = builder.ToQueryString();
         }
 
-        public string RemoveVersion(ref PathString path, ref QueryString query)
+        public void AddVersion(string version, ref PathString path, ref QueryString query)
+        {
+            AddVersion(version, ref query);
+        }
+
+        internal static string RemoveVersion(ref QueryString query)
         {
             string version = null;
 
@@ -51,6 +56,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
             query = builder.ToQueryString();
 
             return version;
+        }
+
+        public string RemoveVersion(ref PathString path, ref QueryString query)
+        {
+            return RemoveVersion(ref query);
         }
     }
 }

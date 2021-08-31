@@ -1,8 +1,10 @@
 ﻿using System;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling
@@ -19,15 +21,6 @@ namespace Karambolo.AspNetCore.Bundling
     {
         internal sealed class Configurer : BundleDefaultsConfigurerBase<BundleGlobalOptions>
         {
-            private static string DefaultResolveSourceItemUrl(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper, IWebHostEnvironment env)
-            {
-                return
-                    item.ItemTransformContext is IFileBundleItemTransformContext fileItemContext &&
-                        new AbstractionFile.FileProviderEqualityComparer(fileItemContext.CaseSensitiveFilePaths).Equals(fileItemContext.FileProvider, env.WebRootFileProvider) ?
-                    urlHelper.Content("~" + bundlingContext.StaticFilesPathPrefix.Add(UrlUtils.NormalizePath(fileItemContext.FilePath)).ToString()) :
-                    null;
-            }
-
             public Configurer(Action<BundleGlobalOptions, IServiceProvider> action, IServiceProvider serviceProvider)
                 : base(action, serviceProvider) { }
 
@@ -40,7 +33,26 @@ namespace Karambolo.AspNetCore.Bundling
                 options.EnableCacheBusting = !env.IsDevelopment();
 
                 options.Builder = new DefaultBundleBuilder();
-                options.SourceItemUrlResolver = (item, bundlingContext, urlHelper) => DefaultResolveSourceItemUrl(item, bundlingContext, urlHelper, env);
+
+                options.SourceItemToUrlMapper = (item, bundlingContext, urlHelper) =>
+                    item.ItemTransformContext is IFileBundleItemTransformContext fileItemContext &&
+                        new AbstractionFile.FileProviderEqualityComparer(fileItemContext.CaseSensitiveFilePaths).Equals(fileItemContext.FileProvider, env.WebRootFileProvider) ?
+                    urlHelper.Content("~" + bundlingContext.StaticFilesPathPrefix.Add(new PathString(UrlUtils.NormalizePath(fileItemContext.FilePath)))) :
+                    null;
+
+                options.StaticFileUrlToFileMapper = delegate (string url, IUrlHelper urlHelper, out IFileProvider fileProvider, out string filePath, out bool caseSensitiveFilePaths)
+                {
+                    if (urlHelper.IsLocalUrl(url))
+                    {
+                        fileProvider = env.WebRootFileProvider;
+                        filePath = PathString.FromUriComponent(UrlUtils.NormalizePath(urlHelper.Content(url))).Value;
+                        caseSensitiveFilePaths = AbstractionFile.GetDefaultCaseSensitiveFilePaths(fileProvider);
+                        return true;
+                    }
+
+                    (fileProvider, filePath, caseSensitiveFilePaths) = (default, default, default);
+                    return false;
+                };
             }
         }
 
@@ -49,6 +61,8 @@ namespace Karambolo.AspNetCore.Bundling
         public bool EnableCacheBusting { get; set; }
         public bool EnableCacheHeader { get; set; }
         public TimeSpan? CacheHeaderMaxAge { get; set; }
+
+        public StaticFileUrlToFileMapper StaticFileUrlToFileMapper { get; set; }
 
         internal void Merge(IBundleGlobalConfiguration configuration)
         {

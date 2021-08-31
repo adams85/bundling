@@ -39,21 +39,21 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
             CacheOptions = bundle.CacheOptions != null ? new BundleCacheOptions(bundle.CacheOptions) : BundleCacheOptions.Default;
 
+            SourceItemToUrlMapper = bundle.SourceItemToUrlMapper ?? delegate { return null; };
+
+            HtmlRenderer = CreateHtmlRenderer(bundle);
+
+            Sources = bundle.Sources.Select(CreateSourceModel).ToArray();
+        }
+
+        protected virtual IBundleHtmlRenderer CreateHtmlRenderer(Bundle bundle)
+        {
             var renderSourceIncludes =
                 (bundle.RenderSourceIncludes ?? false) &&
                 !bundle.DependsOnParams &&
                 (bundle.Transforms == null || bundle.Transforms.All(t => t is IAllowsSourceIncludes)) &&
                 bundle.Sources.All(s => s.ItemTransforms == null || s.ItemTransforms.All(t => t is IAllowsSourceIncludes));
 
-            HtmlRenderer = CreateHtmlRenderer(renderSourceIncludes);
-
-            SourceItemUrlResolver = bundle.SourceItemUrlResolver ?? delegate { return null; };
-
-            Sources = bundle.Sources.Select(CreateSourceModel).ToArray();
-        }
-
-        protected virtual IBundleHtmlRenderer CreateHtmlRenderer(bool renderSourceIncludes)
-        {
             return renderSourceIncludes ? SourceIncludesBundleHtmlRenderer.Instance : (IBundleHtmlRenderer)DefaultBundleHtmlRenderer.Instance;
         }
 
@@ -75,7 +75,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
         public IReadOnlyList<IBundleTransform> Transforms { get; }
         public IBundleCacheOptions CacheOptions { get; }
         public IBundleHtmlRenderer HtmlRenderer { get; }
-        public BundleSourceItemUrlResolver SourceItemUrlResolver { get; }
+        public BundleSourceItemToUrlMapper SourceItemToUrlMapper { get; }
 
         public event EventHandler Changed;
 

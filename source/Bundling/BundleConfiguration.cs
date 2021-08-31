@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 
 namespace Karambolo.AspNetCore.Bundling
 {
-    public delegate string BundleSourceItemUrlResolver(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper);
+    public delegate string BundleSourceItemToUrlMapper(IBundleSourceBuildItem item, IBundlingContext bundlingContext, IUrlHelper urlHelper);
+
+    public delegate bool StaticFileUrlToFileMapper(string url, IUrlHelper urlHelper, out IFileProvider fileProvider, out string filePath, out bool caseSensitiveFilePaths);
 
     public interface IBundleGlobalConfiguration
     {
@@ -18,7 +21,7 @@ namespace Karambolo.AspNetCore.Bundling
     public interface IRunTimeGlobalBundleConfiguration
     {
         bool? RenderSourceIncludes { get; }
-        BundleSourceItemUrlResolver SourceItemUrlResolver { get; }
+        BundleSourceItemToUrlMapper SourceItemToUrlMapper { get; }
     }
 
     public interface IBundleConfiguration : IBundleGlobalConfiguration
@@ -38,7 +41,7 @@ namespace Karambolo.AspNetCore.Bundling
         public IReadOnlyList<IBundleTransform> Transforms { get; set; }
 
         public bool? RenderSourceIncludes { get; set; }
-        public BundleSourceItemUrlResolver SourceItemUrlResolver { get; set; }
+        public BundleSourceItemToUrlMapper SourceItemToUrlMapper { get; set; }
     }
 
     public class BundleDefaultsOptions : BundleGlobalDefaultsOptions, IBundleConfiguration

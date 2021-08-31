@@ -5,9 +5,7 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 {
     [HtmlTargetElement("link", Attributes = UrlAttributeNameConst + ", [rel=stylesheet]", TagStructure = TagStructure.WithoutEndTag)]
-#if NETCOREAPP3_0_OR_GREATER
     [HtmlTargetElement("link", Attributes = AddVersionAttributeName + ", [rel=stylesheet]", TagStructure = TagStructure.WithoutEndTag)]
-#endif
     public class BundlingLinkTagHelper : BundlingTagHelperBase
     {
         private const string UrlAttributeNameConst = "href";

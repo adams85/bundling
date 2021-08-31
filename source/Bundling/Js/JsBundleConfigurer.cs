@@ -9,15 +9,9 @@ namespace Microsoft.AspNetCore.Builder
         public JsBundleConfigurer(Bundle bundle, IFileProvider sourceFileProvider, bool caseSensitiveSourceFilePaths, IServiceProvider appServices)
             : base(bundle, sourceFileProvider, caseSensitiveSourceFilePaths, appServices) { }
 
-        public JsBundleConfigurer DisableSourceIncludes()
+        public JsBundleConfigurer EnableSourceIncludes(bool value = true)
         {
-            Bundle.RenderSourceIncludes = false;
-            return this;
-        }
-
-        public JsBundleConfigurer EnableSourceIncludes()
-        {
-            Bundle.RenderSourceIncludes = true;
+            Bundle.RenderSourceIncludes = value;
             return this;
         }
     }

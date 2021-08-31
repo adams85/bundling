@@ -12,10 +12,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
     {
         public static readonly DefaultBundleHtmlRenderer Instance = new DefaultBundleHtmlRenderer();
 
-        protected internal DefaultBundleHtmlRenderer() { }
+        protected DefaultBundleHtmlRenderer() { }
 
         public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string tagFormat, bool addVersion)
+            QueryString query, string tagFormat, bool addVersion, StaticFileUrlToFileMapper urlToFileMapper)
         {
             string url = await bundleManager.GenerateUrlAsync(urlHelper.ActionContext.HttpContext, bundle, query, addVersion);
 

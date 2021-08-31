@@ -119,9 +119,9 @@ namespace Microsoft.AspNetCore.Builder
             return (TConfigurer)this;
         }
 
-        public TConfigurer UseSourceItemUrlResolver(BundleSourceItemUrlResolver resolver)
+        public TConfigurer UseSourceItemToUrlMapper(BundleSourceItemToUrlMapper mapper)
         {
-            Bundle.SourceItemUrlResolver = resolver;
+            Bundle.SourceItemToUrlMapper = mapper;
             return (TConfigurer)this;
         }
 

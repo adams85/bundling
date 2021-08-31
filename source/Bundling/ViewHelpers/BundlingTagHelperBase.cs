@@ -13,6 +13,8 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 {
     public abstract class BundlingTagHelperBase : TagHelper
     {
+        internal const string AddVersionAttributeName = "bundling-add-version";
+
         private readonly IBundleManagerFactory _bundleManagerFactory;
         private readonly IUrlHelperFactory _urlHelperFactory;
 
@@ -31,17 +33,12 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 
         public override int Order => -10000;
 
-#if NETCOREAPP3_0_OR_GREATER
-        internal const string AddVersionAttributeName = "bundling-add-version";
-
         [HtmlAttributeName(AddVersionAttributeName)]
         public bool? AddVersion { get; set; }
-#else
-        internal bool? AddVersion => null;
-#endif
 
-        [HtmlAttributeNotBound]
         internal bool ActualAddVersion => AddVersion ?? _bundleManagerFactory.GlobalOptions.Value.EnableCacheBusting;
+
+        internal StaticFileUrlToFileMapper UrlToFileMapper => _bundleManagerFactory.GlobalOptions.Value.StaticFileUrlToFileMapper ?? ViewHelper.NullUrlToFileMapper;
 
         [HtmlAttributeNotBound]
         [ViewContext]
@@ -67,10 +64,7 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
 
                 if (ActualAddVersion)
                 {
-                    Func<object, PathString, string, string> fileVersionAppender =
-                        ViewHelper.GetFileVersionAppender(ViewContext.HttpContext, addVersion: true, out object fileVersionAppenderState);
-
-                    url = fileVersionAppender(fileVersionAppenderState, ViewContext.HttpContext.Request.PathBase, url);
+                    url = ViewHelper.AdjustStaticFileUrl(urlHelper, url, addVersion: true, UrlToFileMapper);
 
                     TagHelperAttribute existingAttribute = context.AllAttributes[UrlAttributeName];
                     var index = output.Attributes.IndexOfName(UrlAttributeName);

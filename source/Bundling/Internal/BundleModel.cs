@@ -18,7 +18,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
         IReadOnlyList<IBundleTransform> Transforms { get; }
         IBundleCacheOptions CacheOptions { get; }
         IBundleHtmlRenderer HtmlRenderer { get; }
-        BundleSourceItemUrlResolver SourceItemUrlResolver { get; }
+        BundleSourceItemToUrlMapper SourceItemToUrlMapper { get; }
 
         event EventHandler Changed;
 

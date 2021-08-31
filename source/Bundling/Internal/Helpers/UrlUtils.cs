@@ -74,22 +74,22 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return ClassifyUrl(url) == UrlKind.RelativeAndRelativePath;
         }
 
-        public static void DeconstructPath(string url, out PathString path, out QueryString query, out FragmentString fragment)
+        public static void DeconstructPath(StringSegment url, out PathString path, out QueryString query, out FragmentString fragment)
         {
             char c;
-            var index = 0;
+            int index = 0, length = url.Length;
 
-            for (; index < url.Length; index++)
+            for (; index < length; index++)
                 if ((c = url[index]) == '#')
                 {
-                    path = PathString.FromUriComponent(NormalizePathSegment(new StringSegment(url, 0, index)).Value);
+                    path = PathString.FromUriComponent(NormalizePathSegment(url.Subsegment(0, index)).Value);
                     query = default;
                     fragment = FragmentString.FromUriComponent(url.Substring(index));
                     return;
                 }
                 else if (c == '?')
                 {
-                    path = PathString.FromUriComponent(NormalizePathSegment(new StringSegment(url, 0, index)).Value);
+                    path = PathString.FromUriComponent(NormalizePathSegment(url.Subsegment(0, index)).Value);
                     goto hasQuery;
                 }
 
@@ -100,7 +100,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
 hasQuery:
             var queryIndex = index++;
-            for (; index < url.Length; index++)
+            for (; index < length; index++)
                 if (url[index] == '#')
                 {
                     query = QueryString.FromUriComponent(url.Substring(queryIndex, index - queryIndex));

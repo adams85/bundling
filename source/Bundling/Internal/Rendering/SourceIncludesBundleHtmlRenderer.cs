@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Karambolo.AspNetCore.Bundling.Css;
 using Karambolo.AspNetCore.Bundling.Js;
@@ -17,7 +18,12 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
     {
         public static readonly SourceIncludesBundleHtmlRenderer Instance = new SourceIncludesBundleHtmlRenderer();
 
-        protected internal SourceIncludesBundleHtmlRenderer() { }
+        private readonly ConditionalWeakTable<IBundleModel, object> _hasLoggedWarningFlags;
+
+        protected SourceIncludesBundleHtmlRenderer()
+        {
+            _hasLoggedWarningFlags = new ConditionalWeakTable<IBundleModel, object>();
+        }
 
         private static string GetTagFormat(IBundleModel bundle)
         {
@@ -40,7 +46,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
         }
 
         public async Task<IHtmlContent> RenderHtmlAsync(IUrlHelper urlHelper, IBundleManager bundleManager, IBundleModel bundle,
-            QueryString query, string tagFormat, bool addVersion)
+            QueryString query, string tagFormat, bool addVersion, StaticFileUrlToFileMapper urlToFileMapper)
         {
             tagFormat = GetTagFormat(bundle);
             if (tagFormat == null)
@@ -48,26 +54,33 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
 
             HttpContext httpContext = urlHelper.ActionContext.HttpContext;
 
-            Func<object, PathString, string, string> fileVersionAppender =
-                ViewHelper.GetFileVersionAppender(httpContext, addVersion, out object fileVersionAppenderState);
+            IStaticFileUrlHelper staticFileUrlHelper = addVersion ? httpContext.RequestServices.GetRequiredService<IStaticFileUrlHelper>() : null;
 
-            IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(urlHelper.ActionContext.HttpContext, bundle, query, loadItemContent: false);
+            IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(httpContext, bundle, query, loadItemContent: false);
 
             var builder = new HtmlContentBuilder(items.Length * 2 - 1);
 
-            bool unresolvedUrlFound = false;
+            bool nonMappableItemFound = false;
             bool isFirstAppend = true;
 
             for (int i = 0, n = items.Length; i < n; i++)
             {
-                string url = bundle.SourceItemUrlResolver(items[i], bundleManager.BundlingContext, urlHelper);
+                IBundleSourceBuildItem item = items[i];
+
+                string url = bundle.SourceItemToUrlMapper(item, bundleManager.BundlingContext, urlHelper);
                 if (url == null)
                 {
-                    unresolvedUrlFound = true;
+                    nonMappableItemFound = true;
                     continue;
                 }
 
-                url = fileVersionAppender(fileVersionAppenderState, httpContext.Request.PathBase, url);
+                if (staticFileUrlHelper != null)
+                {
+                    url =
+                        item.ItemTransformContext is IFileBundleItemTransformContext fileItemContext ?
+                        staticFileUrlHelper.AddVersion(url, urlHelper, fileItemContext.FileProvider, fileItemContext.FilePath) :
+                        staticFileUrlHelper.AddVersion(url, urlHelper, urlToFileMapper);
+                }
 
                 if (isFirstAppend)
                     isFirstAppend = false;
@@ -77,10 +90,15 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
                 builder.AppendHtml(new HtmlFormattableString(tagFormat, url));
             }
 
-            if (unresolvedUrlFound)
+            if (nonMappableItemFound)
             {
-                ILogger logger = urlHelper.ActionContext.HttpContext.RequestServices.GetRequiredService<ILogger<SourceIncludesBundleHtmlRenderer>>();
-                logger.LogWarning($"URL of one or more source items could not be resolved during rendering HTML includes for bundle '{{PATH}}'. You may set a custom URL resolver by the {nameof(BundlingServiceCollectionExtensions.UseSourceItemUrlResolver)} method of the configuration builders.", bundle.Path);
+                ILogger logger = httpContext.RequestServices.GetRequiredService<ILogger<SourceIncludesBundleHtmlRenderer>>();
+
+                _hasLoggedWarningFlags.GetValue(bundle, b =>
+                {
+                    logger.LogWarning($"One or more source items could not be mapped to an URL during rendering HTML includes for bundle '{{PATH}}'. You may set a custom mapper by the {nameof(BundlingServiceCollectionExtensions.UseSourceItemToUrlMapper)} method of the configuration builders.", b.Path);
+                    return new object();
+                });
             }
 
             return builder;
@@ -90,7 +108,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             QueryString query, BundlingTagHelperBase tagHelper)
         {
             tagHelperOutput.SuppressOutput();
-            tagHelperOutput.Content.SetHtmlContent(await RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat: null, tagHelper.ActualAddVersion));
+            tagHelperOutput.Content.SetHtmlContent(await RenderHtmlAsync(urlHelper, bundleManager, bundle, query, tagFormat: null, tagHelper.ActualAddVersion, tagHelper.UrlToFileMapper));
         }
     }
 }

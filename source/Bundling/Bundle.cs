@@ -80,14 +80,14 @@ namespace Karambolo.AspNetCore.Bundling
             set => _renderSourceIncludes = value;
         }
 
-        private BundleSourceItemUrlResolver _sourceItemUrlResolver;
-        public BundleSourceItemUrlResolver SourceItemUrlResolver
+        private BundleSourceItemToUrlMapper _sourceItemToUrlMapper;
+        public BundleSourceItemToUrlMapper SourceItemToUrlMapper
         {
             get =>
-                _sourceItemUrlResolver ??
-                (Defaults as IRunTimeGlobalBundleConfiguration)?.SourceItemUrlResolver ??
-                (GlobalDefaults as IRunTimeGlobalBundleConfiguration)?.SourceItemUrlResolver;
-            set => _sourceItemUrlResolver = value;
+                _sourceItemToUrlMapper ??
+                (Defaults as IRunTimeGlobalBundleConfiguration)?.SourceItemToUrlMapper ??
+                (GlobalDefaults as IRunTimeGlobalBundleConfiguration)?.SourceItemToUrlMapper;
+            set => _sourceItemToUrlMapper = value;
         }
 
         public IConfigurationHelper ConfigurationHelper => Defaults.ConfigurationHelper;
