@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Karambolo.AspNetCore.Bundling
 {
@@ -20,6 +21,11 @@ namespace Karambolo.AspNetCore.Bundling
         {
             get => _itemTransforms ?? Bundle.ItemTransforms;
             set => _itemTransforms = value;
+        }
+
+        public virtual bool AllowsSourceIncludes()
+        {
+            return ItemTransforms == null || ItemTransforms.All(t => t is IAllowsSourceIncludes);
         }
     }
 }

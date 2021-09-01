@@ -48,13 +48,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Models
 
         protected virtual IBundleHtmlRenderer CreateHtmlRenderer(Bundle bundle)
         {
-            var renderSourceIncludes =
-                (bundle.RenderSourceIncludes ?? false) &&
-                !bundle.DependsOnParams &&
-                (bundle.Transforms == null || bundle.Transforms.All(t => t is IAllowsSourceIncludes)) &&
-                bundle.Sources.All(s => s.ItemTransforms == null || s.ItemTransforms.All(t => t is IAllowsSourceIncludes));
-
-            return renderSourceIncludes ? SourceIncludesBundleHtmlRenderer.Instance : (IBundleHtmlRenderer)DefaultBundleHtmlRenderer.Instance;
+            return bundle.AllowsSourceIncludes() ? SourceIncludesBundleHtmlRenderer.Instance : (IBundleHtmlRenderer)DefaultBundleHtmlRenderer.Instance;
         }
 
         protected virtual IBundleSourceModel CreateSourceModel(BundleSource bundleSource)

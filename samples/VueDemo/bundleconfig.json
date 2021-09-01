@@ -1,0 +1,22 @@
+[
+  {
+    "outputFileName": "/bundles/site.css",
+    "inputFiles": [
+      "/less/site.less"
+    ],
+    "minify": {
+      // must be set to false to allow the global configuration to decide whether to minify or not
+      "enabled": false
+    }
+  },
+  {
+    "outputFileName": "/bundles/app.js",
+    "inputFiles": [
+      "/js/components/*.js",
+      "/js/app.js"
+    ],
+    "minify": {
+      "enabled": false
+    }
+  }
+]

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.FileProviders;
@@ -33,6 +34,13 @@ namespace Karambolo.AspNetCore.Bundling
         }
 
         public IList<FileBundleSourceItem> Items { get; }
+
+        public override bool AllowsSourceIncludes()
+        {
+            return
+                base.AllowsSourceIncludes() &&
+                Items.All(it => it.AllowsSourceIncludes());
+        }
     }
 
     public class FileBundleSourceItem
@@ -62,6 +70,11 @@ namespace Karambolo.AspNetCore.Bundling
         {
             get => _itemTransforms ?? BundleSource.ItemTransforms;
             set => _itemTransforms = value;
+        }
+
+        public virtual bool AllowsSourceIncludes()
+        {
+            return ItemTransforms == null || ItemTransforms.All(t => t is IAllowsSourceIncludes);
         }
     }
 }

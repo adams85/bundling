@@ -14,5 +14,10 @@ namespace Karambolo.AspNetCore.Bundling
 
         public BuildItemsProvider ItemsProvider { get; set; }
         public Func<IChangeToken> ChangeTokenFactory { get; set; }
+
+        public override bool AllowsSourceIncludes()
+        {
+            return false;
+        }
     }
 }

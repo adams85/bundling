@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
@@ -91,5 +92,14 @@ namespace Karambolo.AspNetCore.Bundling
         }
 
         public IConfigurationHelper ConfigurationHelper => Defaults.ConfigurationHelper;
+
+        public virtual bool AllowsSourceIncludes()
+        {
+            return
+                (RenderSourceIncludes ?? false) &&
+                !DependsOnParams &&
+                (Transforms == null || Transforms.All(t => t is IAllowsSourceIncludes)) &&
+                Sources.All(s => s.AllowsSourceIncludes());
+        }
     }
 }

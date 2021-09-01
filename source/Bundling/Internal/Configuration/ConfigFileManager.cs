@@ -32,7 +32,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
         {
             var result = new PathString(filePath);
 
-            if (result.StartsWithSegments(DefaultPathPrefix, out result) && output)
+            if (result.StartsWithSegments(DefaultPathPrefix, out PathString remaining))
+                result = remaining;
+
+            if (output)
                 result.StartsWithSegments(pathPrefix, out result);
 
             return result;
@@ -73,9 +76,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
 
                 bundle.Transforms = outputConfig.ConfigurationHelper.SetDefaultTransforms(bundle.Transforms);
 
-                if (item.Minify == null || 
-                    !item.Minify.Any(kvp => "enabled".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
-                    kvp.Value is bool boolValue && boolValue))
+                if (item.Minify == null ||
+                    !item.Minify.Any(kvp => "enabled".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase) || kvp.Value is bool boolValue && boolValue))
                     bundle.Transforms = outputConfig.ConfigurationHelper.EnableMinification(bundle.Transforms);
 
                 if (item.InputFiles != null)
@@ -93,7 +95,10 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                             exclude = false;
 
                         PathString inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
-                        extension = Path.GetExtension(inputPath.Value) ?? string.Empty;
+                        if (!inputPath.HasValue)
+                            throw ErrorHelper.PathMappingNotPossible(inputFile, nameof(pathMapper));
+
+                        extension = Path.GetExtension(inputPath.Value);
 
                         IBundleConfiguration inputConfig = _extensionMappers.Select(em => em.MapInput(extension)).FirstOrDefault(cfg => cfg != null);
                         if (inputConfig == null)
