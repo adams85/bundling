@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using Esprima.Ast;
+using Esprima.Utils;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
-    internal class VariableScopeBuilder : ImprovedAstVisitor
+    internal class VariableScopeBuilder : AstVisitor
     {
         private readonly Dictionary<Node, VariableScope> _variableScopes;
         private readonly Stack<VariableScope> _variableScopeStack;
@@ -72,6 +73,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             EndVariableScope();
         }
 
+        private void VisitClassCore(IClass @class)
+        {
+            if (@class.SuperClass != null)
+                Visit(@class.SuperClass);
+
+            Visit(@class.Body);
+        }
+
         protected override void VisitClassDeclaration(ClassDeclaration classDeclaration)
         {
             if (classDeclaration.Id != null)
@@ -79,10 +88,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             BeginVariableScope(new VariableScope.Class(classDeclaration, CurrentVariableScope));
 
-            if (classDeclaration.SuperClass != null)
-                Visit(classDeclaration.SuperClass);
-
-            Visit(classDeclaration.Body);
+            VisitClassCore(classDeclaration);
 
             EndVariableScope();
         }
@@ -93,10 +99,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             BeginVariableScope(new VariableScope.Class(classExpression, CurrentVariableScope));
 
-            if (classExpression.SuperClass != null)
-                Visit(classExpression.SuperClass);
-
-            Visit(classExpression.Body);
+            VisitClassCore(classExpression);
 
             EndVariableScope();
         }
@@ -173,29 +176,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override void VisitImportDeclaration(ImportDeclaration importDeclaration)
         {
-            for (int i = 0, n = importDeclaration.Specifiers.Count; i < n; i++)
-            {
-                ImportDeclarationSpecifier specifier = importDeclaration.Specifiers[i];
-                Identifier local;
+            VariableScope.GlobalBlock globalScope = EnsureImportDeclarationScope(importDeclaration);
 
-                switch (specifier)
-                {
-                    case ImportDefaultSpecifier importDefaultSpecifier:
-                        local = importDefaultSpecifier.Local;
-                        break;
-                    case ImportNamespaceSpecifier importNamespaceSpecifier:
-                        local = importNamespaceSpecifier.Local;
-                        break;
-                    case ImportSpecifier importSpecifier:
-                        local = importSpecifier.Local;
-                        break;
-                    default:
-                        VisitUnknownNode(specifier);
-                        throw new InvalidOperationException();
-                }
-
-                EnsureImportDeclarationScope(importDeclaration).AddImportDeclaration(local);
-            }
+            ref readonly NodeList<ImportDeclarationSpecifier> specifiers = ref importDeclaration.Specifiers;
+            for (var i = 0; i < specifiers.Count; i++)
+                globalScope.AddImportDeclaration(specifiers[i].Local);
 
             Visit(importDeclaration.Source);
         }
@@ -216,8 +201,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     globalScope = new VariableScope.Global(script);
                     break;
                 default:
-                    VisitUnknownNode(program);
-                    throw new InvalidOperationException();
+                    throw UnknownNodeError(program);
             }
 
             BeginVariableScope(globalScope);
@@ -235,15 +219,21 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 visitVariableIdentifier: (s, identifier) => ((VariableScope.StatementBase)s.Builder.CurrentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
                 visitRewritableExpression: (s, expression) => s.Builder.Visit(expression));
 
-            for (int i = 0, n = variableDeclaration.Declarations.Count; i < n; i++)
+            ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
+            for (var i = 0; i < declarations.Count; i++)
             {
-                VariableDeclarator variableDeclarator = variableDeclaration.Declarations[i];
+                VariableDeclarator variableDeclarator = declarations[i];
 
                 variableDeclarationVisitor.VisitId(variableDeclarator);
 
                 if (variableDeclarator.Init != null)
                     Visit(variableDeclarator.Init);
             }
+        }
+
+        private static Exception UnknownNodeError(Node node)
+        {
+            return new NotSupportedException($"Nodes of type {node.Type} are not supported.");
         }
     }
 }

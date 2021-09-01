@@ -25,27 +25,27 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     _visitVariableIdentifier(_state, identifier);
                     break;
                 case ArrayPattern arrayPattern:
-                    VisitArrayPatternElements(arrayPattern.Elements);
+                    VisitArrayPatternElements(in arrayPattern.Elements);
                     break;
                 case ObjectPattern objectPattern:
-                    VisitObjectPatternProperties(objectPattern.Properties);
+                    VisitObjectPatternProperties(in objectPattern.Properties);
                     break;
             }
         }
 
-        private void VisitArrayPatternElements(NodeList<Expression> elements)
+        private void VisitArrayPatternElements(in NodeList<Expression> elements)
         {
-            for (int i = 0, n = elements.Count; i < n; i++)
+            for (var i = 0; i < elements.Count; i++)
                 switch (elements[i])
                 {
                     case Identifier identifier:
                         _visitVariableIdentifier(_state, identifier);
                         break;
                     case ArrayPattern arrayPattern:
-                        VisitArrayPatternElements(arrayPattern.Elements);
+                        VisitArrayPatternElements(in arrayPattern.Elements);
                         break;
                     case ObjectPattern objectPattern:
-                        VisitObjectPatternProperties(objectPattern.Properties);
+                        VisitObjectPatternProperties(in objectPattern.Properties);
                         break;
                     case RestElement restElement:
                         VisitBindingExpression(restElement.Argument);
@@ -57,9 +57,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 }
         }
 
-        private void VisitObjectPatternProperties(NodeList<Node> properties)
+        private void VisitObjectPatternProperties(in NodeList<Node> properties)
         {
-            for (int i = 0, n = properties.Count; i < n; i++)
+            for (var i = 0; i < properties.Count; i++)
                 switch (properties[i])
                 {
                     case Property property:
@@ -72,10 +72,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                                 _visitVariableIdentifier(_state, identifier);
                                 break;
                             case ArrayPattern arrayPattern:
-                                VisitArrayPatternElements(arrayPattern.Elements);
+                                VisitArrayPatternElements(in arrayPattern.Elements);
                                 break;
                             case ObjectPattern objectPattern:
-                                VisitObjectPatternProperties(objectPattern.Properties);
+                                VisitObjectPatternProperties(in objectPattern.Properties);
                                 break;
                             case AssignmentPattern assignmentPattern:
                                 VisitBindingExpression(assignmentPattern.Left);
@@ -97,7 +97,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public void VisitParams(IFunction function)
         {
-            VisitArrayPatternElements(function.Params);
+            VisitArrayPatternElements(in function.Params);
         }
 
         public void VisitId(VariableDeclarator variableDeclarator)

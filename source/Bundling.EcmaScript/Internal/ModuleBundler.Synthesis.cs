@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Esprima;
 using Esprima.Ast;
+using Esprima.Utils;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
@@ -17,7 +18,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
     {
         private delegate void SubstitutionAdjuster(Identifier identifier, ref string value);
 
-        private sealed class SubstitutionCollector : ImprovedAstVisitor
+        private sealed class SubstitutionCollector : AstVisitor
         {
             private readonly ModuleBundler _bundler;
             private readonly ModuleData _module;
@@ -272,20 +273,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 Visit(property.Value);
             }
 
-            protected override void VisitUnknownNode(Node node)
-            {
-                Range range = node.Range;
-                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), node.Location.Start,
-                    $"'{_module.Content.Substring(range.Start, range.End - range.Start)}' is not supported currently.");
-            }
-
             protected override void VisitVariableDeclaration(VariableDeclaration variableDeclaration)
             {
                 VariableDeclarationVisitor<SubstitutionCollector> variableDeclarationVisitor = CreateVariableDeclarationVisitor();
 
-                for (int i = 0, n = variableDeclaration.Declarations.Count; i < n; i++)
+                ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
+                for (var i = 0; i < declarations.Count; i++)
                 {
-                    VariableDeclarator variableDeclarator = variableDeclaration.Declarations[i];
+                    VariableDeclarator variableDeclarator = declarations[i];
 
                     // Variable identifier(s) are not subject to rewriting, thus, skipped.
                     variableDeclarationVisitor.VisitId(variableDeclarator);
@@ -442,7 +437,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private void ExpandExports(Dictionary<string, ExportData> exports, HashSet<ModuleData> visitedModules, ModuleData module,
             ModuleData rootModule, IModuleResource exportAllSource = null)
         {
-            // TODO: wildcard re-exports may cause redeclarations ()
+            // TODO: wildcard re-exports may cause redeclarations
 
             for (int i = 0, n = module.ExportsRaw.Count; i < n; i++)
             {

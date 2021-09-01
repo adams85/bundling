@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Esprima.Ast;
+using Esprima.Utils;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
@@ -26,6 +27,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 public Program Program { get; }
 
                 public override NodeCollection ChildNodes => throw new NotSupportedException();
+
+                protected override void Accept(AstVisitor visitor) => throw new NotSupportedException();
             }
 
             public Global(Script script) : base(new Placeholder(script), null, script.Strict) { }
@@ -35,23 +38,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public sealed class Function : FunctionBase
         {
-            // Strict mode tracking of functions is quite broken in Esprima.NET currently, so we need to look for the directive manually.
-            // TODO: This workaround can be removed after https://github.com/sebastienros/esprima-dotnet/issues/179 gets resolved.
-            private static bool GetIsStrict(IFunction function) =>
-                function.Body is BlockStatement body &&
-                body.Body.Count > 0 &&
-                body.Body[0] is ExpressionStatement expressionStatement &&
-                expressionStatement.Expression is Literal literal &&
-                literal.StringValue == "use strict";
-
             public Function(ArrowFunctionExpression arrowFunctionExpression, VariableScope parentScope)
-                : base(arrowFunctionExpression, parentScope, parentScope.IsStrict || GetIsStrict(arrowFunctionExpression)) { }
+                : base(arrowFunctionExpression, parentScope, parentScope.IsStrict || arrowFunctionExpression.Strict) { }
 
             public Function(FunctionDeclaration functionDeclaration, VariableScope parentScope)
-                : base(functionDeclaration, parentScope, parentScope.IsStrict || GetIsStrict(functionDeclaration)) { }
+                : base(functionDeclaration, parentScope, parentScope.IsStrict || functionDeclaration.Strict) { }
 
             public Function(FunctionExpression functionExpression, VariableScope parentScope)
-                : base(functionExpression, parentScope, parentScope.IsStrict || GetIsStrict(functionExpression)) { }
+                : base(functionExpression, parentScope, parentScope.IsStrict || functionExpression.Strict) { }
 
             public void AddParamDeclaration(Identifier identifier)
             {
@@ -104,14 +98,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             protected override void FinalizeScopeCore()
             {
-                Identifier classIdentifier =
-                    OriginatorNode is ClassDeclaration classDeclaration ? classDeclaration.Id :
-                    OriginatorNode is ClassExpression classExpression ? classExpression.Id :
-                    null;
+                var classNode = (IClass)OriginatorNode;
 
                 // The class's name is always available in the class's scope. (Class expressions' name is not visible in the parent scope!)
-                if (classIdentifier != null)
-                    Add(classIdentifier.Name);
+                if (classNode.Id != null)
+                    Add(classNode.Id.Name);
             }
         }
 

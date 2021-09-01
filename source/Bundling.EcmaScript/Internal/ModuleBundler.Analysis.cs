@@ -68,9 +68,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     // export { a as alias };
                     if (exportNamedDeclaration.Source == null)
                     {
-                        for (int i = 0, n = exportNamedDeclaration.Specifiers.Count; i < n; i++)
+                        ref readonly NodeList<ExportSpecifier> specifiers = ref exportNamedDeclaration.Specifiers;
+                        for (var i = 0; i < specifiers.Count; i++)
                         {
-                            ExportSpecifier exportSpecifier = exportNamedDeclaration.Specifiers[i];
+                            ExportSpecifier exportSpecifier = specifiers[i];
                             _module.ExportsRaw.Add(new NamedExportData(exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
                         }
                     }
@@ -79,9 +80,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     {
                         IModuleResource source = ResolveImportSource(exportNamedDeclaration.Source.StringValue);
 
-                        for (int i = 0, n = exportNamedDeclaration.Specifiers.Count; i < n; i++)
+                        ref readonly NodeList<ExportSpecifier> specifiers = ref exportNamedDeclaration.Specifiers;
+                        for (var i = 0; i < specifiers.Count; i++)
                         {
-                            ExportSpecifier exportSpecifier = exportNamedDeclaration.Specifiers[i];
+                            ExportSpecifier exportSpecifier = specifiers[i];
 
                             _module.ExportsRaw.Add(new ReexportData(source, exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
                         }
@@ -99,8 +101,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                             var variableDeclarationVisitor = new VariableDeclarationVisitor<ModuleData>(_module,
                                 visitVariableIdentifier: (m, identifier) => m.ExportsRaw.Add(new NamedExportData(identifier.Name)));
 
-                            for (int i = 0, n = variableDeclaration.Declarations.Count; i < n; i++)
-                                variableDeclarationVisitor.VisitId(variableDeclaration.Declarations[i]);
+                            ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
+                            for (var i = 0; i < declarations.Count; i++)
+                                variableDeclarationVisitor.VisitId(declarations[i]);
                             break;
                         case FunctionDeclaration functionDeclaration:
                             _module.ExportsRaw.Add(new NamedExportData(functionDeclaration.Id.Name));
@@ -116,8 +119,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 IModuleResource source = ResolveImportSource(importDeclaration.Source.StringValue);
 
-                for (int i = 0, n = importDeclaration.Specifiers.Count; i < n; i++)
-                    switch (importDeclaration.Specifiers[i])
+                ref readonly NodeList<ImportDeclarationSpecifier> specifiers = ref importDeclaration.Specifiers;
+                for (var i = 0; i < specifiers.Count; i++)
+                    switch (specifiers[i])
                     {
                         //  import localName from 'src/my_lib';
                         case ImportDefaultSpecifier importDefaultSpecifier:
@@ -142,10 +146,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 if (callExpression.Callee is Import)
                 {
-                    sourceLiteral = 
+                    sourceLiteral =
                         callExpression.Arguments.Count == 1 &&
                             callExpression.Arguments[0] is Literal literal &&
-                            literal.TokenType == TokenType.StringLiteral ? 
+                            literal.TokenType == TokenType.StringLiteral ?
                         literal :
                         null;
 
