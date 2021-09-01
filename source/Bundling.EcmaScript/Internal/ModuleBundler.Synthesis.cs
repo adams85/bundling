@@ -88,6 +88,18 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // Label identifier is not subject to rewriting, thus, skipped.
             }
 
+            protected override void VisitCallExpression(CallExpression callExpression)
+            {
+                if (VariableDeclarationAnalyzer.IsDynamicImportCall(callExpression, out Literal sourceLiteral) && sourceLiteral != null)
+                {
+                    IModuleResource source = _module.Resource.Resolve(sourceLiteral.StringValue, default(object), delegate { throw new InvalidOperationException(); });
+                    var moduleRef = _module.ModuleRefs[source];
+                    _substitutions.Add(callExpression.Range, $"Promise.resolve({moduleRef})");
+                }
+                else
+                    base.VisitCallExpression(callExpression);
+            }
+
             protected override void VisitCatchClause(CatchClause catchClause)
             {
                 // Catch clause error parameter identifier(s) are not subject to rewriting, thus, skipped.

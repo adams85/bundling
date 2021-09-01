@@ -1,4 +1,5 @@
-﻿using Esprima.Ast;
+﻿using Esprima;
+using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
@@ -135,6 +136,42 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 if (!_module.ModuleRefs.ContainsKey(source))
                     _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
+            }
+
+            internal static bool IsDynamicImportCall(CallExpression callExpression, out Literal sourceLiteral)
+            {
+                if (callExpression.Callee is Import)
+                {
+                    sourceLiteral = 
+                        callExpression.Arguments.Count == 1 &&
+                            callExpression.Arguments[0] is Literal literal &&
+                            literal.TokenType == TokenType.StringLiteral ? 
+                        literal :
+                        null;
+
+                    return true;
+                }
+
+                sourceLiteral = default;
+                return false;
+            }
+
+            protected override void VisitCallExpression(CallExpression callExpression)
+            {
+                if (IsDynamicImportCall(callExpression, out Literal sourceLiteral))
+                {
+                    if (sourceLiteral != null)
+                    {
+                        IModuleResource source = ResolveImportSource(sourceLiteral.StringValue);
+
+                        if (!_module.ModuleRefs.ContainsKey(source))
+                            _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
+                    }
+                    else
+                        _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), callExpression.Location.Start);
+                }
+                else
+                    base.VisitCallExpression(callExpression);
             }
 
             protected override void VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)

@@ -14,7 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             const string messageFormat = "Failed to resolve import source '{1}' in the context of module '{0}'.";
 
-            logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{SOURCEURL}") + Environment.NewLine + "{REASON}", moduleUrl, sourceUrl, reason);
+            logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{SOURCEURL}") + Environment.NewLine + "{REASON}", sourceUrl, moduleUrl, reason);
 
             return new BundlingErrorException(string.Format(messageFormat, moduleUrl, sourceUrl));
         }
@@ -30,11 +30,25 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public static BundlingErrorException ParsingModuleFailed(this ILogger logger, string moduleUrl, Exception ex)
         {
-            const string messageFormat = "Failed to parse module '{0}'.";
+            if (ex is ParserException parserException && parserException.Error != null && parserException.Error.IsPositionDefined)
+            {
+                Position position = parserException.Error.Position;
+                string reason = parserException.Error.Description;
 
-            logger.LogError(string.Format(messageFormat, "{MODULEURL}") + Environment.NewLine + "{REASON}", moduleUrl, ex.Message);
+                string messageFormat = "Failed to parse module '{0}'." + Environment.NewLine + "Error at {1}: {2}";
 
-            return new BundlingErrorException(string.Format(messageFormat, moduleUrl), ex);
+                logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, position, reason);
+
+                return new BundlingErrorException(string.Format(messageFormat, moduleUrl, position, reason));
+            }
+            else
+            {
+                const string messageFormat = "Failed to parse module '{0}'.";
+
+                logger.LogError(string.Format(messageFormat, "{MODULEURL}") + Environment.NewLine + "{REASON}", moduleUrl, ex.Message);
+
+                return new BundlingErrorException(string.Format(messageFormat, moduleUrl), ex);
+            }
         }
 
         public static BundlingErrorException RewritingModuleFailed(this ILogger logger, string moduleUrl, in Position position, string reason)
@@ -44,6 +58,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, position, reason);
 
             return new BundlingErrorException(string.Format(messageFormat, moduleUrl, position, reason));
+        }
+
+        public static void NonRewritableDynamicImportWarning(this ILogger logger, string moduleUrl, in Position position)
+        {
+            logger.LogWarning("Non-rewritable dynamic import was found in module '{MODULEURL}' at {POSITION}.", moduleUrl, position);
         }
     }
 }

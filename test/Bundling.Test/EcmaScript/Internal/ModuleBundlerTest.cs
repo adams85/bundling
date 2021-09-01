@@ -682,6 +682,52 @@ console.log(barUrl1, barUrl2)";
         }
 
         [Fact]
+        public async Task Import_Dynamic()
+        {
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#dynamic_imports
+
+            var fooContent =
+@"(async () => {
+  const bar = await import('./bar.js?x=0#y');
+  console.log(bar.importUrl);
+})()";
+
+            var barContent =
+@"export const importUrl = import.meta.url;";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/foo.js", fooContent);
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js");
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js?x=0#y\");",
+                "(async () => {",
+                "  const bar = await Promise.resolve(__es$module_0);",
+                "  console.log(bar.importUrl);",
+                "})()",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js?x=0#y").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$importMeta = { };",
+                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js?x=0#y\"; });",
+                "__es$require.d(__es$exports, \"importUrl\", function() { return importUrl; });",
+                "const importUrl = __es$importMeta.url;",
+            }, barLines);
+        }
+
+        [Fact]
         public async Task Import_SpecialPropertiesAndMethods()
         {
             var fooContent =
@@ -810,11 +856,10 @@ export default foo = {key: 'k', value: 'v'};
         }
 
         [Fact]
-        public async Task Feature_AsyncAwait_And_DynamicImport()
+        public async Task Feature_AsyncAwait()
         {
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/async_function
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await
-            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#dynamic_imports
 
             var fooContent =
 @"import * as bar from './bar';
@@ -823,7 +868,7 @@ export default foo = {key: 'k', value: 'v'};
 
             var barContent =
 @"
-export const myAsyncLambda = async () => await import('x');
+export const myAsyncLambda = async () => await import(url);
 export const myAsyncFunc1 = async function() { return await myAsyncLambda(); }
 export async function myAsyncFunc2() { return await myAsyncFunc1(); }
 async function myAsyncFunc3() { return await myAsyncFunc2(); }
@@ -855,7 +900,7 @@ export { myAsyncFunc3 }
                 "__es$require.d(__es$exports, \"myAsyncFunc1\", function() { return myAsyncFunc1; });",
                 "__es$require.d(__es$exports, \"myAsyncFunc2\", function() { return myAsyncFunc2; });",
                 "__es$require.d(__es$exports, \"myAsyncFunc3\", function() { return myAsyncFunc3; });",
-                "const myAsyncLambda = async () => await import('x');",
+                "const myAsyncLambda = async () => await import(url);",
                 "const myAsyncFunc1 = async function() { return await myAsyncLambda(); }",
                 "async function myAsyncFunc2() { return await myAsyncFunc1(); }",
                 "async function myAsyncFunc3() { return await myAsyncFunc2(); }",
