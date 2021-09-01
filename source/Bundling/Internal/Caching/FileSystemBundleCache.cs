@@ -143,14 +143,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
         protected virtual string MetadataFileNamePostfix => ".meta.json";
         protected virtual string TimestampFileNamePostfix => ".meta.ts";
 
-        protected virtual string GetItemsBasePath(int managerId, string path)
+        protected virtual string GetItemsBasePath(int managerId, PathString path)
         {
             return Path.Combine(BasePath, managerId.ToString(CultureInfo.InvariantCulture), UrlUtils.PathToFileName(path));
         }
 
         protected virtual string GetItemFileName(BundleCacheKey key)
         {
-            return UrlUtils.QueryToFileName(key.Query.HasValue ? key.Query.ToString() : "?") + Path.GetExtension(key.Path);
+            return UrlUtils.QueryToFileName(key.Query.HasValue ? key.Query : QueryString.FromUriComponent("?")) + Path.GetExtension(key.Path.Value);
         }
 
         private static bool TryGetSlidingExpiration(string filePath, out DateTimeOffset expirationTime)
@@ -306,7 +306,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         protected virtual IBundleCacheItem CreateMemoryCacheItem(BundleCacheKey key, BundleCacheData data)
         {
-            var fileInfo = new MemoryFileInfo(Path.GetFileName(key.Path), data.Content, data.Timestamp);
+            var fileInfo = new MemoryFileInfo(Path.GetFileName(key.Path.Value), data.Content, data.Timestamp);
             return new Item(new StoreItem(fileInfo, data), NullDisposable.Instance);
         }
 

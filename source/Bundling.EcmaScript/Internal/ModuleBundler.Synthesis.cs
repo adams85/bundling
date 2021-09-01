@@ -375,7 +375,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
                     .Append(ImportMetaId).Append(", ")
                     .Append('"').Append("url").Append('"').Append(", ")
-                    .Append("function() { return ").Append('"').Append(module.Resource.SecureUrl).Append('"').Append("; }").Append(')').Append(';').Append(_br);
+                    .Append("function() { return ").Append('"').Append(module.Resource.SecureUrl.ToStringEscaped()).Append('"').Append("; }").Append(')').Append(';').Append(_br);
             }
         }
 
@@ -551,7 +551,7 @@ $@"(function (modules) {{
                 {
                     var index = sb.Length;
                     sb.Append('/').Append('*', 3)
-                        .Append($" MODULE: {module.Resource.Url} ")
+                        .Append($" MODULE: {module.Resource.Url.ToString()} ")
                         .Append('*', Math.Max(78 - (sb.Length - index), 0)).Append('*').Append('/')
                         .Append(_br);
                 }

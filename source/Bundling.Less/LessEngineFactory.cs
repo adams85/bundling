@@ -24,11 +24,13 @@ namespace Karambolo.AspNetCore.Bundling.Less
     {
         internal sealed class EnhancedImporter : Importer, IImporter
         {
+            private readonly PathString _virtualPathPrefix;
             private readonly PathString _outputPath;
 
-            public EnhancedImporter(IFileReader fileReader, bool disableUrlReWriting, string rootPath, bool inlineCssFiles, bool importAllFilesAsLess, PathString outputPath)
-                : base(fileReader, disableUrlReWriting, rootPath, inlineCssFiles, importAllFilesAsLess)
+            public EnhancedImporter(IFileReader fileReader, bool disableUrlReWriting, PathString virtualPathPrefix, bool inlineCssFiles, bool importAllFilesAsLess, PathString outputPath)
+                : base(fileReader, disableUrlReWriting, UrlUtils.NormalizePath(virtualPathPrefix, trailingNormalization: PathNormalization.ExcludeSlash), inlineCssFiles, importAllFilesAsLess)
             {
+                _virtualPathPrefix = virtualPathPrefix;
                 _outputPath = outputPath;
             }
 
@@ -40,7 +42,7 @@ namespace Karambolo.AspNetCore.Bundling.Less
                 if (pathList.Count > 0)
                     url = GetAdjustedFilePath(url, pathList);
 
-                return CssRewriteUrlTransform.RebaseUrlCore(url, CurrentDirectory, RootPath, _outputPath);
+                return CssRewriteUrlTransform.RebaseUrlCore(url, CurrentDirectory, _virtualPathPrefix, _outputPath);
             }
         }
 
@@ -53,11 +55,10 @@ namespace Karambolo.AspNetCore.Bundling.Less
                 throw new ArgumentNullException(nameof(fileBasePath));
 
             fileBasePath = UrlUtils.NormalizePath(fileBasePath, trailingNormalization: PathNormalization.ExcludeSlash);
-            var rootPath = UrlUtils.NormalizePath(virtualPathPrefix, trailingNormalization: PathNormalization.ExcludeSlash);
 
             var fileReader = new FileProviderFileReader(fileProvider ?? AbstractionFile.NullFileProvider, token);
 
-            var importer = new EnhancedImporter(fileReader, disableUrlReWriting: false, rootPath, inlineCssFiles: true, importAllFilesAsLess: true, outputPath);
+            var importer = new EnhancedImporter(fileReader, disableUrlReWriting: false, virtualPathPrefix, inlineCssFiles: true, importAllFilesAsLess: true, outputPath);
 
             var parser = new Parser(s_stylizer, importer);
 

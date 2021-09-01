@@ -2,7 +2,6 @@
 using System.Text.RegularExpressions;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.Css
@@ -21,9 +20,9 @@ namespace Karambolo.AspNetCore.Bundling.Css
 
             UrlUtils.DeconstructPath(value, out PathString path, out QueryString query, out FragmentString fragment);
 
-            value = UrlUtils.NormalizePath(virtualPathPrefix.Add(basePath).Add(path), canonicalize: true);
+            value = UrlUtils.NormalizePath(virtualPathPrefix + new PathString(basePath) + path, canonicalize: true);
 
-            value = UriHelper.BuildRelative(default, value, query, fragment);
+            value = value + query.ToString() + fragment.ToString();
 
             if (outputPath.HasValue)
                 value = UrlUtils.MakeRelativePath(outputPath, value);
@@ -65,11 +64,9 @@ namespace Karambolo.AspNetCore.Bundling.Css
                 UrlUtils.GetFileNameSegment(filePathSegment, out StringSegment basePathSegment);
                 basePathSegment = UrlUtils.NormalizePathSegment(basePathSegment, trailingNormalization: PathNormalization.ExcludeSlash);
 
-                var virtualPathPrefix = UrlUtils.NormalizePath(context.BuildContext.BundlingContext.StaticFilesPathPrefix, trailingNormalization: PathNormalization.ExcludeSlash);
+                PathString outputPath = context.BuildContext.BundlingContext.BundlesPathPrefix + context.BuildContext.Bundle.Path;
 
-                PathString outputPath = context.BuildContext.BundlingContext.BundlesPathPrefix.Add(context.BuildContext.Bundle.Path);
-
-                context.Content = RewriteUrls(context.Content, basePathSegment.Value, virtualPathPrefix, outputPath);
+                context.Content = RewriteUrls(context.Content, basePathSegment.Value, context.BuildContext.BundlingContext.StaticFilesPathPrefix, outputPath);
             }
         }
     }

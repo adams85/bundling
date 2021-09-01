@@ -26,11 +26,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
             _extensionMappers = extensionMappers;
         }
 
-        public const string DefaultPathPrefix = "/wwwroot";
+        public static readonly PathString DefaultPathPrefix = "/wwwroot";
 
         private static PathString DefaultMapPath(string filePath, PathString pathPrefix, bool output)
         {
-            PathString result = filePath;
+            var result = new PathString(filePath);
 
             if (result.StartsWithSegments(DefaultPathPrefix, out result) && output)
                 result.StartsWithSegments(pathPrefix, out result);
@@ -62,7 +62,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                 if (!outputPath.HasValue)
                     throw ErrorHelper.PathMappingNotPossible(item.OutputFileName, nameof(pathMapper));
 
-                var extension = Path.GetExtension(outputPath);
+                var extension = Path.GetExtension(outputPath.Value);
 
                 IBundleConfiguration outputConfig = _extensionMappers.Select(em => em.MapOutput(extension)).FirstOrDefault(cfg => cfg != null);
                 if (outputConfig == null)
@@ -93,13 +93,13 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Configuration
                             exclude = false;
 
                         PathString inputPath = pathMapper(UrlUtils.NormalizePath(inputFile), PathString.Empty, output: false);
-                        extension = Path.GetExtension(inputPath);
+                        extension = Path.GetExtension(inputPath.Value) ?? string.Empty;
 
                         IBundleConfiguration inputConfig = _extensionMappers.Select(em => em.MapInput(extension)).FirstOrDefault(cfg => cfg != null);
                         if (inputConfig == null)
                             throw ErrorHelper.ExtensionNotRecognized(extension);
 
-                        var bundleSourceItem = new FileBundleSourceItem(inputPath, bundleSource) { Exclude = exclude };
+                        var bundleSourceItem = new FileBundleSourceItem(inputPath.Value, bundleSource) { Exclude = exclude };
 
                         bundleSourceItem.ItemTransforms = inputConfig.ConfigurationHelper.SetDefaultItemTransforms(bundleSourceItem.ItemTransforms);
 

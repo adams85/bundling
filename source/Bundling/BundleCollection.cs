@@ -8,7 +8,7 @@ namespace Karambolo.AspNetCore.Bundling
 {
     public class BundleCollection : ICollection<Bundle>
     {
-        private readonly Dictionary<string, Bundle> _bundles;
+        private readonly Dictionary<PathString, Bundle> _bundles;
 
         public BundleCollection()
             : this(PathString.Empty, null) { }
@@ -22,7 +22,7 @@ namespace Karambolo.AspNetCore.Bundling
             SourceFileProvider = sourceFileProvider;
             CaseSensitiveSourceFilePaths = caseSensitiveSourceFilePaths;
 
-            _bundles = new Dictionary<string, Bundle>(StringComparer.OrdinalIgnoreCase);
+            _bundles = new Dictionary<PathString, Bundle>();
         }
 
         public PathString PathPrefix { get; }

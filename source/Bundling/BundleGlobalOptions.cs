@@ -37,7 +37,7 @@ namespace Karambolo.AspNetCore.Bundling
                 options.SourceItemToUrlMapper = (item, bundlingContext, urlHelper) =>
                     item.ItemTransformContext is IFileBundleItemTransformContext fileItemContext &&
                         new AbstractionFile.FileProviderEqualityComparer(fileItemContext.CaseSensitiveFilePaths).Equals(fileItemContext.FileProvider, env.WebRootFileProvider) ?
-                    urlHelper.Content("~" + bundlingContext.StaticFilesPathPrefix.Add(new PathString(UrlUtils.NormalizePath(fileItemContext.FilePath)))) :
+                    urlHelper.Content("~" + (bundlingContext.StaticFilesPathPrefix + new PathString(UrlUtils.NormalizePath(fileItemContext.FilePath)))) :
                     null;
 
                 options.StaticFileUrlToFileMapper = delegate (string url, IUrlHelper urlHelper, out IFileProvider fileProvider, out string filePath, out bool caseSensitiveFilePaths)

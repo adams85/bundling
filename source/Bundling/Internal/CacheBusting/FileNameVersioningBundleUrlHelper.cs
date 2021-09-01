@@ -26,23 +26,23 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
 
         public void AddVersion(string version, ref PathString path, ref QueryString query)
         {
-            DeconstructFileName(UrlUtils.GetFileNameSegment(path.ToString(), out StringSegment basePathSegment), out ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension);
+            DeconstructFileName(UrlUtils.GetFileNameSegment(path.Value, out StringSegment basePathSegment), out ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension);
 
             fileName = fileName.Concat(VersionPrefix.AsSpan(), WebUtility.UrlEncode(version).AsSpan()).ToString().AsSpan();
 
-            path = basePathSegment.AsSpan().Concat(fileName, extension);
+            path = new PathString(basePathSegment.AsSpan().Concat(fileName, extension));
         }
 
 
         public string RemoveVersion(ref PathString path, ref QueryString query)
         {
-            DeconstructFileName(UrlUtils.GetFileNameSegment(path.ToString(), out StringSegment basePathSegment), out ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension);
+            DeconstructFileName(UrlUtils.GetFileNameSegment(path.Value, out StringSegment basePathSegment), out ReadOnlySpan<char> fileName, out ReadOnlySpan<char> extension);
 
             var index = fileName.LastIndexOf(VersionPrefix.AsSpan());
             if (index < 0)
                 return null;
 
-            path = basePathSegment.AsSpan().Concat(fileName.Slice(0, index), extension);
+            path = new PathString(basePathSegment.AsSpan().Concat(fileName.Slice(0, index), extension));
             return fileName.Slice(index + VersionPrefix.Length).ToString();
         }
     }

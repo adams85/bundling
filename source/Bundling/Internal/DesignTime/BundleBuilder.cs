@@ -250,7 +250,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
             return builderContext.Result;
         }
 
-        private async Task ProduceBundlesAsync(BundleCollection bundles, string appBasePath, BundlingContext bundlingContext, string outputBasePath, CancellationToken shutdownToken)
+        private async Task ProduceBundlesAsync(BundleCollection bundles, PathString appBasePath, BundlingContext bundlingContext, string outputBasePath, CancellationToken shutdownToken)
         {
             IBundleModel[] bundleModels = bundles.Select(CreateModel).ToArray();
 

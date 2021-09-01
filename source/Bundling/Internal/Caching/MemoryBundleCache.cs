@@ -48,7 +48,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Caching
 
         private Item CreateCacheItem(BundleCacheKey key, BundleCacheData data)
         {
-            var fileInfo = new MemoryFileInfo(Path.GetFileName(key.Path), data.Content, data.Timestamp);
+            var fileInfo = new MemoryFileInfo(Path.GetFileName(key.Path.Value), data.Content, data.Timestamp);
             return new Item(fileInfo, data);
         }
 

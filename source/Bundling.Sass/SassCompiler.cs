@@ -119,8 +119,6 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             else
                 filePath = fileBasePath = "/";
 
-            virtualPathPrefix = UrlUtils.NormalizePath(virtualPathPrefix, trailingNormalization: PathNormalization.ExcludeSlash);
-
             CompilationResult compilationResult;
             using (var context = new SassCompilationContext(this, fileBasePath, virtualPathPrefix, fileProvider, outputPath, token))
             {

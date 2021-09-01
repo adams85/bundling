@@ -78,7 +78,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return null;
             }
 
-            var filePath = FileModuleResource.ResolvePath(url, urlKind == UrlKind.RelativeAndRelativePath, _basePath, out QueryString query, out FragmentString fragment);
+            var filePath = FileModuleResource.ResolvePathToFilePath(url, urlKind == UrlKind.RelativeAndRelativePath, _basePath, out QueryString query, out FragmentString fragment);
 
             return new FileModuleResource(_associatedFileProviderPrefix, _associatedFileProvider, filePath, _caseSensitiveFilePaths, query, fragment);
         }
@@ -131,7 +131,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             : base(fileProvider, normalizedFilePath, caseSensitiveFilePaths)
         {
             _fileProviderPrefix = fileProviderPrefix;
-            _normalizedParamPart = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> _).ToString() + fragment;
+            _normalizedParamPart = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> _).ToString() + fragment.ToString();
             _basePath = GetBasePath(FilePath);
         }
 
@@ -161,10 +161,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return await reader.ReadToEndAsync().ConfigureAwait(false);
         }
 
-        internal static string ResolvePath(string path, bool isRelativePath, StringSegment basePath, out QueryString query, out FragmentString fragment)
+        internal static string ResolvePathToFilePath(string url, bool isRelativePath, StringSegment basePath, out QueryString query, out FragmentString fragment)
         {
-            UrlUtils.DeconstructPath(path, out PathString pathString, out query, out fragment);
-            path = pathString.Value;
+            UrlUtils.DeconstructPath(url, out PathString pathString, out query, out fragment);
+            var path = pathString.Value;
 
             var index = path.LastIndexOfAny(s_slashAndDot);
             if (index < 0 || path[index] != '.')
@@ -182,7 +182,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return null;
             }
 
-            var filePath = ResolvePath(url, urlKind == UrlKind.RelativeAndRelativePath, _basePath, out QueryString query, out FragmentString fragment);
+            var filePath = ResolvePathToFilePath(url, urlKind == UrlKind.RelativeAndRelativePath, _basePath, out QueryString query, out FragmentString fragment);
 
             return new FileModuleResource(_fileProviderPrefix, this, filePath, query, fragment);
         }

@@ -39,7 +39,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass
             }
 
             PathString pathPrefix = context.BuildContext.BundlingContext.StaticFilesPathPrefix;
-            PathString outputPath = context.BuildContext.BundlingContext.BundlesPathPrefix.Add(context.BuildContext.Bundle.Path);
+            PathString outputPath = context.BuildContext.BundlingContext.BundlesPathPrefix + context.BuildContext.Bundle.Path;
 
             SassCompilationResult result = await _compiler.CompileAsync(context.Content, pathPrefix, filePath, fileProvider, outputPath, context.BuildContext.CancellationToken);
 

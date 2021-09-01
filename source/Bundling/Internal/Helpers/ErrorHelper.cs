@@ -37,7 +37,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
         public static InvalidOperationException BundleInfoNotAvailable(PathString path, QueryString query)
         {
-            return new InvalidOperationException($"Bundle information for request {path + query} is not available.");
+            return new InvalidOperationException($"Bundle information for request '{path.Value}{query}' is not available.");
         }
 
         public static InvalidOperationException ModelFactoryNotAvailable(Type modelType)

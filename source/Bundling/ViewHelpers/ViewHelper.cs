@@ -46,15 +46,15 @@ namespace Karambolo.AspNetCore.Bundling.ViewHelpers
             return false;
         }
 
-        internal static string AdjustStaticFileUrl(IUrlHelper urlHelper, string url, bool addVersion, StaticFileUrlToFileMapper urlToFileMapper)
+        internal static string AdjustStaticFileUrl(IUrlHelper urlHelper, string absolutePath, bool addVersion, StaticFileUrlToFileMapper urlToFileMapper)
         {
             if (addVersion)
             {
                 IStaticFileUrlHelper staticFileUrlHelper = urlHelper.ActionContext.HttpContext.RequestServices.GetRequiredService<IStaticFileUrlHelper>();
-                return staticFileUrlHelper.AddVersion(url, urlHelper, urlToFileMapper);
+                return staticFileUrlHelper.AddVersion(absolutePath, urlHelper, urlToFileMapper);
             }
 
-            return url;
+            return absolutePath;
         }
 
         private static Task<string> GenerateUrlCoreAsync(IUrlHelper urlHelper, IBundleManagerFactory bundleManagerFactory, string path, bool? addVersion)

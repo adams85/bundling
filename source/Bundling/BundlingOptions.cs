@@ -1,5 +1,6 @@
 ﻿using Karambolo.AspNetCore.Bundling.Internal;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles.Infrastructure;
 using Microsoft.Extensions.FileProviders;
 
@@ -43,6 +44,6 @@ namespace Karambolo.AspNetCore.Bundling
         public IBundleManager BundleManager { get; set; }
         public IFileProvider SourceFileProvider { get; set; }
         public bool? CaseSensitiveSourceFilePaths { get; set; }
-        public string StaticFilesRequestPath { get; set; }
+        public PathString StaticFilesRequestPath { get; set; }
     }
 }

@@ -221,8 +221,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public async Task<bool> TryEnsureUrlAsync(HttpContext httpContext)
         {
-            PathString branchPath = httpContext.Request.Path;
-            if (!branchPath.StartsWithSegments(BundlingContext.BundlesPathPrefix, out PathString bundlePath))
+            if (!httpContext.Request.Path.StartsWithSegments(BundlingContext.BundlesPathPrefix, out PathString bundlePath))
                 return false;
 
             QueryString query = httpContext.Request.QueryString;

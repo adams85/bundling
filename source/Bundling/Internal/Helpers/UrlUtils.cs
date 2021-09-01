@@ -53,7 +53,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
                 // fallback
                 var collapseSlashesRegex = new Regex(@"//*", RegexOptions.CultureInvariant | RegexOptions.Compiled);
-                return value => new UriBuilder { Path = collapseSlashesRegex.Replace(value, "/") }.Uri.LocalPath;
+                return value => new UriBuilder { Path = collapseSlashesRegex.Replace(value, "/") }.Uri.GetComponents(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.UriEscaped);
             })(path);
         }
 
@@ -189,7 +189,13 @@ hasQuery:
 
         public static string MakeRelativePath(string basePath, string path)
         {
+            // MakeRelativeUri returns an escaped URI
             return new Uri(s_dummyBaseUri, basePath).MakeRelativeUri(new Uri(s_dummyBaseUri, path)).ToString();
+        }
+
+        public static string ToStringEscaped(this Uri uri)
+        {
+            return uri.IsAbsoluteUri ? uri.AbsoluteUri : Uri.EscapeUriString(uri.ToString());
         }
 
         public static string GetFileName(string path, out string basePath)
@@ -210,18 +216,24 @@ hasQuery:
             return path.Subsegment(index);
         }
 
-        public static string PathToFileName(string value)
+        public static string PathToFileName(PathString value)
         {
+            if (!value.HasValue)
+                return string.Empty;
+
+            var path = value.Value;
+
 #if !NETCOREAPP3_0_OR_GREATER
-            var chars = new char[value.Length];
-            var source = value;
+            var chars = new char[path.Length];
+            var source = path;
 #else
-            return string.Create(value.Length, value, (chars, source) =>
+            return string.Create(path.Length, path, (chars, source) =>
             {
 #endif
                 char c;
                 for (int i = 0; i < source.Length; i++)
                     chars[i] = Array.IndexOf(s_illegalFileNameChars, c = source[i]) < 0 ? char.ToLowerInvariant(c) : '_';
+
 #if NETCOREAPP3_0_OR_GREATER
             });
 #else
@@ -229,12 +241,15 @@ hasQuery:
 #endif
         }
 
-        public static string QueryToFileName(string value)
+        public static string QueryToFileName(QueryString value)
         {
-            // query is treated case-sensitive so a case-insensitive encoding should be used
+            if (!value.HasValue)
+                return string.Empty;
+
+            // query is case-sensitive, so a case-insensitive encoding should be used
             // as the file system may be case-insensitive
 
-            var bytes = Encoding.UTF8.GetBytes(value);
+            var bytes = Encoding.UTF8.GetBytes(value.ToString());
 
 #if !NETCOREAPP3_0_OR_GREATER
             var chars = new char[bytes.Length * 2];
@@ -249,6 +264,7 @@ hasQuery:
                     chars[j++] = HexChars[source[i] >> 4 & 0xF];
                     chars[j++] = HexChars[source[i] & 0xF];
                 }
+
 #if NETCOREAPP3_0_OR_GREATER
             });
 #else
