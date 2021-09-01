@@ -202,15 +202,19 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
         public async Task<string> GenerateUrlAsync(HttpContext httpContext, IBundleModel bundle, QueryString query, bool addVersion = true)
         {
-            query = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> @params);
+            QueryString normalizedQuery;
+            IDictionary<string, StringValues> @params;
+
             if (!bundle.DependsOnParams)
-                query = QueryString.Empty;
+                (normalizedQuery, @params) = (QueryString.Empty, null);
+            else
+                normalizedQuery = UrlUtils.NormalizeQuery(query, out @params);
 
             PathString bundlePath = bundle.Path;
 
             if (addVersion)
             {
-                var cacheKey = new BundleCacheKey(Id, bundlePath, query);
+                var cacheKey = new BundleCacheKey(Id, bundlePath, normalizedQuery);
                 IBundleCacheItem cacheItem = await GetBundleCacheItemAsync(cacheKey, bundle, query, @params, httpContext, lockFile: false);
 
                 _urlHelper.AddVersion(cacheItem.Version, ref bundlePath, ref query);
@@ -230,11 +234,15 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             if (!Bundles.TryGetValue(bundlePath, out IBundleModel bundle))
                 return false;
 
-            query = UrlUtils.NormalizeQuery(query, out IDictionary<string, StringValues> @params);
-            if (!bundle.DependsOnParams)
-                query = QueryString.Empty;
+            QueryString normalizedQuery;
+            IDictionary<string, StringValues> @params;
 
-            var cacheKey = new BundleCacheKey(Id, bundlePath, query);
+            if (!bundle.DependsOnParams)
+                (normalizedQuery, @params) = (QueryString.Empty, null);
+            else
+                normalizedQuery = UrlUtils.NormalizeQuery(query, out @params);
+
+            var cacheKey = new BundleCacheKey(Id, bundlePath, normalizedQuery);
             IBundleCacheItem cacheItem = await GetBundleCacheItemAsync(cacheKey, bundle, query, @params, httpContext, lockFile: true);
 
             try
