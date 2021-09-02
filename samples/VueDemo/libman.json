@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "provider": "jsdelivr",
+      "library": "vue@2.6.14",
+      "destination": "wwwroot/lib/vue/"
+    }
+  ]
+}

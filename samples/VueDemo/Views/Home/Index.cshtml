@@ -22,14 +22,12 @@
         </p>
     </div>
 
-    @* references Vue from CDN with local fallback *@
+    @* references Vue (without bundling) *@
     <environment include="Development">
-        <script src="~/js/lib/vue.js"></script>
+        <script src="~/lib/vue/dist/vue.js"></script>
     </environment>
     <environment exclude="Development">
-        <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js" 
-                integrity="sha256-chlNFSVx3TdcQ2Xlw7SvnbLAavAQLO0Y/LBiWX04viY=" crossorigin="anonymous"
-                asp-fallback-src="~/js/lib/vue.min.js" asp-fallback-test="Vue"></script>
+        <script src="~/lib/vue/dist/vue.min.js"></script>
     </environment>
 
     @* references our Vue application bundle  *@

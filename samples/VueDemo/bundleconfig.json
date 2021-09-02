@@ -16,6 +16,7 @@
       "/js/app.js"
     ],
     "minify": {
+      // must be set to false to allow the global configuration to decide whether to minify or not
       "enabled": false
     }
   }

@@ -43,27 +43,22 @@ namespace VueDemo
                 app.UseExceptionHandler("/Home/Error");
             }
 
-            app.UseBundling(
-                // as we rebased the static files to /static (see UseStaticFiles()),
-                // we need to pass this information to the bundling middleware as well,
-                // otherwise urls would be rewrited incorrectly
-                new BundlingOptions
-                {
-                    StaticFilesRequestPath = "/static"
-                },
-                bundles =>
-                {
-                    // we use LESS in this demo
-                    bundles.AddLess("/site.css")
-                        .Include("/less/site.less");
+            app.UseBundling(bundles =>
+            {
+                // we use file configuration in this sample, which is equivalent to the commented code configuration below
+                bundles.LoadFromConfigFile("bundleconfig.json", _env.ContentRootFileProvider);
 
-                    // defines a Javascript bundle containing your Vue application and components
-                    bundles.AddJs("/app.js")
-                        .Include("/js/components/*.js")
-                        .Include("/js/app.js");
-                });
+                //// we use LESS in this demo
+                //bundles.AddLess("/site.css")
+                //    .Include("/less/site.less");
 
-            app.UseStaticFiles(new StaticFileOptions { RequestPath = "/static" });
+                //// defines a Javascript bundle containing your Vue application and components
+                //bundles.AddJs("/app.js")
+                //    .Include("/js/components/*.js")
+                //    .Include("/js/app.js");
+            });
+
+            app.UseStaticFiles();
 
             app.UseRouting();
 
