@@ -103,7 +103,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
             await bundle.Builder.BuildAsync(builderContext);
 
-            var content = bundle.OutputEncoding.GetBytes(builderContext.Result);
+            var content = bundle.OutputEncoding.GetBytesWithPreamble(builderContext.Result);
             DateTimeOffset timestamp = _clock.UtcNow;
 
             var versionProviderContext = new BundleVersionProviderContext

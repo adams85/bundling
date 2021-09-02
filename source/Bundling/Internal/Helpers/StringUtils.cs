@@ -93,5 +93,21 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             return new string(buffer);
 #endif
         }
+
+        public static byte[] GetBytesWithPreamble(this Encoding encoding, string value)
+        {
+            var bytes = encoding.GetBytes(value);
+
+            var preamble = encoding.GetPreamble();
+            if (preamble.Length > 0)
+            {
+                var contentBytes = bytes;
+                Span<byte> bytesSpan = bytes = new byte[preamble.Length + contentBytes.Length];
+                preamble.CopyTo(bytesSpan);
+                contentBytes.CopyTo(bytesSpan.Slice(preamble.Length));
+            }
+
+            return bytes;
+        }
     }
 }
