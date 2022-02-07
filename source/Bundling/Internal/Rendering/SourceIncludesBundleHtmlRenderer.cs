@@ -57,6 +57,8 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Rendering
             IStaticFileUrlHelper staticFileUrlHelper = addVersion ? httpContext.RequestServices.GetRequiredService<IStaticFileUrlHelper>() : null;
 
             IBundleSourceBuildItem[] items = await bundleManager.GetBuildItemsAsync(httpContext, bundle, query, loadItemContent: false);
+            if (items.Length == 0)
+                return HtmlString.Empty;
 
             var builder = new HtmlContentBuilder(items.Length * 2 - 1);
 
