@@ -40,7 +40,8 @@ namespace QuickStartTemplate
             bundles.AddJs("/js/vendor.js")
                 .Include("/lib/jquery/dist/jquery.js")
                 .Include("/lib/jquery-validation/dist/jquery.validate.js")
-                .Include("/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.js");
+                .Include("/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.js")
+                .Include("/lib/bootstrap/dist/js/bootstrap.bundle.js");
 
             bundles.AddJs("/js/site.js")
                 .Include("/js/site.js")
