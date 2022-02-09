@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <TypeScriptToolsVersion>4.3</TypeScriptToolsVersion>
+    <TypeScriptToolsVersion>4.4</TypeScriptToolsVersion>
     <TypeScriptModuleKind>ES6</TypeScriptModuleKind>
     <TypeScriptTarget>ES2020</TypeScriptTarget>
   </PropertyGroup>

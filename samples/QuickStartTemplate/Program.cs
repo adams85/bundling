@@ -2,32 +2,78 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace QuickStartTemplate
+namespace QuickStartTemplate;
+
+public class Program
 {
-    public class Program
-    {
-        public static readonly bool UsesDesignTimeBundling =
+    public static readonly bool UsesDesignTimeBundling =
 #if USES_DESIGNTIME_BUNDLING
-            true;
+        true;
 #else
-            false;
+        false;
 #endif
 
-        public static void Main(string[] args)
+    private static void ConfigureServices(WebApplicationBuilder builder)
+    {
+        // To enable bundling on build, set the UseDesignTimeBundling property to true in the csproj file.
+        if (Program.UsesDesignTimeBundling)
         {
-            CreateHostBuilder(args).Build().Run();
+            builder.Services.AddBundling();
+        }
+        else
+        {
+            Bundles.ConfigureServices(builder.Services, builder.Environment);
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
+        builder.Services.AddRazorPages();
+    }
+
+    private static void Configure(WebApplication app)
+    {
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseExceptionHandler("/Error");
+            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+            app.UseHsts();
+        }
+
+        app.UseHttpsRedirection();
+
+        if (Program.UsesDesignTimeBundling)
+        {
+            app.InitializeBundling();
+        }
+        else
+        {
+            app.UseBundling(new Bundles());
+        }
+
+        app.UseStaticFiles();
+
+        app.UseRouting();
+
+        app.UseAuthorization();
+
+        app.MapRazorPages();
+    }
+
+    public static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        ConfigureServices(builder);
+
+        var app = builder.Build();
+
+        Configure(app);
+
+        app.Run();
     }
 }
