@@ -72,7 +72,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
             var index = url.IndexOf('?');
             StringSegment leftPart = index >= 0 ? new StringSegment(url, 0, index) : url;
 
-            UrlUtils.DeconstructPath(new StringSegment(url, leftPart.Length, url.Length - leftPart.Length), out PathString _, out QueryString query, out FragmentString fragment);
+            UrlUtils.DeconstructPath(new StringSegment(url, leftPart.Length, url.Length - leftPart.Length), out _, out QueryString query, out FragmentString fragment);
 
             QueryStringVersioningBundleUrlHelper.AddVersion(version, ref query);
 
@@ -82,7 +82,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
         public string AddVersion(string url, IUrlHelper urlHelper, StaticFileUrlToFileMapper mapper)
         {
             var version = GetVersion(url, urlHelper, (url, mapper), (state, uh) =>
-                state.mapper(state.url, uh, out IFileProvider fileProvider, out string filePath, out bool _) ?
+                state.mapper(state.url, uh, out IFileProvider fileProvider, out string filePath, out _) ?
                     (fileProvider, filePath) :
                     (AbstractionFile.NullFileProvider, null));
 
