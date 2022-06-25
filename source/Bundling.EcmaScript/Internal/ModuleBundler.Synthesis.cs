@@ -14,6 +14,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     using Range = Esprima.Ast.Range;
 
+    // TODO: check existing visitations & add new ones
     internal partial class ModuleBundler
     {
         private delegate void SubstitutionAdjuster(Identifier identifier, ref string value);
@@ -40,15 +41,17 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 Visit(_module.Ast);
             }
 
-            public override void Visit(Node node)
+            public override object Visit(Node node)
             {
                 VariableScope previousVariableScope = _currentVariableScope;
                 if (_module.VariableScopes.TryGetValue(node, out VariableScope variableScope))
                     _currentVariableScope = variableScope;
 
-                base.Visit(node);
+                var result = base.Visit(node);
 
                 _currentVariableScope = previousVariableScope;
+
+                return result;
             }
 
             private Scanner CreateScannerFor(Node node) => new Scanner(_module.Content, _module.ParserOptions)
@@ -84,32 +87,24 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _substitutions.Add(identifier.Range, value);
             }
 
-            protected override void VisitBreakStatement(BreakStatement breakStatement)
+            protected override object VisitBreakStatement(BreakStatement breakStatement)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
+                
+                return breakStatement;
             }
 
-            protected override void VisitCallExpression(CallExpression callExpression)
-            {
-                if (VariableDeclarationAnalyzer.IsDynamicImportCall(callExpression, out Literal sourceLiteral) && sourceLiteral != null)
-                {
-                    IModuleResource source = _module.Resource.Resolve(sourceLiteral.StringValue, default(object), delegate { throw new InvalidOperationException(); });
-                    var moduleRef = _module.ModuleRefs[source];
-                    _substitutions.Add(callExpression.Range, $"Promise.resolve({moduleRef})");
-                }
-                else
-                    base.VisitCallExpression(callExpression);
-            }
-
-            protected override void VisitCatchClause(CatchClause catchClause)
+            protected override object VisitCatchClause(CatchClause catchClause)
             {
                 // Catch clause error parameter identifier(s) are not subject to rewriting, thus, skipped.
                 CreateVariableDeclarationVisitor().VisitParam(catchClause);
 
                 Visit(catchClause.Body);
+
+                return catchClause;
             }
 
-            protected override void VisitClassDeclaration(ClassDeclaration classDeclaration)
+            protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
             {
                 // Class name identifier is not subject to rewriting, thus, skipped.
 
@@ -117,9 +112,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     Visit(classDeclaration.SuperClass);
 
                 Visit(classDeclaration.Body);
+
+                return classDeclaration;
             }
 
-            protected override void VisitClassExpression(ClassExpression classExpression)
+            protected override object VisitClassExpression(ClassExpression classExpression)
             {
                 // Class name identifier is not subject to rewriting, thus, skipped.
 
@@ -127,21 +124,25 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     Visit(classExpression.SuperClass);
 
                 Visit(classExpression.Body);
+
+                return classExpression;
             }
 
-            protected override void VisitContinueStatement(ContinueStatement continueStatement)
+            protected override object VisitContinueStatement(ContinueStatement continueStatement)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
+                
+                return continueStatement;
             }
 
-            protected override void VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
+            protected override object VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
             {
                 _substitutions.Add(exportAllDeclaration.Range, StringSegment.Empty);
 
-                base.VisitExportAllDeclaration(exportAllDeclaration);
+                return base.VisitExportAllDeclaration(exportAllDeclaration);
             }
 
-            protected override void VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
+            protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
             {
                 switch (exportDefaultDeclaration.Declaration)
                 {
@@ -154,7 +155,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         break;
                 }
 
-                base.VisitExportDefaultDeclaration(exportDefaultDeclaration);
+                return base.VisitExportDefaultDeclaration(exportDefaultDeclaration);
 
                 // exportDefaultDeclaration.Declaration.Range doesn't include preceding comments or parentheses,
                 // so we need to do some gymnastics to determine the actual start of the declaration/expression.
@@ -171,66 +172,94 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 }
             }
 
-            protected override void VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
+            protected override object VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
             {
                 if (exportNamedDeclaration.Declaration == null)
                     _substitutions.Add(exportNamedDeclaration.Range, StringSegment.Empty);
                 else
                     _substitutions.Add(new Range(exportNamedDeclaration.Range.Start, exportNamedDeclaration.Declaration.Range.Start), StringSegment.Empty);
 
-                base.VisitExportNamedDeclaration(exportNamedDeclaration);
+                return base.VisitExportNamedDeclaration(exportNamedDeclaration);
             }
 
-            protected override void VisitExportSpecifier(ExportSpecifier exportSpecifier)
+            protected override object VisitExportSpecifier(ExportSpecifier exportSpecifier)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
+
+                return exportSpecifier;
             }
 
-            protected override void VisitFunctionExpression(IFunction function)
+            protected override object VisitFunctionExpression(FunctionExpression functionExpression)
             {
                 // Class name identifier is not subject to rewriting, thus, skipped.
 
                 // Function parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitParams(function);
+                CreateVariableDeclarationVisitor().VisitParams(functionExpression);
 
-                Visit(function.Body);
+                Visit(functionExpression.Body);
+
+                return functionExpression;
             }
 
-            protected override void VisitIdentifier(Identifier identifier)
+            protected override object VisitIdentifier(Identifier identifier)
             {
                 AddSubstitutionIfImported(identifier, delegate { });
+
+                return identifier;
             }
 
-            protected override void VisitImportDeclaration(ImportDeclaration importDeclaration)
+            protected override object VisitImport(Import import)
+            {
+                if (VariableDeclarationAnalyzer.IsRewritableDynamicImport(import, out Literal sourceLiteral))
+                {
+                    IModuleResource source = _module.Resource.Resolve(sourceLiteral.StringValue, default(object), delegate { throw new InvalidOperationException(); });
+                    var moduleRef = _module.ModuleRefs[source];
+                    _substitutions.Add(import.Range, $"Promise.resolve({moduleRef})");
+                }
+                else
+                    return base.VisitImport(import);
+
+                return import;
+            }
+
+            protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
             {
                 _substitutions.Add(importDeclaration.Range, StringSegment.Empty);
 
-                base.VisitImportDeclaration(importDeclaration);
+                return base.VisitImportDeclaration(importDeclaration);
             }
 
-            protected override void VisitImportDefaultSpecifier(ImportDefaultSpecifier importDefaultSpecifier)
+            protected override object VisitImportDefaultSpecifier(ImportDefaultSpecifier importDefaultSpecifier)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
+
+                return importDefaultSpecifier;
             }
 
-            protected override void VisitImportNamespaceSpecifier(ImportNamespaceSpecifier importNamespaceSpecifier)
+            protected override object VisitImportNamespaceSpecifier(ImportNamespaceSpecifier importNamespaceSpecifier)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
+
+                return importNamespaceSpecifier;
             }
 
-            protected override void VisitImportSpecifier(ImportSpecifier importSpecifier)
+            protected override object VisitImportSpecifier(ImportSpecifier importSpecifier)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
+
+                return importSpecifier;
             }
 
-            protected override void VisitLabeledStatement(LabeledStatement labeledStatement)
+            protected override object VisitLabeledStatement(LabeledStatement labeledStatement)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
 
                 Visit(labeledStatement.Body);
+
+                return labeledStatement;
             }
 
-            protected override void VisitMemberExpression(MemberExpression memberExpression)
+            protected override object VisitMemberExpression(MemberExpression memberExpression)
             {
                 Visit(memberExpression.Object);
 
@@ -238,14 +267,18 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // Computed properties (array-like access) needs to be visited though.
                 if (memberExpression.Computed)
                     Visit(memberExpression.Property);
+
+                return memberExpression;
             }
 
-            protected override void VisitMetaProperty(MetaProperty metaProperty)
+            protected override object VisitMetaProperty(MetaProperty metaProperty)
             {
                 _substitutions.Add(metaProperty.Range, ImportMetaId);
+
+                return metaProperty;
             }
 
-            protected override void VisitMethodDefinition(MethodDefinition methodDefinitions)
+            protected override object VisitMethodDefinition(MethodDefinition methodDefinitions)
             {
                 // Method name identifier is not subject to rewriting, thus, skipped.
                 // Computed keys needs to be visited though.
@@ -253,16 +286,19 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     Visit(methodDefinitions.Key);
 
                 Visit(methodDefinitions.Value);
+
+                return methodDefinitions;
             }
 
-            protected override void VisitProperty(Property property)
+            protected override object VisitProperty(Property property)
             {
                 // Shorthand properties need special care.
                 if (property.Shorthand)
                 {
                     var identifier = (Identifier)property.Value;
                     AddSubstitutionIfImported(identifier, delegate (Identifier id, ref string value) { value = id.Name + ": " + value; });
-                    return;
+
+                    return property;
                 }
 
                 // Property name identifier is not subject to rewriting, thus, skipped.
@@ -271,9 +307,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     Visit(property.Key);
 
                 Visit(property.Value);
+
+                return property;
             }
 
-            protected override void VisitVariableDeclaration(VariableDeclaration variableDeclaration)
+            protected override object VisitVariableDeclaration(VariableDeclaration variableDeclaration)
             {
                 VariableDeclarationVisitor<SubstitutionCollector> variableDeclarationVisitor = CreateVariableDeclarationVisitor();
 
@@ -288,9 +326,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     if (variableDeclarator.Init != null)
                         Visit(variableDeclarator.Init);
                 }
+
+                return variableDeclarationVisitor;
             }
 
-            protected override void VisitWithStatement(WithStatement withStatement)
+            protected override object VisitWithStatement(WithStatement withStatement)
             {
                 // Modules are always in strict mode, which doesn't allow with statements.
                 throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), withStatement.Location.Start,

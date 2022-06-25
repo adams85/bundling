@@ -1,9 +1,11 @@
-﻿using Esprima;
+﻿using System;
+using Esprima;
 using Esprima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
+    // TODO: (support import, export name literals) + TEST!
     internal partial class ModuleBundler
     {
         private sealed class VariableDeclarationAnalyzer : VariableScopeBuilder
@@ -30,8 +32,39 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     throw analyzer._bundler._logger.ResolvingImportSourceFailed(analyzer._module.Resource.Url.ToString(), sourceUrl, reason));
             }
 
+            private Exception InvalidExportImportNameExpression(Expression expression)
+            {
+                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), expression.Location.Start,
+                    $"Expression of type {expression.Type} is not a valid export/import name expression.");
+            }
+
+            private string GetExportImportName(Expression expression)
+            {
+                return
+                (
+                    expression is Identifier identifier ? identifier.Name :
+                    expression is Literal literal && literal.TokenType == TokenType.StringLiteral ? literal.StringValue :
+                    null
+                ) ?? throw InvalidExportImportNameExpression(expression);
+            }
+
+            private string GetLocalName(Expression expression)
+            {
+                return
+                (
+                    expression is Identifier identifier ? identifier.Name :
+                    null
+                ) ?? throw InvalidExportImportNameExpression(expression);
+            }
+
             private void ExtractExports(ExportAllDeclaration exportAllDeclaration)
             {
+                if (exportAllDeclaration.Exported != null)
+                {
+                    // TODO: support re-export all as namespace (ExportAllDeclaration.Exported)
+                    throw new NotImplementedException();
+                }
+
                 IModuleResource source = ResolveImportSource(exportAllDeclaration.Source.StringValue);
 
                 _module.ExportsRaw.Add(new ExportAllData(source));
@@ -72,7 +105,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         for (var i = 0; i < specifiers.Count; i++)
                         {
                             ExportSpecifier exportSpecifier = specifiers[i];
-                            _module.ExportsRaw.Add(new NamedExportData(exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
+                            _module.ExportsRaw.Add(new NamedExportData(GetExportImportName(exportSpecifier.Exported), GetLocalName(exportSpecifier.Local)));
                         }
                     }
                     // export { default as defaultAlias, a as alias, b } from 'bar.js';
@@ -85,7 +118,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         {
                             ExportSpecifier exportSpecifier = specifiers[i];
 
-                            _module.ExportsRaw.Add(new ReexportData(source, exportSpecifier.Exported.Name, exportSpecifier.Local.Name));
+                            _module.ExportsRaw.Add(new ReexportData(source, GetExportImportName(exportSpecifier.Exported), GetExportImportName(exportSpecifier.Local)));
                         }
 
                         if (!_module.ModuleRefs.ContainsKey(source))
@@ -134,7 +167,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         // import { name1 } from 'src/my_lib';
                         // import { default as foo } from 'src/my_lib';
                         case ImportSpecifier importSpecifier:
-                            _module.Imports[importSpecifier.Local.Name] = new NamedImportData(source, importSpecifier.Local.Name, importSpecifier.Imported.Name);
+                            _module.Imports[importSpecifier.Local.Name] = new NamedImportData(source, importSpecifier.Local.Name, GetExportImportName(importSpecifier.Imported));
                             break;
                     }
 
@@ -142,17 +175,38 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
             }
 
-            internal static bool IsDynamicImportCall(CallExpression callExpression, out Literal sourceLiteral)
+            protected override object VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
             {
-                if (callExpression.Callee is Import)
-                {
-                    sourceLiteral =
-                        callExpression.Arguments.Count == 1 &&
-                            callExpression.Arguments[0] is Literal literal &&
-                            literal.TokenType == TokenType.StringLiteral ?
-                        literal :
-                        null;
+                base.VisitExportAllDeclaration(exportAllDeclaration);
 
+                ExtractExports(exportAllDeclaration);
+
+                return exportAllDeclaration;
+            }
+
+            protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
+            {
+                base.VisitExportDefaultDeclaration(exportDefaultDeclaration);
+
+                ExtractExports(exportDefaultDeclaration);
+
+                return exportDefaultDeclaration;
+            }
+
+            protected override object VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
+            {
+                base.VisitExportNamedDeclaration(exportNamedDeclaration);
+
+                ExtractExports(exportNamedDeclaration);
+
+                return exportNamedDeclaration;
+            }
+
+            internal static bool IsRewritableDynamicImport(Import import, out Literal sourceLiteral)
+            {
+                if (import.Source is Literal literal && literal.TokenType == TokenType.StringLiteral && literal.Value != null)
+                {
+                    sourceLiteral = literal;
                     return true;
                 }
 
@@ -160,55 +214,35 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return false;
             }
 
-            protected override void VisitCallExpression(CallExpression callExpression)
+            protected override object VisitImport(Import import)
             {
-                if (IsDynamicImportCall(callExpression, out Literal sourceLiteral))
+                if (IsRewritableDynamicImport(import, out Literal sourceLiteral))
                 {
-                    if (sourceLiteral != null)
-                    {
-                        IModuleResource source = ResolveImportSource(sourceLiteral.StringValue);
+                    IModuleResource source = ResolveImportSource(sourceLiteral.StringValue);
 
-                        if (!_module.ModuleRefs.ContainsKey(source))
-                            _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
-                    }
-                    else
-                        _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), callExpression.Location.Start);
+                    if (!_module.ModuleRefs.ContainsKey(source))
+                        _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
                 }
                 else
-                    base.VisitCallExpression(callExpression);
+                    _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), import.Location.Start);
+
+                return import;
             }
 
-            protected override void VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
-            {
-                base.VisitExportAllDeclaration(exportAllDeclaration);
-
-                ExtractExports(exportAllDeclaration);
-            }
-
-            protected override void VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
-            {
-                base.VisitExportDefaultDeclaration(exportDefaultDeclaration);
-
-                ExtractExports(exportDefaultDeclaration);
-            }
-
-            protected override void VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
-            {
-                base.VisitExportNamedDeclaration(exportNamedDeclaration);
-
-                ExtractExports(exportNamedDeclaration);
-            }
-
-            protected override void VisitImportDeclaration(ImportDeclaration importDeclaration)
+            protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
             {
                 base.VisitImportDeclaration(importDeclaration);
 
                 ExtractImports(importDeclaration);
+
+                return importDeclaration;
             }
 
-            protected override void VisitMetaProperty(MetaProperty metaProperty)
+            protected override object VisitMetaProperty(MetaProperty metaProperty)
             {
                 _module.UsesImportMeta = true;
+
+                return metaProperty;
             }
         }
 

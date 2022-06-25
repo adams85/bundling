@@ -5,6 +5,7 @@ using Esprima.Utils;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
+    // TODO: eliminate stack?
     internal class VariableScopeBuilder : AstVisitor
     {
         private readonly Dictionary<Node, VariableScope> _variableScopes;
@@ -40,25 +41,29 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         private VariableScope.GlobalBlock EnsureImportDeclarationScope(ImportDeclaration importDeclaration) =>
             (CurrentVariableScope as VariableScope.GlobalBlock) ?? HandleInvalidImportDeclaration(importDeclaration, "Import declarations may only appear at top level of a module.");
 
-        protected override void VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
+        protected override object VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
         {
             BeginVariableScope(new VariableScope.Function(arrowFunctionExpression, CurrentVariableScope));
 
             VisitFunctionCore(arrowFunctionExpression);
 
             EndVariableScope();
+
+            return arrowFunctionExpression;
         }
 
-        protected override void VisitBlockStatement(BlockStatement blockStatement)
+        protected override object VisitBlockStatement(BlockStatement blockStatement)
         {
             BeginVariableScope(new VariableScope.Block(blockStatement, CurrentVariableScope));
 
             base.VisitBlockStatement(blockStatement);
 
             EndVariableScope();
+
+            return blockStatement;
         }
 
-        protected override void VisitCatchClause(CatchClause catchClause)
+        protected override object VisitCatchClause(CatchClause catchClause)
         {
             BeginVariableScope(new VariableScope.CatchClause(catchClause, CurrentVariableScope));
 
@@ -71,6 +76,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             Visit(catchClause.Body);
 
             EndVariableScope();
+
+            return catchClause;
         }
 
         private void VisitClassCore(IClass @class)
@@ -81,7 +88,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             Visit(@class.Body);
         }
 
-        protected override void VisitClassDeclaration(ClassDeclaration classDeclaration)
+        protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
         {
             if (classDeclaration.Id != null)
                 ((VariableScope.BlockBase)CurrentVariableScope).AddClassDeclaration(classDeclaration.Id);
@@ -91,9 +98,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             VisitClassCore(classDeclaration);
 
             EndVariableScope();
+
+            return classDeclaration;
         }
 
-        protected override void VisitClassExpression(ClassExpression classExpression)
+        protected override object VisitClassExpression(ClassExpression classExpression)
         {
             // Class expression's name is not available the enclosing scope.
 
@@ -102,9 +111,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             VisitClassCore(classExpression);
 
             EndVariableScope();
+
+            return classExpression;
         }
 
-        protected override void VisitForInStatement(ForInStatement forInStatement)
+        protected override object VisitForInStatement(ForInStatement forInStatement)
         {
             var hasDeclaration = forInStatement.Left is VariableDeclaration;
             if (hasDeclaration)
@@ -114,9 +125,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             if (hasDeclaration)
                 EndVariableScope();
+
+            return forInStatement;
         }
 
-        protected override void VisitForOfStatement(ForOfStatement forOfStatement)
+        protected override object VisitForOfStatement(ForOfStatement forOfStatement)
         {
             var hasDeclaration = forOfStatement.Left is VariableDeclaration;
             if (hasDeclaration)
@@ -126,9 +139,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             if (hasDeclaration)
                 EndVariableScope();
+
+            return forOfStatement;
         }
 
-        protected override void VisitForStatement(ForStatement forStatement)
+        protected override object VisitForStatement(ForStatement forStatement)
         {
             var hasDeclaration = forStatement.Init is VariableDeclaration;
             if (hasDeclaration)
@@ -138,6 +153,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             if (hasDeclaration)
                 EndVariableScope();
+
+            return forStatement;
         }
 
         private void VisitFunctionCore(IFunction function)
@@ -151,7 +168,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             Visit(function.Body);
         }
 
-        protected override void VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
+        protected override object VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
         {
             if (functionDeclaration.Id != null)
                 ((VariableScope.BlockBase)CurrentVariableScope).AddFunctionDeclaration(functionDeclaration.Id);
@@ -161,20 +178,24 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             VisitFunctionCore(functionDeclaration);
 
             EndVariableScope();
+
+            return functionDeclaration;
         }
 
-        protected override void VisitFunctionExpression(IFunction function)
+        protected override object VisitFunctionExpression(FunctionExpression functionExpression)
         {
             // Function expression's name is not available in the enclosing scope.
 
-            BeginVariableScope(new VariableScope.Function((FunctionExpression)function, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Function(functionExpression, CurrentVariableScope));
 
-            VisitFunctionCore(function);
+            VisitFunctionCore(functionExpression);
 
             EndVariableScope();
+
+            return functionExpression;
         }
 
-        protected override void VisitImportDeclaration(ImportDeclaration importDeclaration)
+        protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
         {
             VariableScope.GlobalBlock globalScope = EnsureImportDeclarationScope(importDeclaration);
 
@@ -183,9 +204,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 globalScope.AddImportDeclaration(specifiers[i].Local);
 
             Visit(importDeclaration.Source);
+
+            return importDeclaration;
         }
 
-        protected override void VisitProgram(Program program)
+        protected override object VisitProgram(Program program)
         {
             _variableScopes.Clear();
             _variableScopeStack.Clear();
@@ -211,9 +234,17 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             EndVariableScope();
             EndVariableScope();
+
+            return program;
         }
 
-        protected override void VisitVariableDeclaration(VariableDeclaration variableDeclaration)
+        protected override object VisitStaticBlock(StaticBlock staticBlock)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        protected override object VisitVariableDeclaration(VariableDeclaration variableDeclaration)
         {
             var variableDeclarationVisitor = new VariableDeclarationVisitor<(VariableScopeBuilder Builder, VariableDeclaration Declaration)>((this, variableDeclaration),
                 visitVariableIdentifier: (s, identifier) => ((VariableScope.StatementBase)s.Builder.CurrentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
@@ -229,6 +260,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 if (variableDeclarator.Init != null)
                     Visit(variableDeclarator.Init);
             }
+
+            return variableDeclaration;
         }
 
         private static Exception UnknownNodeError(Node node)

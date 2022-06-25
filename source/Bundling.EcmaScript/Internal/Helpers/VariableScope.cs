@@ -28,7 +28,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
                 public override NodeCollection ChildNodes => throw new NotSupportedException();
 
-                protected override void Accept(AstVisitor visitor) => throw new NotSupportedException();
+                protected override object Accept(AstVisitor visitor) => throw new NotSupportedException();
             }
 
             public Global(Script script) : base(new Placeholder(script), null, script.Strict) { }

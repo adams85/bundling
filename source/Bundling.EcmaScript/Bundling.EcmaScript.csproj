@@ -14,7 +14,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Esprima" Version="2.0.3" />
+    <PackageReference Include="Esprima" Version="3.0.0-beta-2" />
   </ItemGroup>
 
   <ItemGroup>
