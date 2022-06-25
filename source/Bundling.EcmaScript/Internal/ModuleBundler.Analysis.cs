@@ -15,7 +15,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private int _moduleIndex;
 
-            public VariableDeclarationAnalyzer(ModuleBundler bundler, ModuleData module) : base(module.VariableScopes)
+            public VariableDeclarationAnalyzer(ModuleBundler bundler, ModuleData module)
             {
                 _bundler = bundler;
                 _module = module;

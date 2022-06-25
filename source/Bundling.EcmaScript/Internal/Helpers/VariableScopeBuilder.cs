@@ -8,15 +8,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
     // TODO: eliminate stack?
     internal class VariableScopeBuilder : AstVisitor
     {
-        private readonly Dictionary<Node, VariableScope> _variableScopes;
+        private readonly Action<Node, VariableScope> _recordVariableScope;
         private readonly Stack<VariableScope> _variableScopeStack;
 
-        public VariableScopeBuilder(Dictionary<Node, VariableScope> variableScopes)
-        {
-            if (variableScopes == null)
-                throw new ArgumentNullException(nameof(variableScopes));
+        public VariableScopeBuilder() : this((node, scope) => node.Data = scope) { }
 
-            _variableScopes = variableScopes;
+        public VariableScopeBuilder(Action<Node, VariableScope> recordVariableScope)
+        {
+            _recordVariableScope = recordVariableScope ?? throw new ArgumentNullException(nameof(recordVariableScope));
             _variableScopeStack = new Stack<VariableScope>();
         }
 
@@ -31,7 +30,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             VariableScope variableScope = _variableScopeStack.Pop();
             variableScope.FinalizeScope();
-            _variableScopes.Add(variableScope.OriginatorNode, variableScope);
+            _recordVariableScope(variableScope.OriginatorNode, variableScope);
         }
 
         protected virtual VariableScope.GlobalBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
@@ -210,7 +209,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitProgram(Program program)
         {
-            _variableScopes.Clear();
             _variableScopeStack.Clear();
 
             VariableScope.Global globalScope;

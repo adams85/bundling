@@ -78,7 +78,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 module.ParserOptions = CreateParserOptions();
                 module.Ast = ParseModuleContent(module);
-                module.VariableScopes = new Dictionary<Node, VariableScope>();
                 module.ModuleRefs = new Dictionary<IModuleResource, string>();
                 module.ExportsRaw = new List<ExportData>();
                 module.Imports = new Dictionary<string, ImportData>();

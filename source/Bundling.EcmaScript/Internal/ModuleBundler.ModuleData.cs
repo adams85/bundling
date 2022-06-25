@@ -20,7 +20,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             public ParserOptions ParserOptions { get; set; }
             public Program Ast { get; set; }
-            public Dictionary<Node, VariableScope> VariableScopes { get; set; }
             public Dictionary<IModuleResource, string> ModuleRefs { get; set; }
             public List<ExportData> ExportsRaw { get; set; }
             public Dictionary<string, ImportData> Imports { get; set; }

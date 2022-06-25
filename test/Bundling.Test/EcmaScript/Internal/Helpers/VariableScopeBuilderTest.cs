@@ -44,12 +44,10 @@ function globalFunc3() { }
 
             Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
 
-            var scopes = new Dictionary<Node, VariableScope>();
-
-            var scopeBuilder = new VariableScopeBuilder(scopes);
+            var scopeBuilder = new VariableScopeBuilder();
             scopeBuilder.Visit(moduleAst);
 
-            VariableScope globalBlockScope = scopes[moduleAst];
+            var globalBlockScope = (VariableScope)moduleAst.Data;
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
             Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
@@ -119,7 +117,7 @@ function globalFunc3() { }
 
             var scopes = new Dictionary<Node, VariableScope>();
 
-            var scopeBuilder = new VariableScopeBuilder(scopes);
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
             scopeBuilder.Visit(moduleAst);
 
             VariableScope globalBlockScope = scopes[moduleAst];
@@ -213,7 +211,7 @@ function globalFunc3() { }
 
             var scopes = new Dictionary<Node, VariableScope>();
 
-            var scopeBuilder = new VariableScopeBuilder(scopes);
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
             scopeBuilder.Visit(moduleAst);
 
             VariableScope globalBlockScope = scopes[moduleAst];
@@ -288,7 +286,7 @@ function globalFunc3() { }
 
             var scopes = new Dictionary<Node, VariableScope>();
 
-            var scopeBuilder = new VariableScopeBuilder(scopes);
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
             scopeBuilder.Visit(moduleAst);
 
             VariableScope globalBlockScope = scopes[moduleAst];
@@ -421,7 +419,7 @@ function globalFunc3() { }
 
             var scopes = new Dictionary<Node, VariableScope>();
 
-            var scopeBuilder = new VariableScopeBuilder(scopes);
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
             scopeBuilder.Visit(moduleAst);
 
             VariableScope globalBlockScope = scopes[moduleAst];
@@ -519,7 +517,7 @@ function f4(a = foo) {
 
             var scopes = new Dictionary<Node, VariableScope>();
 
-            var scopeBuilder = new VariableScopeBuilder(scopes);
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
             scopeBuilder.Visit(moduleAst);
 
             VariableScope globalBlockScope = scopes[moduleAst];

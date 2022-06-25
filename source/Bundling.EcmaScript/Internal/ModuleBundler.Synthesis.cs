@@ -44,7 +44,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public override object Visit(Node node)
             {
                 VariableScope previousVariableScope = _currentVariableScope;
-                if (_module.VariableScopes.TryGetValue(node, out VariableScope variableScope))
+                if (node.Data is VariableScope variableScope)
                     _currentVariableScope = variableScope;
 
                 var result = base.Visit(node);
