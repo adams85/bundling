@@ -8,29 +8,44 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
     // TODO: eliminate stack?
     internal class VariableScopeBuilder : AstVisitor
     {
+        protected readonly struct Snapshot
+        {
+            private readonly VariableScope _currentVariableScope;
+
+            public Snapshot(VariableScopeBuilder builder)
+            {
+                _currentVariableScope = builder._currentVariableScope;
+            }
+
+            public void Restore(VariableScopeBuilder builder)
+            {
+                builder._currentVariableScope = _currentVariableScope;
+            }
+        }
+
         private readonly Action<Node, VariableScope> _recordVariableScope;
-        private readonly Stack<VariableScope> _variableScopeStack;
+        private VariableScope _currentVariableScope;
 
         public VariableScopeBuilder() : this((node, scope) => node.Data = scope) { }
 
         public VariableScopeBuilder(Action<Node, VariableScope> recordVariableScope)
         {
             _recordVariableScope = recordVariableScope ?? throw new ArgumentNullException(nameof(recordVariableScope));
-            _variableScopeStack = new Stack<VariableScope>();
         }
 
-        protected VariableScope CurrentVariableScope => _variableScopeStack.Peek();
+        protected VariableScope CurrentVariableScope => _currentVariableScope;
 
-        protected void BeginVariableScope(VariableScope scope)
+        protected void BeginVariableScope(VariableScope variableScope, out Snapshot snapshot)
         {
-            _variableScopeStack.Push(scope);
+            snapshot = new Snapshot(this);
+            _currentVariableScope = variableScope;
         }
 
-        protected void EndVariableScope()
+        protected void EndVariableScope(in Snapshot snapshot)
         {
-            VariableScope variableScope = _variableScopeStack.Pop();
-            variableScope.FinalizeScope();
-            _recordVariableScope(variableScope.OriginatorNode, variableScope);
+            _currentVariableScope.FinalizeScope();
+            _recordVariableScope(_currentVariableScope.OriginatorNode, _currentVariableScope);
+            snapshot.Restore(this);
         }
 
         protected virtual VariableScope.GlobalBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
@@ -38,43 +53,43 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         // Esprima.NET allows import declarations in scopes other than the top level scope (bug?), so we need to ensure this manually.
         private VariableScope.GlobalBlock EnsureImportDeclarationScope(ImportDeclaration importDeclaration) =>
-            (CurrentVariableScope as VariableScope.GlobalBlock) ?? HandleInvalidImportDeclaration(importDeclaration, "Import declarations may only appear at top level of a module.");
+            (_currentVariableScope as VariableScope.GlobalBlock) ?? HandleInvalidImportDeclaration(importDeclaration, "Import declarations may only appear at top level of a module.");
 
         protected override object VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
         {
-            BeginVariableScope(new VariableScope.Function(arrowFunctionExpression, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Function(arrowFunctionExpression, _currentVariableScope), out Snapshot snapshot);
 
             VisitFunctionCore(arrowFunctionExpression);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return arrowFunctionExpression;
         }
 
         protected override object VisitBlockStatement(BlockStatement blockStatement)
         {
-            BeginVariableScope(new VariableScope.Block(blockStatement, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Block(blockStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitBlockStatement(blockStatement);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return blockStatement;
         }
 
         protected override object VisitCatchClause(CatchClause catchClause)
         {
-            BeginVariableScope(new VariableScope.CatchClause(catchClause, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.CatchClause(catchClause, _currentVariableScope), out Snapshot snapshot);
 
             var variableDeclarationVisitor = new VariableDeclarationVisitor<VariableScopeBuilder>(this,
-                visitVariableIdentifier: (b, identifier) => ((VariableScope.CatchClause)b.CurrentVariableScope).AddParamDeclaration(identifier),
+                visitVariableIdentifier: (b, identifier) => ((VariableScope.CatchClause)b._currentVariableScope).AddParamDeclaration(identifier),
                 visitRewritableExpression: (b, expression) => b.Visit(expression));
 
             variableDeclarationVisitor.VisitParam(catchClause);
 
             Visit(catchClause.Body);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return catchClause;
         }
@@ -90,13 +105,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
         {
             if (classDeclaration.Id != null)
-                ((VariableScope.BlockBase)CurrentVariableScope).AddClassDeclaration(classDeclaration.Id);
+                ((VariableScope.BlockBase)_currentVariableScope).AddClassDeclaration(classDeclaration.Id);
 
-            BeginVariableScope(new VariableScope.Class(classDeclaration, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Class(classDeclaration, _currentVariableScope), out Snapshot snapshot);
 
             VisitClassCore(classDeclaration);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return classDeclaration;
         }
@@ -105,53 +120,53 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             // Class expression's name is not available the enclosing scope.
 
-            BeginVariableScope(new VariableScope.Class(classExpression, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Class(classExpression, _currentVariableScope), out Snapshot snapshot);
 
             VisitClassCore(classExpression);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return classExpression;
         }
 
         protected override object VisitForInStatement(ForInStatement forInStatement)
         {
-            var hasDeclaration = forInStatement.Left is VariableDeclaration;
-            if (hasDeclaration)
-                BeginVariableScope(new VariableScope.DeclaratorStatement(forInStatement, CurrentVariableScope));
+            if (!(forInStatement.Left is VariableDeclaration))
+                return base.VisitForInStatement(forInStatement);
+
+            BeginVariableScope(new VariableScope.DeclaratorStatement(forInStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitForInStatement(forInStatement);
 
-            if (hasDeclaration)
-                EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return forInStatement;
         }
 
         protected override object VisitForOfStatement(ForOfStatement forOfStatement)
         {
-            var hasDeclaration = forOfStatement.Left is VariableDeclaration;
-            if (hasDeclaration)
-                BeginVariableScope(new VariableScope.DeclaratorStatement(forOfStatement, CurrentVariableScope));
+            if (!(forOfStatement.Left is VariableDeclaration))
+                return base.VisitForOfStatement(forOfStatement);
+
+            BeginVariableScope(new VariableScope.DeclaratorStatement(forOfStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitForOfStatement(forOfStatement);
 
-            if (hasDeclaration)
-                EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return forOfStatement;
         }
 
         protected override object VisitForStatement(ForStatement forStatement)
         {
-            var hasDeclaration = forStatement.Init is VariableDeclaration;
-            if (hasDeclaration)
-                BeginVariableScope(new VariableScope.DeclaratorStatement(forStatement, CurrentVariableScope));
+            if (!(forStatement.Init is VariableDeclaration))
+                return base.VisitForStatement(forStatement);
+
+            BeginVariableScope(new VariableScope.DeclaratorStatement(forStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitForStatement(forStatement);
 
-            if (hasDeclaration)
-                EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return forStatement;
         }
@@ -159,7 +174,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         private void VisitFunctionCore(IFunction function)
         {
             var variableDeclarationVisitor = new VariableDeclarationVisitor<VariableScopeBuilder>(this,
-                visitVariableIdentifier: (b, identifier) => ((VariableScope.Function)b.CurrentVariableScope).AddParamDeclaration(identifier),
+                visitVariableIdentifier: (b, identifier) => ((VariableScope.Function)b._currentVariableScope).AddParamDeclaration(identifier),
                 visitRewritableExpression: (b, expression) => b.Visit(expression));
 
             variableDeclarationVisitor.VisitParams(function);
@@ -170,13 +185,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         protected override object VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
         {
             if (functionDeclaration.Id != null)
-                ((VariableScope.BlockBase)CurrentVariableScope).AddFunctionDeclaration(functionDeclaration.Id);
+                ((VariableScope.BlockBase)_currentVariableScope).AddFunctionDeclaration(functionDeclaration.Id);
 
-            BeginVariableScope(new VariableScope.Function(functionDeclaration, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Function(functionDeclaration, _currentVariableScope), out Snapshot snapshot);
 
             VisitFunctionCore(functionDeclaration);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return functionDeclaration;
         }
@@ -185,11 +200,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             // Function expression's name is not available in the enclosing scope.
 
-            BeginVariableScope(new VariableScope.Function(functionExpression, CurrentVariableScope));
+            BeginVariableScope(new VariableScope.Function(functionExpression, _currentVariableScope), out Snapshot snapshot);
 
             VisitFunctionCore(functionExpression);
 
-            EndVariableScope();
+            EndVariableScope(in snapshot);
 
             return functionExpression;
         }
@@ -209,7 +224,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitProgram(Program program)
         {
-            _variableScopeStack.Clear();
+            _currentVariableScope = null;
 
             VariableScope.Global globalScope;
 
@@ -225,13 +240,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     throw UnknownNodeError(program);
             }
 
-            BeginVariableScope(globalScope);
-            BeginVariableScope(new VariableScope.GlobalBlock(program, globalScope));
+            BeginVariableScope(globalScope, out Snapshot snapshotGlobal);
+            BeginVariableScope(new VariableScope.GlobalBlock(program, globalScope), out Snapshot snapshot);
 
             base.VisitProgram(program);
 
-            EndVariableScope();
-            EndVariableScope();
+            EndVariableScope(in snapshot);
+            EndVariableScope(in snapshotGlobal);
 
             return program;
         }
@@ -245,7 +260,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         protected override object VisitVariableDeclaration(VariableDeclaration variableDeclaration)
         {
             var variableDeclarationVisitor = new VariableDeclarationVisitor<(VariableScopeBuilder Builder, VariableDeclaration Declaration)>((this, variableDeclaration),
-                visitVariableIdentifier: (s, identifier) => ((VariableScope.StatementBase)s.Builder.CurrentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
+                visitVariableIdentifier: (s, identifier) => ((VariableScope.StatementBase)s.Builder._currentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
                 visitRewritableExpression: (s, expression) => s.Builder.Visit(expression));
 
             ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
