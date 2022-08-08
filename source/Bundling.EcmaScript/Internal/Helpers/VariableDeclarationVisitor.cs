@@ -17,9 +17,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             _visitRewritableExpression = visitRewritableExpression ?? delegate { };
         }
 
-        private void VisitBindingExpression(Expression expression)
+        private void VisitVariableBinding(Node variableBinding)
         {
-            switch (expression)
+            switch (variableBinding)
             {
                 case Identifier identifier:
                     _visitVariableIdentifier(_state, identifier);
@@ -33,7 +33,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             }
         }
 
-        private void VisitArrayPatternElements(in NodeList<Expression> elements)
+        private void VisitArrayPatternElements(in NodeList<Node> elements)
         {
             for (var i = 0; i < elements.Count; i++)
                 switch (elements[i])
@@ -47,12 +47,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     case ObjectPattern objectPattern:
                         VisitObjectPatternProperties(in objectPattern.Properties);
                         break;
-                    case RestElement restElement:
-                        VisitBindingExpression(restElement.Argument);
-                        break;
                     case AssignmentPattern assignmentPattern:
-                        VisitBindingExpression(assignmentPattern.Left);
+                        VisitVariableBinding(assignmentPattern.Left);
                         _visitRewritableExpression(_state, assignmentPattern.Right);
+                        break;
+                    case RestElement restElement:
+                        VisitVariableBinding(restElement.Argument);
                         break;
                 }
         }
@@ -78,31 +78,31 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                                 VisitObjectPatternProperties(in objectPattern.Properties);
                                 break;
                             case AssignmentPattern assignmentPattern:
-                                VisitBindingExpression(assignmentPattern.Left);
+                                VisitVariableBinding(assignmentPattern.Left);
                                 _visitRewritableExpression(_state, assignmentPattern.Right);
                                 break;
                         }
                         break;
                     case RestElement restElement:
-                        VisitBindingExpression(restElement.Argument);
+                        VisitVariableBinding(restElement.Argument);
                         break;
                 }
         }
 
-        public void VisitParam(CatchClause catchClause)
+        public void VisitCatchClause(CatchClause catchClause)
         {
             if (catchClause.Param != null)
-                VisitBindingExpression(catchClause.Param);
+                VisitVariableBinding(catchClause.Param);
         }
 
-        public void VisitParams(IFunction function)
+        public void VisitFunction(IFunction function)
         {
             VisitArrayPatternElements(in function.Params);
         }
 
-        public void VisitId(VariableDeclarator variableDeclarator)
+        public void VisitVariableDeclarator(VariableDeclarator variableDeclarator)
         {
-            VisitBindingExpression(variableDeclarator.Id);
+            VisitVariableBinding(variableDeclarator.Id);
         }
     }
 }

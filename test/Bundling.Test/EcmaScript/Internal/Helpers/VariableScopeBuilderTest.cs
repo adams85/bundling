@@ -47,9 +47,8 @@ function globalFunc3() { }
             var scopeBuilder = new VariableScopeBuilder();
             scopeBuilder.Visit(moduleAst);
 
-            var globalBlockScope = (VariableScope)moduleAst.Data;
+            var globalBlockScope = (VariableScope)moduleAst.GetAdditionalData(typeof(VariableScope));
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
-            Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
             Assert.Same(globalBlockScope, globalBlockScope.FindIdentifier("defaultImport"));
             Assert.Same(globalBlockScope, globalBlockScope.FindIdentifier("namespaceImport"));
@@ -122,7 +121,6 @@ function globalFunc3() { }
 
             VariableScope globalBlockScope = scopes[moduleAst];
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
-            Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
             ClassDeclaration classDeclaration = moduleAst.Body
                 .OfType<ClassDeclaration>().Single(d => d.Id?.Name == "GlobalClass1");
@@ -174,6 +172,94 @@ function globalFunc3() { }
         }
 
         [Fact]
+        public void FindIdentifer_ClassStaticBlockScope()
+        {
+            var moduleContent =
+@"import defaultImport, * as namespaceImport from './foo.js';
+import { import1, x as aliasImport } from './foo.js';
+
+var globalVar1, globalVar2 = 0;
+const [globalConst1, globalConst2] = [0, 1];
+let {globalLet1, b: [globalLet2, globalLet3] = [globalConst1 + 3, globalConst2 + 3]} = { globalLet1: 2 };
+
+class GlobalClass1 {
+    static {
+        var methodParam, aliasImport, globalVar2, globalConst2, globalLet2, globalFunc2, GlobalClass2;
+        var methodLocalVar = 0;
+        let methodLocalLet = 1;
+    }
+}
+
+class GlobalClass2 { }
+
+function globalFunc1(funcParam, aliasImport, globalVar2, globalConst2, globalLet2, globalFunc2, GlobalClass2) { 
+  var funcLocalVar = 0;
+  let funcLocalLet = 1;
+
+  class FuncLocalClass { }
+  
+  function funcLocalFunc() { }
+}
+
+function globalFunc2() { }
+
+function globalFunc3() { }
+";
+
+            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+
+            var scopes = new Dictionary<Node, VariableScope>();
+
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
+            scopeBuilder.Visit(moduleAst);
+
+            VariableScope globalBlockScope = scopes[moduleAst];
+            Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
+
+            ClassDeclaration classDeclaration = moduleAst.Body
+                .OfType<ClassDeclaration>().Single(d => d.Id?.Name == "GlobalClass1");
+
+            VariableScope classScope = scopes[classDeclaration];
+            Assert.IsType<VariableScope.Class>(classScope);
+            Assert.Same(globalBlockScope, classScope.ParentScope);
+
+            StaticBlock staticBlock = classDeclaration.Body.Body
+                .OfType<StaticBlock>().Single()
+                .As<StaticBlock>();
+
+            VariableScope staticBlockScope = scopes[staticBlock];
+            Assert.IsType<VariableScope.ClassStaticBlock>(staticBlockScope);
+            Assert.Same(classScope, staticBlockScope.ParentScope);
+
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("defaultImport"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("namespaceImport"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("import1"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("aliasImport"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("globalVar1"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("globalVar2"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("globalConst1"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("globalConst2"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("globalLet1"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("globalLet2"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("globalLet3"));
+            Assert.Same(classScope, staticBlockScope.FindIdentifier("GlobalClass1"));
+            Assert.Null(staticBlockScope.FindIdentifier("method"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("methodParam"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("methodLocalVar"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("methodLocalLet"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("GlobalClass2"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("globalFunc1"));
+            Assert.Null(staticBlockScope.FindIdentifier("funcParam"));
+            Assert.Null(staticBlockScope.FindIdentifier("funcLocalVar"));
+            Assert.Null(staticBlockScope.FindIdentifier("funcLocalLet"));
+            Assert.Null(staticBlockScope.FindIdentifier("FuncLocalClass"));
+            Assert.Null(staticBlockScope.FindIdentifier("funcLocalFunc"));
+            Assert.Same(staticBlockScope, staticBlockScope.FindIdentifier("globalFunc2"));
+            Assert.Same(globalBlockScope, staticBlockScope.FindIdentifier("globalFunc3"));
+            Assert.Null(staticBlockScope.FindIdentifier("arguments"));
+        }
+
+        [Fact]
         public void FindIdentifer_FunctionScope()
         {
             var moduleContent =
@@ -216,7 +302,6 @@ function globalFunc3() { }
 
             VariableScope globalBlockScope = scopes[moduleAst];
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
-            Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
             FunctionDeclaration functionDeclaration = moduleAst.Body
                 .OfType<FunctionDeclaration>().Single(d => d.Id?.Name == "globalFunc1");
@@ -260,7 +345,7 @@ function globalFunc3() { }
         }
 
         [Fact]
-        public void FindIdentifer_DeclaratorStatementScope()
+        public void FindIdentifer_VariableDeclaratorStatementScope()
         {
             var moduleContent =
 @"(() => {
@@ -291,7 +376,6 @@ function globalFunc3() { }
 
             VariableScope globalBlockScope = scopes[moduleAst];
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
-            Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
             ArrowFunctionExpression functionExpression = moduleAst.Body.Single()
                 .As<ExpressionStatement>().Expression
@@ -321,7 +405,7 @@ function globalFunc3() { }
             ForStatement forStatement = wrapperFunctionBlockStatement.Body.OfType<ForStatement>().Single();
 
             VariableScope forScope = scopes[forStatement];
-            Assert.IsType<VariableScope.DeclaratorStatement>(forScope);
+            Assert.IsType<VariableScope.VariableDeclaratorStatement>(forScope);
             Assert.Same(wrapperFunctionBlockScope, forScope.ParentScope);
 
             Assert.Same(wrapperFunctionBlockScope, forScope.FindIdentifier("i"));
@@ -351,7 +435,7 @@ function globalFunc3() { }
             ForInStatement forInStatement = wrapperFunctionBlockStatement.Body.OfType<ForInStatement>().Single();
 
             VariableScope forInScope = scopes[forInStatement];
-            Assert.IsType<VariableScope.DeclaratorStatement>(forInScope);
+            Assert.IsType<VariableScope.VariableDeclaratorStatement>(forInScope);
             Assert.Same(wrapperFunctionBlockScope, forInScope.ParentScope);
 
             Assert.Same(wrapperFunctionBlockScope, forInScope.FindIdentifier("i"));
@@ -381,7 +465,7 @@ function globalFunc3() { }
             ForOfStatement forOfStatement = wrapperFunctionBlockStatement.Body.OfType<ForOfStatement>().Single();
 
             VariableScope forOfScope = scopes[forOfStatement];
-            Assert.IsType<VariableScope.DeclaratorStatement>(forOfScope);
+            Assert.IsType<VariableScope.VariableDeclaratorStatement>(forOfScope);
             Assert.Same(wrapperFunctionBlockScope, forOfScope.ParentScope);
 
             Assert.Same(wrapperFunctionBlockScope, forOfScope.FindIdentifier("i"));
@@ -424,7 +508,6 @@ function globalFunc3() { }
 
             VariableScope globalBlockScope = scopes[moduleAst];
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
-            Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
             ArrowFunctionExpression functionExpression = moduleAst.Body.Single()
                 .As<ExpressionStatement>().Expression
@@ -522,7 +605,6 @@ function f4(a = foo) {
 
             VariableScope globalBlockScope = scopes[moduleAst];
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
-            Assert.IsType<VariableScope.Global>(globalBlockScope.ParentScope);
 
             Assert.Same(globalBlockScope, globalBlockScope.FindIdentifier("foo"));
 

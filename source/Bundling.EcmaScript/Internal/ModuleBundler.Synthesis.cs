@@ -12,7 +12,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
-    using Range = Esprima.Ast.Range;
+    using Range = Esprima.Range;
 
     // TODO: check existing visitations & add new ones
     internal partial class ModuleBundler
@@ -44,7 +44,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public override object Visit(Node node)
             {
                 VariableScope previousVariableScope = _currentVariableScope;
-                if (node.Data is VariableScope variableScope)
+                if (node.GetAdditionalData(typeof(VariableScope)) is VariableScope variableScope)
                     _currentVariableScope = variableScope;
 
                 var result = base.Visit(node);
@@ -97,7 +97,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override object VisitCatchClause(CatchClause catchClause)
             {
                 // Catch clause error parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitParam(catchClause);
+                CreateVariableDeclarationVisitor().VisitCatchClause(catchClause);
 
                 Visit(catchClause.Body);
 
@@ -194,7 +194,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // Class name identifier is not subject to rewriting, thus, skipped.
 
                 // Function parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitParams(functionExpression);
+                CreateVariableDeclarationVisitor().VisitFunction(functionExpression);
 
                 Visit(functionExpression.Body);
 
@@ -321,7 +321,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     VariableDeclarator variableDeclarator = declarations[i];
 
                     // Variable identifier(s) are not subject to rewriting, thus, skipped.
-                    variableDeclarationVisitor.VisitId(variableDeclarator);
+                    variableDeclarationVisitor.VisitVariableDeclarator(variableDeclarator);
 
                     if (variableDeclarator.Init != null)
                         Visit(variableDeclarator.Init);

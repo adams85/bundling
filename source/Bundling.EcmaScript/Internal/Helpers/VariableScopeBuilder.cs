@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using Esprima.Ast;
 using Esprima.Utils;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
-    // TODO: eliminate stack?
     internal class VariableScopeBuilder : AstVisitor
     {
         protected readonly struct Snapshot
@@ -26,7 +24,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         private readonly Action<Node, VariableScope> _recordVariableScope;
         private VariableScope _currentVariableScope;
 
-        public VariableScopeBuilder() : this((node, scope) => node.Data = scope) { }
+        public VariableScopeBuilder() : this((node, scope) => node.SetAdditionalData(typeof(VariableScope), scope)) { }
 
         public VariableScopeBuilder(Action<Node, VariableScope> recordVariableScope)
         {
@@ -85,7 +83,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 visitVariableIdentifier: (b, identifier) => ((VariableScope.CatchClause)b._currentVariableScope).AddParamDeclaration(identifier),
                 visitRewritableExpression: (b, expression) => b.Visit(expression));
 
-            variableDeclarationVisitor.VisitParam(catchClause);
+            variableDeclarationVisitor.VisitCatchClause(catchClause);
 
             Visit(catchClause.Body);
 
@@ -104,6 +102,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
         {
+            ref readonly NodeList<Decorator> decorators = ref classDeclaration.Decorators;
+            for (var i = 0; i < decorators.Count; i++)
+            {
+                Visit(decorators[i]);
+            }
+
             if (classDeclaration.Id != null)
                 ((VariableScope.BlockBase)_currentVariableScope).AddClassDeclaration(classDeclaration.Id);
 
@@ -118,6 +122,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitClassExpression(ClassExpression classExpression)
         {
+            ref readonly NodeList<Decorator> decorators = ref classExpression.Decorators;
+            for (var i = 0; i < decorators.Count; i++)
+            {
+                Visit(decorators[i]);
+            }
+
             // Class expression's name is not available the enclosing scope.
 
             BeginVariableScope(new VariableScope.Class(classExpression, _currentVariableScope), out Snapshot snapshot);
@@ -134,7 +144,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             if (!(forInStatement.Left is VariableDeclaration))
                 return base.VisitForInStatement(forInStatement);
 
-            BeginVariableScope(new VariableScope.DeclaratorStatement(forInStatement, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope(new VariableScope.VariableDeclaratorStatement(forInStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitForInStatement(forInStatement);
 
@@ -148,7 +158,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             if (!(forOfStatement.Left is VariableDeclaration))
                 return base.VisitForOfStatement(forOfStatement);
 
-            BeginVariableScope(new VariableScope.DeclaratorStatement(forOfStatement, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope(new VariableScope.VariableDeclaratorStatement(forOfStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitForOfStatement(forOfStatement);
 
@@ -162,7 +172,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             if (!(forStatement.Init is VariableDeclaration))
                 return base.VisitForStatement(forStatement);
 
-            BeginVariableScope(new VariableScope.DeclaratorStatement(forStatement, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope(new VariableScope.VariableDeclaratorStatement(forStatement, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitForStatement(forStatement);
 
@@ -177,7 +187,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 visitVariableIdentifier: (b, identifier) => ((VariableScope.Function)b._currentVariableScope).AddParamDeclaration(identifier),
                 visitRewritableExpression: (b, expression) => b.Visit(expression));
 
-            variableDeclarationVisitor.VisitParams(function);
+            variableDeclarationVisitor.VisitFunction(function);
 
             Visit(function.Body);
         }
@@ -219,6 +229,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             Visit(importDeclaration.Source);
 
+            ref readonly NodeList<ImportAttribute> assertions = ref importDeclaration.Assertions;
+            for (var i = 0; i < assertions.Count; i++)
+            {
+                Visit(assertions[i]);
+            }
+
             return importDeclaration;
         }
 
@@ -226,41 +242,44 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             _currentVariableScope = null;
 
-            VariableScope.Global globalScope;
+            VariableScope.GlobalBlock globalScope;
 
             switch (program)
             {
                 case Module module:
-                    globalScope = new VariableScope.Global(module);
+                    globalScope = new VariableScope.GlobalBlock(module);
                     break;
                 case Script script:
-                    globalScope = new VariableScope.Global(script);
+                    globalScope = new VariableScope.GlobalBlock(script);
                     break;
                 default:
                     throw UnknownNodeError(program);
             }
 
-            BeginVariableScope(globalScope, out Snapshot snapshotGlobal);
-            BeginVariableScope(new VariableScope.GlobalBlock(program, globalScope), out Snapshot snapshot);
+            BeginVariableScope(globalScope, out Snapshot snapshot);
 
             base.VisitProgram(program);
 
             EndVariableScope(in snapshot);
-            EndVariableScope(in snapshotGlobal);
 
             return program;
         }
 
         protected override object VisitStaticBlock(StaticBlock staticBlock)
         {
-            // TODO
-            throw new NotImplementedException();
+            BeginVariableScope(new VariableScope.ClassStaticBlock(staticBlock, _currentVariableScope), out Snapshot snapshot);
+
+            base.VisitStaticBlock(staticBlock);
+
+            EndVariableScope(in snapshot);
+
+            return staticBlock;
         }
 
         protected override object VisitVariableDeclaration(VariableDeclaration variableDeclaration)
         {
             var variableDeclarationVisitor = new VariableDeclarationVisitor<(VariableScopeBuilder Builder, VariableDeclaration Declaration)>((this, variableDeclaration),
-                visitVariableIdentifier: (s, identifier) => ((VariableScope.StatementBase)s.Builder._currentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
+                visitVariableIdentifier: (s, identifier) => ((VariableScope.VariableDeclaratorBase)s.Builder._currentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
                 visitRewritableExpression: (s, expression) => s.Builder.Visit(expression));
 
             ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
@@ -268,7 +287,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             {
                 VariableDeclarator variableDeclarator = declarations[i];
 
-                variableDeclarationVisitor.VisitId(variableDeclarator);
+                variableDeclarationVisitor.VisitVariableDeclarator(variableDeclarator);
 
                 if (variableDeclarator.Init != null)
                     Visit(variableDeclarator.Init);

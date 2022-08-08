@@ -136,7 +136,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                             ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
                             for (var i = 0; i < declarations.Count; i++)
-                                variableDeclarationVisitor.VisitId(declarations[i]);
+                                variableDeclarationVisitor.VisitVariableDeclarator(declarations[i]);
                             break;
                         case FunctionDeclaration functionDeclaration:
                             _module.ExportsRaw.Add(new NamedExportData(functionDeclaration.Id.Name));

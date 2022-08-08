@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Esprima.Ast;
 using Esprima.Utils;
 
@@ -8,35 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
     // https://exploringjs.com/es6/ch_variables.html
     internal abstract class VariableScope : HashSet<string>
     {
-        public abstract class FunctionBase : VariableScope
-        {
-            protected FunctionBase(Node originatorNode, VariableScope parentScope, bool isStrict) : base(originatorNode, parentScope, isStrict) { }
-
-            public sealed override FunctionBase FunctionScope => this;
-        }
-
-        public sealed class Global : FunctionBase
-        {
-            public sealed class Placeholder : Node
-            {
-                public Placeholder(Program program) : base((Nodes)(int.MinValue))
-                {
-                    Program = program;
-                }
-
-                public Program Program { get; }
-
-                public override NodeCollection ChildNodes => throw new NotSupportedException();
-
-                protected override object Accept(AstVisitor visitor) => throw new NotSupportedException();
-            }
-
-            public Global(Script script) : base(new Placeholder(script), null, script.Strict) { }
-
-            public Global(Module module) : base(new Placeholder(module), null, isStrict: true) { }
-        }
-
-        public sealed class Function : FunctionBase
+        public sealed class Function : VariableScope
         {
             public Function(ArrowFunctionExpression arrowFunctionExpression, VariableScope parentScope)
                 : base(arrowFunctionExpression, parentScope, parentScope.IsStrict || arrowFunctionExpression.Strict) { }
@@ -46,6 +19,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             public Function(FunctionExpression functionExpression, VariableScope parentScope)
                 : base(functionExpression, parentScope, parentScope.IsStrict || functionExpression.Strict) { }
+
+            public override VariableScope FunctionScope => this;
 
             public void AddParamDeclaration(Identifier identifier)
             {
@@ -94,7 +69,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 FunctionScope = parentScope.FunctionScope;
             }
 
-            public override FunctionBase FunctionScope { get; }
+            public override VariableScope FunctionScope { get; }
 
             protected override void FinalizeScopeCore()
             {
@@ -113,7 +88,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 FunctionScope = parentScope.FunctionScope;
             }
 
-            public override FunctionBase FunctionScope { get; }
+            public override VariableScope FunctionScope { get; }
 
             public void AddParamDeclaration(Identifier identifier)
             {
@@ -128,14 +103,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             }
         }
 
-        public abstract class StatementBase : VariableScope
+        public abstract class VariableDeclaratorBase : VariableScope
         {
-            protected StatementBase(Statement statement, VariableScope parentScope) : base(statement, parentScope, parentScope.IsStrict)
-            {
-                FunctionScope = parentScope.FunctionScope;
-            }
+            protected VariableDeclaratorBase(Node node, bool isStrict) : base(node, null, isStrict) { }
 
-            public sealed override FunctionBase FunctionScope { get; }
+            protected VariableDeclaratorBase(Node node, VariableScope parentScope) : base(node, parentScope, parentScope.IsStrict) { }
 
             public void AddVariableDeclaration(Identifier identifier, VariableDeclarationKind declarationKind)
             {
@@ -161,12 +133,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     case VariableDeclarationType.Var:
                         HoistVariable(identifier);
                         break;
-                    case VariableDeclarationType.Let:
-                    case VariableDeclarationType.Const:
+                    default:
                         Add(identifier.Name);
                         break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(declarationType));
                 }
             }
 
@@ -180,18 +149,31 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             }
         }
 
-        public sealed class DeclaratorStatement : StatementBase
+        public sealed class VariableDeclaratorStatement : VariableDeclaratorBase
         {
-            public DeclaratorStatement(ForInStatement forInStatement, VariableScope parentScope) : base(forInStatement, parentScope) { }
+            public VariableDeclaratorStatement(ForInStatement forInStatement, VariableScope parentScope) : base(forInStatement, parentScope)
+            {
+                FunctionScope = parentScope.FunctionScope;
+            }
             
-            public DeclaratorStatement(ForOfStatement forOfStatement, VariableScope parentScope) : base(forOfStatement, parentScope) { }
+            public VariableDeclaratorStatement(ForOfStatement forOfStatement, VariableScope parentScope) : base(forOfStatement, parentScope)
+            {
+                FunctionScope = parentScope.FunctionScope;
+            }
 
-            public DeclaratorStatement(ForStatement forStatement, VariableScope parentScope) : base(forStatement, parentScope) { }
+            public VariableDeclaratorStatement(ForStatement forStatement, VariableScope parentScope) : base(forStatement, parentScope)
+            {
+                FunctionScope = parentScope.FunctionScope;
+            }
+
+            public override VariableScope FunctionScope { get; }
         }
 
-        public abstract class BlockBase : StatementBase
+        public abstract class BlockBase : VariableDeclaratorBase
         {
-            protected BlockBase(Statement statement, VariableScope parentScope) : base(statement, parentScope) { }
+            protected BlockBase(Node block, bool isStrict) : base(block, isStrict) { }
+
+            protected BlockBase(Node block, VariableScope parentScope) : base(block, parentScope) { }
 
             public void AddClassDeclaration(Identifier identifier)
             {
@@ -262,9 +244,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     case VariableDeclarationType.Function:
                         HoistFunction(identifier);
                         break;
-                    case VariableDeclarationType.Class:
-                        Add(identifier.Name);
-                        break;
                     default:
                         base.FinalizeDeclaration(identifier, declarationType);
                         break;
@@ -272,9 +251,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             }
         }
 
-        public sealed class GlobalBlock: BlockBase
+        public sealed class GlobalBlock : BlockBase
         {
-            public GlobalBlock(Program program, Global globalScope) : base(program, globalScope) { }
+            public GlobalBlock(Script script) : base(script, script.Strict) { }
+
+            public GlobalBlock(Module module) : base(module, isStrict: true) { }
+
+            public override VariableScope FunctionScope => this;
 
             public void AddImportDeclaration(Identifier identifier)
             {
@@ -284,21 +267,30 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             protected override void FinalizeDeclaration(Identifier identifier, VariableDeclarationType declarationType)
             {
-                switch (declarationType)
-                {
-                    case VariableDeclarationType.Import:
-                        Add(identifier.Name);
-                        break;
-                    default:
-                        base.FinalizeDeclaration(identifier, declarationType);
-                        break;
-                }
+                Add(identifier.Name);
             }
         }
 
         public sealed class Block : BlockBase
         {
-            public Block(BlockStatement blockStatement, VariableScope parentScope) : base(blockStatement, parentScope) { }
+            public Block(BlockStatement blockStatement, VariableScope parentScope) : base(blockStatement, parentScope)
+            {
+                FunctionScope = parentScope.FunctionScope;
+            }
+
+            public override VariableScope FunctionScope { get; }
+        }
+
+        public sealed class ClassStaticBlock : BlockBase
+        {
+            public ClassStaticBlock(StaticBlock staticBlock, VariableScope parentScope) : base(staticBlock, parentScope) { }
+
+            public override VariableScope FunctionScope => this;
+
+            protected override void FinalizeDeclaration(Identifier identifier, VariableDeclarationType declarationType)
+            {
+                Add(identifier.Name);
+            }
         }
 
         private static VariableDeclarationType ConvertToDeclarationType(VariableDeclarationKind declarationKind)
@@ -322,7 +314,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         }
 
         public VariableScope ParentScope { get; }
-        public abstract FunctionBase FunctionScope { get; }
+        public abstract VariableScope FunctionScope { get; }
 
         public Node OriginatorNode { get; }
 
