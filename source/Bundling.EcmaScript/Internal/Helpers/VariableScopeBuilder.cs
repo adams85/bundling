@@ -24,7 +24,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         private readonly Action<Node, VariableScope> _recordVariableScope;
         private VariableScope _currentVariableScope;
 
-        public VariableScopeBuilder() : this((node, scope) => node.SetAdditionalData(typeof(VariableScope), scope)) { }
+        public VariableScopeBuilder() : this((node, scope) => node.AssociatedData = scope) { }
 
         public VariableScopeBuilder(Action<Node, VariableScope> recordVariableScope)
         {
@@ -83,7 +83,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 visitVariableIdentifier: (b, identifier) => ((VariableScope.CatchClause)b._currentVariableScope).AddParamDeclaration(identifier),
                 visitRewritableExpression: (b, expression) => b.Visit(expression));
 
-            variableDeclarationVisitor.VisitCatchClause(catchClause);
+            variableDeclarationVisitor.VisitCatchClauseParam(catchClause);
 
             Visit(catchClause.Body);
 
@@ -187,7 +187,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 visitVariableIdentifier: (b, identifier) => ((VariableScope.Function)b._currentVariableScope).AddParamDeclaration(identifier),
                 visitRewritableExpression: (b, expression) => b.Visit(expression));
 
-            variableDeclarationVisitor.VisitFunction(function);
+            variableDeclarationVisitor.VisitFunctionParams(function);
 
             Visit(function.Body);
         }
@@ -287,7 +287,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             {
                 VariableDeclarator variableDeclarator = declarations[i];
 
-                variableDeclarationVisitor.VisitVariableDeclarator(variableDeclarator);
+                variableDeclarationVisitor.VisitVariableDeclaratorId(variableDeclarator);
 
                 if (variableDeclarator.Init != null)
                     Visit(variableDeclarator.Init);

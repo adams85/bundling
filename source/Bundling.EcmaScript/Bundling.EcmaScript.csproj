@@ -4,7 +4,6 @@
     <TargetFrameworks>$(DefaultNetCoreTargetFramework);netstandard2.0</TargetFrameworks>
     <AssemblyName>Karambolo.AspNetCore.Bundling.EcmaScript</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.EcmaScript</RootNamespace>
-    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />
@@ -14,11 +13,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <!--<PackageReference Include="Esprima" Version="3.0.0-beta-2" />-->
+    <PackageReference Include="Esprima" Version="3.0.0-beta-9" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Ref\esprima-dotnet\src\Esprima\Esprima.csproj" />
     <ProjectReference Include="..\Bundling\Bundling.csproj" />
   </ItemGroup>
 

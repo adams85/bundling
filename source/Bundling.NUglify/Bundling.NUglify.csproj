@@ -4,7 +4,6 @@
     <TargetFrameworks>$(DefaultNetCoreTargetFramework);netstandard2.0</TargetFrameworks>
     <AssemblyName>Karambolo.AspNetCore.Bundling.NUglify</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.NUglify</RootNamespace>
-    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />

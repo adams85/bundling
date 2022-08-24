@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Esprima;
 using Esprima.Ast;
-using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
@@ -18,7 +17,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             public string Content { get; set; }
 
-            public ParserOptions ParserOptions { get; set; }
             public Program Ast { get; set; }
             public Dictionary<IModuleResource, string> ModuleRefs { get; set; }
             public List<ExportData> ExportsRaw { get; set; }

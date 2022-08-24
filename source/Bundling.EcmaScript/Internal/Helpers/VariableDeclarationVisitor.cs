@@ -89,18 +89,18 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 }
         }
 
-        public void VisitCatchClause(CatchClause catchClause)
+        public void VisitCatchClauseParam(CatchClause catchClause)
         {
             if (catchClause.Param != null)
                 VisitVariableBinding(catchClause.Param);
         }
 
-        public void VisitFunction(IFunction function)
+        public void VisitFunctionParams(IFunction function)
         {
             VisitArrayPatternElements(in function.Params);
         }
 
-        public void VisitVariableDeclarator(VariableDeclarator variableDeclarator)
+        public void VisitVariableDeclaratorId(VariableDeclarator variableDeclarator)
         {
             VisitVariableBinding(variableDeclarator.Id);
         }
