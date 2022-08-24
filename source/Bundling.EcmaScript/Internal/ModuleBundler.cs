@@ -58,13 +58,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         internal static ParserOptions CreateParserOptions()
         {
-            return new ParserOptions() { AdaptRegexp = false, Comment = false, Tokens = false, Tolerant = false };
+            return new ParserOptions { AdaptRegexp = false, Comments = false, Tokens = false, Tolerant = false };
         }
 
         private Program ParseModuleContent(ModuleData module)
         {
-            var parser = new JavaScriptParser(module.Content, module.ParserOptions);
-            try { return parser.ParseModule(); }
+            var parser = new JavaScriptParser(module.ParserOptions);
+            try { return parser.ParseModule(module.Content); }
             catch (Exception ex) { throw _logger.ParsingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
 

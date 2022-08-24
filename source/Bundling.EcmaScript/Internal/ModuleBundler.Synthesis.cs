@@ -54,12 +54,15 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return result;
             }
 
-            private Scanner CreateScannerFor(Node node) => new Scanner(_module.Content, _module.ParserOptions)
+            private Scanner CreateScannerFor(Node node)
             {
-                Index = node.Range.Start,
-                LineNumber = node.Location.Start.Line,
-                LineStart = node.Range.Start - node.Location.Start.Column
-            };
+                var scanner = new Scanner(_module.Content, _module.ParserOptions);
+                scanner.Reset(
+                    startIndex: node.Range.Start,
+                    lineNumber: node.Location.Start.Line,
+                    lineStartIndex: node.Range.Start - node.Location.Start.Column);
+                return scanner;
+            }
 
             private VariableDeclarationVisitor<SubstitutionCollector> CreateVariableDeclarationVisitor() =>
                 new VariableDeclarationVisitor<SubstitutionCollector>(this, visitRewritableExpression: (sc, expression) => sc.Visit(expression));
@@ -87,43 +90,56 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _substitutions.Add(identifier.Range, value);
             }
 
+            protected override object VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
+            {
+                VisitFunctionCore(arrowFunctionExpression);
+
+                return arrowFunctionExpression;
+            }
+
             protected override object VisitBreakStatement(BreakStatement breakStatement)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
-                
+
                 return breakStatement;
             }
 
             protected override object VisitCatchClause(CatchClause catchClause)
             {
                 // Catch clause error parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitCatchClause(catchClause);
+                CreateVariableDeclarationVisitor().VisitCatchClauseParam(catchClause);
 
                 Visit(catchClause.Body);
 
                 return catchClause;
             }
 
-            protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
+            private void VisitClassCore(IClass @class)
             {
+                ref readonly NodeList<Decorator> decorators = ref @class.Decorators;
+                for (var i = 0; i < decorators.Count; i++)
+                {
+                    Visit(decorators[i]);
+                }
+
                 // Class name identifier is not subject to rewriting, thus, skipped.
 
-                if (classDeclaration.SuperClass != null)
-                    Visit(classDeclaration.SuperClass);
+                if (@class.SuperClass != null)
+                    Visit(@class.SuperClass);
 
-                Visit(classDeclaration.Body);
+                Visit(@class.Body);
+            }
+
+            protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
+            {
+                VisitClassCore(classDeclaration);
 
                 return classDeclaration;
             }
 
             protected override object VisitClassExpression(ClassExpression classExpression)
             {
-                // Class name identifier is not subject to rewriting, thus, skipped.
-
-                if (classExpression.SuperClass != null)
-                    Visit(classExpression.SuperClass);
-
-                Visit(classExpression.Body);
+                VisitClassCore(classExpression);
 
                 return classExpression;
             }
@@ -131,7 +147,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override object VisitContinueStatement(ContinueStatement continueStatement)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
-                
+
                 return continueStatement;
             }
 
@@ -148,10 +164,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     case FunctionDeclaration functionDeclaration when functionDeclaration.Id != null:
                     case ClassDeclaration classDeclaration when classDeclaration.Id != null:
-                        _substitutions.Add(new Range(exportDefaultDeclaration.Range.Start, FindActualDeclarationStart(exportDefaultDeclaration)), StringSegment.Empty);
+                        _substitutions.Add(Range.From(exportDefaultDeclaration.Range.Start, FindActualDeclarationStart(exportDefaultDeclaration)), StringSegment.Empty);
                         break;
                     default:
-                        _substitutions.Add(new Range(exportDefaultDeclaration.Range.Start, FindActualDeclarationStart(exportDefaultDeclaration)), string.Concat("var ", DefaultExportId, " = "));
+                        _substitutions.Add(Range.From(exportDefaultDeclaration.Range.Start, FindActualDeclarationStart(exportDefaultDeclaration)), string.Concat("var ", DefaultExportId, " = "));
                         break;
                 }
 
@@ -177,7 +193,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 if (exportNamedDeclaration.Declaration == null)
                     _substitutions.Add(exportNamedDeclaration.Range, StringSegment.Empty);
                 else
-                    _substitutions.Add(new Range(exportNamedDeclaration.Range.Start, exportNamedDeclaration.Declaration.Range.Start), StringSegment.Empty);
+                    _substitutions.Add(Range.From(exportNamedDeclaration.Range.Start, exportNamedDeclaration.Declaration.Range.Start), StringSegment.Empty);
 
                 return base.VisitExportNamedDeclaration(exportNamedDeclaration);
             }
@@ -189,14 +205,26 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return exportSpecifier;
             }
 
-            protected override object VisitFunctionExpression(FunctionExpression functionExpression)
+            private void VisitFunctionCore(IFunction function)
             {
-                // Class name identifier is not subject to rewriting, thus, skipped.
+                // Function name identifier is not subject to rewriting, thus, skipped.
 
                 // Function parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitFunction(functionExpression);
+                CreateVariableDeclarationVisitor().VisitFunctionParams(function);
 
-                Visit(functionExpression.Body);
+                Visit(function.Body);
+            }
+
+            protected override object VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
+            {
+                VisitFunctionCore(functionDeclaration);
+
+                return functionDeclaration;
+            }
+
+            protected override object VisitFunctionExpression(FunctionExpression functionExpression)
+            {
+                VisitFunctionCore(functionExpression);
 
                 return functionExpression;
             }
@@ -210,6 +238,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitImport(Import import)
             {
+                // TODO: attributes?
+
                 if (VariableDeclarationAnalyzer.IsRewritableDynamicImport(import, out Literal sourceLiteral))
                 {
                     IModuleResource source = _module.Resource.Resolve(sourceLiteral.StringValue, default(object), delegate { throw new InvalidOperationException(); });
@@ -224,6 +254,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
             {
+                // TODO: assertions?
+
                 _substitutions.Add(importDeclaration.Range, StringSegment.Empty);
 
                 return base.VisitImportDeclaration(importDeclaration);
@@ -278,16 +310,27 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return metaProperty;
             }
 
-            protected override object VisitMethodDefinition(MethodDefinition methodDefinitions)
+            protected override object VisitMethodDefinition(MethodDefinition methodDefinition)
             {
-                // Method name identifier is not subject to rewriting, thus, skipped.
+                ref readonly NodeList<Decorator> decorators = ref methodDefinition.Decorators;
+                for (var i = 0; i < decorators.Count; i++)
+                {
+                    Visit(decorators[i]);
+                }
+
+                VisitPropertyCore(methodDefinition);
+
+                Visit(methodDefinition.Value);
+
+                return methodDefinition;
+            }
+
+            private void VisitPropertyCore(IProperty property)
+            {
+                // Property name identifier is not subject to rewriting, thus, skipped.
                 // Computed keys needs to be visited though.
-                if (methodDefinitions.Computed)
-                    Visit(methodDefinitions.Key);
-
-                Visit(methodDefinitions.Value);
-
-                return methodDefinitions;
+                if (property.Computed)
+                    Visit(property.Key);
             }
 
             protected override object VisitProperty(Property property)
@@ -297,18 +340,33 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     var identifier = (Identifier)property.Value;
                     AddSubstitutionIfImported(identifier, delegate (Identifier id, ref string value) { value = id.Name + ": " + value; });
+                }
+                else
+                {
+                    VisitPropertyCore(property);
 
-                    return property;
+                    Visit(property.Value);
                 }
 
-                // Property name identifier is not subject to rewriting, thus, skipped.
-                // Computed keys needs to be visited though.
-                if (property.Computed)
-                    Visit(property.Key);
-
-                Visit(property.Value);
-
                 return property;
+            }
+
+            protected override object VisitPropertyDefinition(PropertyDefinition propertyDefinition)
+            {
+                ref readonly NodeList<Decorator> decorators = ref propertyDefinition.Decorators;
+                for (var i = 0; i < decorators.Count; i++)
+                {
+                    Visit(decorators[i]);
+                }
+
+                VisitPropertyCore(propertyDefinition);
+
+                if (propertyDefinition.Value != null)
+                {
+                    Visit(propertyDefinition.Value);
+                }
+
+                return propertyDefinition;
             }
 
             protected override object VisitVariableDeclaration(VariableDeclaration variableDeclaration)
@@ -321,7 +379,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     VariableDeclarator variableDeclarator = declarations[i];
 
                     // Variable identifier(s) are not subject to rewriting, thus, skipped.
-                    variableDeclarationVisitor.VisitVariableDeclarator(variableDeclarator);
+                    variableDeclarationVisitor.VisitVariableDeclaratorId(variableDeclarator);
 
                     if (variableDeclarator.Init != null)
                         Visit(variableDeclarator.Init);

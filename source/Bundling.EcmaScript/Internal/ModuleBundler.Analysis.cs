@@ -41,20 +41,16 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private string GetExportImportName(Expression expression)
             {
                 return
-                (
                     expression is Identifier identifier ? identifier.Name :
                     expression is Literal literal && literal.TokenType == TokenType.StringLiteral ? literal.StringValue :
-                    null
-                ) ?? throw InvalidExportImportNameExpression(expression);
+                    throw InvalidExportImportNameExpression(expression);
             }
 
             private string GetLocalName(Expression expression)
             {
                 return
-                (
                     expression is Identifier identifier ? identifier.Name :
-                    null
-                ) ?? throw InvalidExportImportNameExpression(expression);
+                    throw InvalidExportImportNameExpression(expression);
             }
 
             private void ExtractExports(ExportAllDeclaration exportAllDeclaration)
@@ -136,7 +132,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                             ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
                             for (var i = 0; i < declarations.Count; i++)
-                                variableDeclarationVisitor.VisitVariableDeclarator(declarations[i]);
+                                variableDeclarationVisitor.VisitVariableDeclaratorId(declarations[i]);
                             break;
                         case FunctionDeclaration functionDeclaration:
                             _module.ExportsRaw.Add(new NamedExportData(functionDeclaration.Id.Name));

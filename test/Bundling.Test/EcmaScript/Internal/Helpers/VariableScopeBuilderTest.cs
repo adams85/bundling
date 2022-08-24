@@ -42,7 +42,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopeBuilder = new VariableScopeBuilder();
             scopeBuilder.Visit(moduleAst);
@@ -112,7 +112,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -206,7 +206,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -293,7 +293,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -367,7 +367,7 @@ function globalFunc3() { }
 })()
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -499,7 +499,7 @@ function globalFunc3() { }
 })()
 ";
 
-            Module moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseModule();
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -596,7 +596,7 @@ function f4(a = foo) {
 }
 ";
 
-            Script moduleAst = new JavaScriptParser(moduleContent, ModuleBundler.CreateParserOptions()).ParseScript();
+            Script moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseScript(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
