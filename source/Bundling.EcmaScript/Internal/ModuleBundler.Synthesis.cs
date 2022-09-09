@@ -28,6 +28,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private readonly SortedDictionary<Range, StringSegment> _substitutions;
 
             private VariableScope _currentVariableScope;
+            private Scanner _scanner;
 
             public SubstitutionCollector(ModuleBundler bundler, ModuleData module, SortedDictionary<Range, StringSegment> substitutions)
             {
@@ -44,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public override object Visit(Node node)
             {
                 VariableScope previousVariableScope = _currentVariableScope;
-                if (node.GetAdditionalData(typeof(VariableScope)) is VariableScope variableScope)
+                if (node.AssociatedData is VariableScope variableScope)
                     _currentVariableScope = variableScope;
 
                 var result = base.Visit(node);
@@ -54,14 +55,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return result;
             }
 
-            private Scanner CreateScannerFor(Node node)
+            private void SetScannerTo(Node node)
             {
-                var scanner = new Scanner(_module.Content, _module.ParserOptions);
-                scanner.Reset(
+                _scanner ??= new Scanner(_module.Content, _bundler.CreateScannerOptions());
+
+                _scanner.Reset(
                     startIndex: node.Range.Start,
                     lineNumber: node.Location.Start.Line,
                     lineStartIndex: node.Range.Start - node.Location.Start.Column);
-                return scanner;
             }
 
             private VariableDeclarationVisitor<SubstitutionCollector> CreateVariableDeclarationVisitor() =>
@@ -177,14 +178,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // so we need to do some gymnastics to determine the actual start of the declaration/expression.
                 int FindActualDeclarationStart(ExportDefaultDeclaration declaration)
                 {
-                    Scanner scanner = CreateScannerFor(declaration);
+                    SetScannerTo(declaration);
 
-                    scanner.Lex(); // skip export keyword
-                    scanner.ScanComments(); // skip possible comments/whitespace
-                    scanner.Lex(); // skip default keyword
-                    scanner.ScanComments(); // skip possible comments/whitespace
+                    _scanner.Lex(); // skip export keyword
+                    _scanner.ScanComments(); // skip possible comments/whitespace
+                    _scanner.Lex(); // skip default keyword
+                    _scanner.ScanComments(); // skip possible comments/whitespace
 
-                    return scanner.Index;
+                    return _scanner.Index;
                 }
             }
 

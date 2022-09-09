@@ -24,7 +24,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         private readonly Action<Node, VariableScope> _recordVariableScope;
         private VariableScope _currentVariableScope;
 
-        public VariableScopeBuilder() : this((node, scope) => node.SetAdditionalData(typeof(VariableScope), scope)) { }
+        public VariableScopeBuilder() : this((node, scope) => node.AssociatedData = scope) { }
 
         public VariableScopeBuilder(Action<Node, VariableScope> recordVariableScope)
         {

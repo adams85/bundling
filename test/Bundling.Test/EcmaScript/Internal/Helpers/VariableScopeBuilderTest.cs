@@ -47,7 +47,7 @@ function globalFunc3() { }
             var scopeBuilder = new VariableScopeBuilder();
             scopeBuilder.Visit(moduleAst);
 
-            var globalBlockScope = (VariableScope)moduleAst.GetAdditionalData(typeof(VariableScope));
+            var globalBlockScope = (VariableScope)moduleAst.AssociatedData;
             Assert.IsType<VariableScope.GlobalBlock>(globalBlockScope);
 
             Assert.Same(globalBlockScope, globalBlockScope.FindIdentifier("defaultImport"));

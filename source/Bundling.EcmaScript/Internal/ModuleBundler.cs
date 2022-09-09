@@ -22,12 +22,15 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private readonly ILogger _logger;
         private readonly string _br;
         private readonly bool _developmentMode;
+        private readonly ParserOptions _parserOptions;
 
         public ModuleBundler(ILoggerFactory loggerFactory = null, ModuleBundlerOptions options = null)
         {
             _logger = loggerFactory?.CreateLogger<ModuleBundler>() ?? (ILogger)NullLogger.Instance;
             _br = options?.NewLine ?? Environment.NewLine;
             _developmentMode = options?.DevelopmentMode ?? false;
+
+            _parserOptions = CreateParserOptions();
 
             Files = new Dictionary<FileModuleResource, (bool, Task<string>)>(new FileModuleResource.AbstractionFileComparer());
             Modules = new Dictionary<IModuleResource, ModuleData>();
@@ -61,9 +64,21 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             return new ParserOptions { AdaptRegexp = false, Comments = false, Tokens = false, Tolerant = false };
         }
 
+        private ScannerOptions CreateScannerOptions()
+        {
+            return new ScannerOptions
+            {
+                AdaptRegexp = _parserOptions.AdaptRegexp,
+                Comments = _parserOptions.Comments,
+                ErrorHandler = _parserOptions.ErrorHandler,
+                RegexTimeout = _parserOptions.RegexTimeout,
+                Tolerant = _parserOptions.Tolerant,
+            };
+        }
+
         private Program ParseModuleContent(ModuleData module)
         {
-            var parser = new JavaScriptParser(module.ParserOptions);
+            var parser = new JavaScriptParser(_parserOptions);
             try { return parser.ParseModule(module.Content); }
             catch (Exception ex) { throw _logger.ParsingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
@@ -76,7 +91,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 await LoadModuleContentAsync(module, token).ConfigureAwait(false);
 
-                module.ParserOptions = CreateParserOptions();
                 module.Ast = ParseModuleContent(module);
                 module.ModuleRefs = new Dictionary<IModuleResource, string>();
                 module.ExportsRaw = new List<ExportData>();
