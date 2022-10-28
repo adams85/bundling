@@ -57,7 +57,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void SetScannerTo(Node node)
             {
-                _scanner ??= new Scanner(_module.Content, _bundler.CreateScannerOptions());
+                _scanner ??= new Scanner(_module.Content, _bundler._parserOptions.ScannerOptions);
 
                 _scanner.Reset(
                     startIndex: node.Range.Start,

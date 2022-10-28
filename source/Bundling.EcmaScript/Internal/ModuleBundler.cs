@@ -64,18 +64,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             return new ParserOptions { AdaptRegexp = false, Comments = false, Tokens = false, Tolerant = false };
         }
 
-        private ScannerOptions CreateScannerOptions()
-        {
-            return new ScannerOptions
-            {
-                AdaptRegexp = _parserOptions.AdaptRegexp,
-                Comments = _parserOptions.Comments,
-                ErrorHandler = _parserOptions.ErrorHandler,
-                RegexTimeout = _parserOptions.RegexTimeout,
-                Tolerant = _parserOptions.Tolerant,
-            };
-        }
-
         private Program ParseModuleContent(ModuleData module)
         {
             var parser = new JavaScriptParser(_parserOptions);
