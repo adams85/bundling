@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Esprima;
 using Esprima.Ast;
 using Esprima.Utils;
@@ -13,8 +15,8 @@ using Microsoft.Extensions.Primitives;
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     using Range = Esprima.Range;
+    using ExportDictionary = Dictionary<string, (ModuleBundler.ExportData Export, bool IsExportedViaWildcard)>;
 
-    // TODO: check existing visitations & add new ones
     internal partial class ModuleBundler
     {
         private delegate void SubstitutionAdjuster(Identifier identifier, ref string value);
@@ -78,7 +80,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 switch (import)
                 {
                     case NamedImportData namedImport:
-                        value = GetModuleVariableRef(_module.ModuleRefs[import.Source], namedImport.ImportName);
+                        value = GetImportVariableRef(_module.ModuleRefs[import.Source], namedImport.ImportName);
                         break;
                     case NamespaceImportData _:
                         value = _module.ModuleRefs[import.Source];
@@ -156,7 +158,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 _substitutions.Add(exportAllDeclaration.Range, StringSegment.Empty);
 
-                return base.VisitExportAllDeclaration(exportAllDeclaration);
+                return exportAllDeclaration;
             }
 
             protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
@@ -172,7 +174,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         break;
                 }
 
-                return base.VisitExportDefaultDeclaration(exportDefaultDeclaration);
+                Visit(exportDefaultDeclaration.Declaration);
+
+                return exportDefaultDeclaration;
 
                 // exportDefaultDeclaration.Declaration.Range doesn't include preceding comments or parentheses,
                 // so we need to do some gymnastics to determine the actual start of the declaration/expression.
@@ -191,12 +195,16 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
             {
-                if (exportNamedDeclaration.Declaration == null)
-                    _substitutions.Add(exportNamedDeclaration.Range, StringSegment.Empty);
-                else
+                if (exportNamedDeclaration.Declaration != null)
+                {
                     _substitutions.Add(Range.From(exportNamedDeclaration.Range.Start, exportNamedDeclaration.Declaration.Range.Start), StringSegment.Empty);
 
-                return base.VisitExportNamedDeclaration(exportNamedDeclaration);
+                    Visit(exportNamedDeclaration.Declaration);
+                }
+                else
+                    _substitutions.Add(exportNamedDeclaration.Range, StringSegment.Empty);
+
+                return exportNamedDeclaration;
             }
 
             protected override object VisitExportSpecifier(ExportSpecifier exportSpecifier)
@@ -239,7 +247,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitImport(Import import)
             {
-                // TODO: attributes?
+                // TODO: Support for attributes?
 
                 if (VariableDeclarationAnalyzer.IsRewritableDynamicImport(import, out Literal sourceLiteral))
                 {
@@ -255,11 +263,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
             {
-                // TODO: assertions?
+                // TODO: Support for assertions?
 
                 _substitutions.Add(importDeclaration.Range, StringSegment.Empty);
 
-                return base.VisitImportDeclaration(importDeclaration);
+                return importDeclaration;
             }
 
             protected override object VisitImportDefaultSpecifier(ImportDefaultSpecifier importDefaultSpecifier)
@@ -412,7 +420,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private sealed class RewriteModuleLocals
         {
             public HashSet<ModuleData> VisitedModules { get; } = new HashSet<ModuleData>();
-            public Dictionary<string, ExportData> Exports { get; } = new Dictionary<string, ExportData>();
+            public ExportDictionary Exports { get; } = new ExportDictionary();
             public SortedDictionary<Range, StringSegment> Substitutions { get; } = new SortedDictionary<Range, StringSegment>(DescendingRangeComparer.Instance);
             public StringBuilder StringBuilder { get; } = new StringBuilder();
 
@@ -459,9 +467,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             return ModuleIdPrefix + uniqueId;
         }
 
-        private static string GetModuleVariableRef(string moduleRef, string localName)
+        private static string GetImportVariableRef(string moduleRef, ExportName importName)
         {
-            return moduleRef + "." + localName;
+            return
+                !importName.IsLiteral ?
+                moduleRef + "." + importName.Value :
+                moduleRef + "[" + importName.RawValue + "]";
         }
 
         private void AppendPolyfills(StringBuilder sb, ModuleData module)
@@ -478,10 +489,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 sb.Append("var ").Append(ImportMetaId).Append(" = ").Append("{ }").Append(';').Append(_br);
 
+                var escapedResourceUrl = HttpUtility.JavaScriptStringEncode(module.Resource.SecureUrl.ToStringEscaped());
                 sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
                     .Append(ImportMetaId).Append(", ")
                     .Append('"').Append("url").Append('"').Append(", ")
-                    .Append("function() { return ").Append('"').Append(module.Resource.SecureUrl.ToStringEscaped()).Append('"').Append("; }").Append(')').Append(';').Append(_br);
+                    .Append("function() { return ").Append('"').Append(escapedResourceUrl).Append('"').Append("; }").Append(')').Append(';').Append(_br);
             }
         }
 
@@ -497,18 +509,24 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
                 sb.Append("var ").Append(moduleRef).Append(" = ").Append(RequireId).Append('(')
-                    .Append('"').Append(resource.Id).Append('"').Append(')').Append(';').Append(_br);
+                    .Append('"').Append(resource.IdEscaped).Append('"').Append(')').Append(';').Append(_br);
         }
 
-        private StringBuilder AppendNamedExportDefinition(StringBuilder sb, string exportName, string localExpression)
+        private StringBuilder AppendNamedExportDefinition(StringBuilder sb, ExportName exportName, string localExpression)
         {
-            return sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
-                .Append(ExportsId).Append(", ")
-                .Append('"').Append(exportName).Append('"').Append(", ")
+            sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
+                .Append(ExportsId).Append(", ");
+
+            if (!exportName.IsLiteral)
+                sb.Append('"').Append(exportName.Value).Append('"');
+            else
+                sb.Append(exportName.RawValue);
+           
+            return sb.Append(", ")
                 .Append("function() { return ").Append(localExpression).Append("; }").Append(')');
         }
 
-        private void AppendExports(StringBuilder sb, ModuleData module, Dictionary<string, ExportData> exports)
+        private void AppendExports(StringBuilder sb, ModuleData module, ExportDictionary exports)
         {
             if (_developmentMode)
             {
@@ -518,47 +536,98 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     sb.Append("/* Exports */").Append(_br);
             }
 
-            foreach (ExportData export in exports.Values)
+            foreach ((ExportData export, _) in exports.Values)
             {
                 switch (export)
                 {
-                    case ReexportData reexport:
-                        AppendNamedExportDefinition(sb, reexport.ExportName, GetModuleVariableRef(module.ModuleRefs[reexport.Source], reexport.LocalName));
-                        break;
                     case NamedExportData namedExport:
                         AppendNamedExportDefinition(sb, namedExport.ExportName, namedExport.LocalName);
+                        break;
+                    case ReexportData reexport:
+                        AppendNamedExportDefinition(sb, reexport.ExportName, GetImportVariableRef(module.ModuleRefs[reexport.Source], reexport.ImportName));
+                        break;
+                    case WildcardReexportData wildcardReexport:
+                        AppendNamedExportDefinition(sb, wildcardReexport.ExportName, module.ModuleRefs[wildcardReexport.Source]);
                         break;
                 }
                 sb.Append(';').Append(_br);
             }
         }
 
-        private void ExpandExports(Dictionary<string, ExportData> exports, HashSet<ModuleData> visitedModules, ModuleData module,
-            ModuleData rootModule, IModuleResource exportAllSource = null)
+        private void ExpandExports(ExportDictionary exports, ModuleData module, HashSet<ModuleData> visitedModules)
         {
-            // TODO: wildcard re-exports may cause redeclarations
+            // * If there are two wildcard exports statements that implicitly re-export the same name, neither one is re-exported.
+            //   (See also: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export#re-exporting_aggregating)
+            // * Exports by identifier and exports by string literal are not distinguished.
+            //   (But comparison must be performed with unescaped string literal values!)
 
-            for (int i = 0, n = module.ExportsRaw.Count; i < n; i++)
+            Queue<(WildcardReexportData Reexport, IModuleResource ImportSource)> wildcardReexportQueue = null;
+            WildcardReexportData wildcardReexport;
+
+            // 1. Add exports of entry module
+            int i, n;
+            for (i = 0, n = module.ExportsRaw.Count; i < n; i++)
             {
                 ExportData export = module.ExportsRaw[i];
 
-                // wildcard re-exports (export * from '...';)
-                if (export is ExportAllData exportAll)
+                wildcardReexport = export as WildcardReexportData;
+                if (wildcardReexport == null || wildcardReexport.ExportName.HasValue)
                 {
-                    ModuleData reexportedModule = Modules[exportAll.Source];
-
-                    // detecting circular references
-                    if (visitedModules.Add(reexportedModule))
-                        ExpandExports(exports, visitedModules, reexportedModule, rootModule, exportAllSource ?? exportAll.Source);
+                    exports[export.ExportName.Value] = (export, false);
                 }
-                // normal exports of the root module
-                else if (exportAllSource == null)
-                    exports[export.ExportName] = export;
-                // normal exports of other modules when expanding a wildcard re-export
-                // (except for default exports, which aren't visible in this case)
-                else if (export.ExportName != DefaultExportName)
-                    exports[export.ExportName] = new ReexportData(exportAllSource, export.ExportName, export.ExportName);
+                else
+                {
+                    if (visitedModules.Count == 0)
+                        visitedModules.Add(module);
+
+                    wildcardReexportQueue ??= new Queue<(WildcardReexportData, IModuleResource)>(capacity: 1);
+                    wildcardReexportQueue.Enqueue((wildcardReexport, wildcardReexport.Source));
+                }
             }
+
+            if (wildcardReexportQueue == null)
+                return;
+
+
+            HashSet<string> exportNamesToRemove = null;
+
+            // 2. Discover exports of wildcard re-exported modules by BFS traversing them
+            while (wildcardReexportQueue.Count > 0)
+            {
+                IModuleResource importSource;
+                (wildcardReexport, importSource) = wildcardReexportQueue.Dequeue();
+
+                module = Modules[wildcardReexport.Source];
+
+                for (i = 0, n = module.ExportsRaw.Count; i < n; i++)
+                {
+                    ExportData export = module.ExportsRaw[i];
+
+                    wildcardReexport = export as WildcardReexportData;
+                    if (wildcardReexport == null || wildcardReexport.ExportName.HasValue)
+                    {
+                        if (!exports.TryGetValue(export.ExportName.Value, out (ExportData Export, bool IsExportedViaWildcard) entry))
+                        {
+                            export = new ReexportData(importSource, export.ExportName, export.ExportName);
+                            exports[export.ExportName.Value] = (export, true);
+                        }
+                        else if (entry.IsExportedViaWildcard)
+                        {
+                            exportNamesToRemove ??= new HashSet<string>();
+                            exportNamesToRemove.Add(export.ExportName.Value);
+                        }
+                    }
+                    else if(visitedModules.Add(module))
+                        wildcardReexportQueue.Enqueue((wildcardReexport, importSource));
+                }
+            }
+
+            if (exportNamesToRemove == null)
+                return;
+
+            // 3. Remove ambigous exports of wildcard re-exported modules  
+            foreach (string exportName in exportNamesToRemove)
+                exports.Remove(exportName);
         }
 
         private RewriteModuleLocals RewriteModule(ModuleData module, ParallelLoopState loopState, RewriteModuleLocals locals)
@@ -566,7 +635,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             locals.Reset();
 
             HashSet<ModuleData> visitedModules = locals.VisitedModules;
-            Dictionary<string, ExportData> exports = locals.Exports;
+            ExportDictionary exports = locals.Exports;
             SortedDictionary<Range, StringSegment> substitutions = locals.Substitutions;
             StringBuilder sb = locals.StringBuilder;
 
@@ -584,8 +653,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             // define exports
 
-            visitedModules.Add(module);
-            ExpandExports(exports, visitedModules, module, module);
+            ExpandExports(exports, module, visitedModules);
 
             if (exports.Count > 0)
                 AppendExports(sb, module, exports);
@@ -637,7 +705,7 @@ $@"(function (modules) {{
             for (int i = 0, n = rootModules.Length; i < n; i++)
             {
                 ModuleData module = rootModules[i];
-                sb.Append(' ', 4).Append($"{RequireId}(\"{module.Resource.Id}\");").Append(_br);
+                sb.Append(' ', 4).Append($"{RequireId}(\"{module.Resource.IdEscaped}\");").Append(_br);
             }
 
             sb.Append("})({");
@@ -651,7 +719,7 @@ $@"(function (modules) {{
                 else
                     sb.Append(',');
 
-                sb.Append(_br).Append(' ', 4).Append($"\"{module.Resource.Id}\": function ({RequireId}, {ExportsId}) {{").Append(_br);
+                sb.Append(_br).Append(' ', 4).Append($"\"{module.Resource.IdEscaped}\": function ({RequireId}, {ExportsId}) {{").Append(_br);
 
                 if (_developmentMode)
                 {

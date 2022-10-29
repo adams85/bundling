@@ -495,6 +495,36 @@ console.log(y);
         }
 
         [Fact]
+        public async Task Import_CircularReference_SelfWithWildcardReexport()
+        {
+            var fooContent =
+@"export { x }
+var x = 0;
+export * from './foo.js';
+console.log(x);
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/foo.js", fooContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js");
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "__es$require.d(__es$exports, \"x\", function() { return x; });",
+                "var x = 0;",
+                "console.log(x);",
+            }, fooLines);
+        }
+
+        [Fact]
         public async Task Import_CircularReference_With_Reexports()
         {
             var fooContent =
@@ -1021,6 +1051,160 @@ i = 1;
                 "var i, length;",
                 "i = 1;",
             }, fooLines);
+        }
+
+        [Fact]
+        public async Task Reexport_Everything_NameCollision()
+        {
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export#re-exporting_aggregating)
+            // "If there are two wildcard exports statements that implicitly re-export the same name, neither one is re-exported."
+
+            var fooContent =
+@"export * from './bar';
+export * from './baz';";
+
+            var barContent =
+@"export const [a, b] = [1, 2];";
+
+            var bazContent =
+@"export * from './qux';";
+
+            var quxContent =
+@"export const a = 1;
+import * as foo from './foo';
+console.log(foo.a, foo.b);";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+            fileProvider.CreateFile("/baz.js", bazContent);
+            fileProvider.CreateFile("/qux.js", quxContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "var __es$module_1 = __es$require(\"/baz.js\");",
+                "__es$require.d(__es$exports, \"b\", function() { return __es$module_0.b; });",
+            }, fooLines);
+        }
+
+        [Fact]
+        public async Task Reexport_Everything_AsNamespace()
+        {
+            // https://exploringjs.com/impatient-js/ch_modules.html#module-exports
+
+            var fooContent =
+@"export const a = 1;
+import { ns } from './bar.js';
+console.log(a, ns.a);";
+
+            var barContent =
+@"export * as ns from './foo.js';";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "__es$require.d(__es$exports, \"a\", function() { return a; });",
+                "const a = 1;",
+                "console.log(a, __es$module_0.ns.a);"
+            }, fooLines);
+            
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "__es$require.d(__es$exports, \"ns\", function() { return __es$module_0; });"
+            }, barLines);
+        }
+
+        [Fact]
+        public async Task Reexport_Everything_AsNamespace_Self()
+        {
+            // https://exploringjs.com/impatient-js/ch_modules.html#module-exports
+
+            var fooContent =
+@"export * as ns from './foo.js';
+import { ns } from './foo.js';
+export const a = 1;
+console.log(a, ns.a);";
+
+            var fileProvider = new MemoryFileProvider();
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';", "var __es$module_0 = __es$require(\"/foo.js\");",
+                "__es$require.d(__es$exports, \"ns\", function() { return __es$module_0; });",
+                "__es$require.d(__es$exports, \"a\", function() { return a; });", "const a = 1;",
+                "console.log(a, __es$module_0.ns.a);"
+            }, fooLines);
+        }
+
+
+        [Fact]
+        public async Task Export_Import_NameLiterals()
+        {
+            var fooContent =
+@"export { 'a' as a, '\u0061' as 'x', a as '\u0021'} from './bar.js'";
+
+            var barContent =
+@"export const a = 1;
+import { 'a' as a2, x, '\u0021' as em } from './foo.js'
+console.log(a2, x, em);";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "__es$require.d(__es$exports, \"a\", function() { return __es$module_0['a']; });",
+                "__es$require.d(__es$exports, 'x', function() { return __es$module_0['\\u0061']; });",
+                "__es$require.d(__es$exports, '\\u0021', function() { return __es$module_0.a; });",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "__es$require.d(__es$exports, \"a\", function() { return a; });",
+                "const a = 1;",
+                "console.log(__es$module_0['a'], __es$module_0.x, __es$module_0['\\u0021']);"
+            }, barLines);
         }
     }
 }

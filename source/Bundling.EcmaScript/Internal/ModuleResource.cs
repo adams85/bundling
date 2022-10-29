@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
@@ -18,6 +19,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
     internal interface IModuleResource : IEquatable<IModuleResource>
     {
         string Id { get; }
+        string IdEscaped { get; }
         Uri Url { get; }
         Uri SecureUrl { get; }
 
@@ -51,8 +53,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private string _id;
-        public string Id => _id ?? (_id = "<root" + _idNumber.ToString(CultureInfo.InvariantCulture) + ">");
+        public string Id => "<root" + _idNumber.ToString(CultureInfo.InvariantCulture) + ">";
+
+        private string _idEscaped;
+        public string IdEscaped => _idEscaped ??= HttpUtility.JavaScriptStringEncode(Id);
 
         public Uri Url => new Uri("transient:" + Id);
 
@@ -141,8 +145,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         public FileModuleResource(string fileProviderPrefix, ModuleFile moduleFile)
             : this(fileProviderPrefix, moduleFile.FileProvider, UrlUtils.NormalizePath(UrlUtils.NormalizeDirectorySeparators(moduleFile.FilePath)), moduleFile.CaseSensitiveFilePaths) { }
 
-        private string _id;
-        public string Id => _id ?? (_id = _fileProviderPrefix + FilePath + _normalizedParamPart);
+        public string Id => _fileProviderPrefix + FilePath + _normalizedParamPart;
+
+        private string _idEscaped;
+        public string IdEscaped => _idEscaped ??= HttpUtility.JavaScriptStringEncode(Id);
 
         public Uri Url =>
             FileProvider is PhysicalFileProvider physicalFileProvider ?

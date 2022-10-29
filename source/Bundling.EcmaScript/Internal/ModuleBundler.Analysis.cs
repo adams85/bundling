@@ -5,7 +5,6 @@ using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
-    // TODO: (support import, export name literals) + TEST!
     internal partial class ModuleBundler
     {
         private sealed class VariableDeclarationAnalyzer : VariableScopeBuilder
@@ -38,11 +37,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     $"Expression of type {expression.Type} is not a valid export/import name expression.");
             }
 
-            private string GetExportImportName(Expression expression)
+            private ExportName GetExportName(Expression expression)
             {
                 return
-                    expression is Identifier identifier ? identifier.Name :
-                    expression is Literal literal && literal.TokenType == TokenType.StringLiteral ? literal.StringValue :
+                    expression is Identifier identifier ? new ExportName(identifier.Name) :
+                    expression is Literal { TokenType: TokenType.StringLiteral } literal ? new ExportName((string)literal.Value, literal.Raw) :
                     throw InvalidExportImportNameExpression(expression);
             }
 
@@ -55,15 +54,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void ExtractExports(ExportAllDeclaration exportAllDeclaration)
             {
-                if (exportAllDeclaration.Exported != null)
-                {
-                    // TODO: support re-export all as namespace (ExportAllDeclaration.Exported)
-                    throw new NotImplementedException();
-                }
-
                 IModuleResource source = ResolveImportSource(exportAllDeclaration.Source.StringValue);
 
-                _module.ExportsRaw.Add(new ExportAllData(source));
+                ExportName exportName = exportAllDeclaration.Exported != null ? GetExportName(exportAllDeclaration.Exported) : ExportName.None;
+                _module.ExportsRaw.Add(new WildcardReexportData(source, exportName));
 
                 if (!_module.ModuleRefs.ContainsKey(source))
                     _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
@@ -75,17 +69,17 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     // export default function myFunc() {}
                     case FunctionDeclaration functionDeclaration when functionDeclaration.Id != null:
-                        _module.ExportsRaw.Add(new NamedExportData(DefaultExportName, functionDeclaration.Id.Name));
+                        _module.ExportsRaw.Add(new NamedExportData(ExportName.Default, functionDeclaration.Id.Name));
                         break;
                     // export default class MyClass {}
                     case ClassDeclaration classDeclaration when classDeclaration.Id != null:
-                        _module.ExportsRaw.Add(new NamedExportData(DefaultExportName, classDeclaration.Id.Name));
+                        _module.ExportsRaw.Add(new NamedExportData(ExportName.Default, classDeclaration.Id.Name));
                         break;
                     // export default function() { }
                     // export default class { }
                     // export default <expression>;
                     default:
-                        _module.ExportsRaw.Add(new NamedExportData(DefaultExportName, DefaultExportId));
+                        _module.ExportsRaw.Add(new NamedExportData(ExportName.Default, DefaultExportId));
                         break;
                 }
             }
@@ -101,7 +95,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         for (var i = 0; i < specifiers.Count; i++)
                         {
                             ExportSpecifier exportSpecifier = specifiers[i];
-                            _module.ExportsRaw.Add(new NamedExportData(GetExportImportName(exportSpecifier.Exported), GetLocalName(exportSpecifier.Local)));
+                            _module.ExportsRaw.Add(new NamedExportData(GetExportName(exportSpecifier.Exported), GetLocalName(exportSpecifier.Local)));
                         }
                     }
                     // export { default as defaultAlias, a as alias, b } from 'bar.js';
@@ -114,7 +108,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         {
                             ExportSpecifier exportSpecifier = specifiers[i];
 
-                            _module.ExportsRaw.Add(new ReexportData(source, GetExportImportName(exportSpecifier.Exported), GetExportImportName(exportSpecifier.Local)));
+                            _module.ExportsRaw.Add(new ReexportData(source, GetExportName(exportSpecifier.Exported), GetExportName(exportSpecifier.Local)));
                         }
 
                         if (!_module.ModuleRefs.ContainsKey(source))
@@ -154,7 +148,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     {
                         //  import localName from 'src/my_lib';
                         case ImportDefaultSpecifier importDefaultSpecifier:
-                            _module.Imports[importDefaultSpecifier.Local.Name] = new NamedImportData(source, importDefaultSpecifier.Local.Name, DefaultExportName);
+                            _module.Imports[importDefaultSpecifier.Local.Name] = new NamedImportData(source, importDefaultSpecifier.Local.Name, ExportName.Default);
                             break;
                         // import * as my_lib from 'src/my_lib';
                         case ImportNamespaceSpecifier importNamespaceSpecifier:
@@ -163,7 +157,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         // import { name1 } from 'src/my_lib';
                         // import { default as foo } from 'src/my_lib';
                         case ImportSpecifier importSpecifier:
-                            _module.Imports[importSpecifier.Local.Name] = new NamedImportData(source, importSpecifier.Local.Name, GetExportImportName(importSpecifier.Imported));
+                            _module.Imports[importSpecifier.Local.Name] = new NamedImportData(source, importSpecifier.Local.Name, GetExportName(importSpecifier.Imported));
                             break;
                     }
 
