@@ -21,12 +21,12 @@
 
         internal sealed class NamedImportData : ImportData
         {
-            public NamedImportData(IModuleResource source, string localName, string importName) : base(source, localName)
+            public NamedImportData(IModuleResource source, string localName, ExportName importName) : base(source, localName)
             {
                 ImportName = importName;
             }
 
-            public string ImportName { get; }
+            public ExportName ImportName { get; }
         }
     }
 }

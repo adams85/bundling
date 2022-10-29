@@ -17,8 +17,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal sealed partial class ModuleBundler : IModuleBundler
     {
-        public const string DefaultExportName = "default";
-
         private readonly ILogger _logger;
         private readonly string _br;
         private readonly bool _developmentMode;
