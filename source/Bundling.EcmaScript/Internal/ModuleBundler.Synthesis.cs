@@ -435,12 +435,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             }
         }
 
-        private const string RequireId = "__es$require";
-        private const string RequireDefineId = "d";
-        private const string ExportsId = "__es$exports";
         private const string ModuleIdPrefix = "__es$module_";
+        private const string RequireId = "__es$require";
+        private const string FinalizeId = "__es$finalize";
+        private const string DefineId = "__es$define";
         private const string DefaultExportId = "__es$default";
         private const string ImportMetaId = "__es$importMeta";
+        private const int IndentSize = 4;
 
         private static StringBuilder ReplaceRange(StringBuilder sb, string content, int offset, in Range range, in StringSegment segment)
         {
@@ -490,45 +491,42 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append("var ").Append(ImportMetaId).Append(" = ").Append("{ }").Append(';').Append(_br);
 
                 var escapedResourceUrl = HttpUtility.JavaScriptStringEncode(module.Resource.SecureUrl.ToStringEscaped());
-                sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
-                    .Append(ImportMetaId).Append(", ")
-                    .Append('"').Append("url").Append('"').Append(", ")
-                    .Append("function() { return ").Append('"').Append(escapedResourceUrl).Append('"').Append("; }").Append(')').Append(';').Append(_br);
+                sb.Append(DefineId).Append('(')
+                    .Append(ImportMetaId).Append(", {").Append(_br)
+                    .Append(' ', IndentSize).Append("url").Append(": ")
+                    .Append("function() { return ").Append('"').Append(escapedResourceUrl).Append('"').Append("; }")
+                    .Append(_br).Append("});").Append(_br);
             }
         }
 
         private void AppendImports(StringBuilder sb, ModuleData module)
         {
-            if (_developmentMode)
+            if (module.ModuleRefs.Count > 0)
             {
-                sb.Append(_br);
-
                 if (_developmentMode)
-                    sb.Append("/* Imports */").Append(_br);
-            }
+                {
+                    sb.Append(_br);
 
-            foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
-                sb.Append("var ").Append(moduleRef).Append(" = ").Append(RequireId).Append('(')
-                    .Append('"').Append(resource.IdEscaped).Append('"').Append(')').Append(';').Append(_br);
+                    if (_developmentMode)
+                        sb.Append("/* Imports */").Append(_br);
+                }
+
+                foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
+                    sb.Append("var ").Append(moduleRef).Append(" = ").Append(RequireId).Append('(')
+                        .Append('"').Append(resource.IdEscaped).Append('"').Append(')').Append(';').Append(_br);
+            }
         }
 
         private StringBuilder AppendNamedExportDefinition(StringBuilder sb, ExportName exportName, string localExpression)
         {
-            sb.Append(RequireId).Append('.').Append(RequireDefineId).Append('(')
-                .Append(ExportsId).Append(", ");
-
-            if (!exportName.IsLiteral)
-                sb.Append('"').Append(exportName.Value).Append('"');
-            else
-                sb.Append(exportName.RawValue);
-           
-            return sb.Append(", ")
-                .Append("function() { return ").Append(localExpression).Append("; }").Append(')');
+            return sb
+                .Append(!exportName.IsLiteral ? exportName.Value : exportName.RawValue).Append(": ")
+                .Append("function() { return ").Append(localExpression).Append("; }");
         }
 
         private void AppendExports(StringBuilder sb, ModuleData module, ExportDictionary exports)
         {
-            if (_developmentMode)
+            if (_developmentMode && exports.Count > 0)
             {
                 sb.Append(_br);
 
@@ -536,22 +534,36 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     sb.Append("/* Exports */").Append(_br);
             }
 
-            foreach ((ExportData export, _) in exports.Values)
+            sb.Append(FinalizeId).Append("(");
+
+            if (exports.Count > 0)
             {
-                switch (export)
+                sb.Append('{');
+                var separator = string.Empty;
+                foreach ((ExportData export, _) in exports.Values)
                 {
-                    case NamedExportData namedExport:
-                        AppendNamedExportDefinition(sb, namedExport.ExportName, namedExport.LocalName);
-                        break;
-                    case ReexportData reexport:
-                        AppendNamedExportDefinition(sb, reexport.ExportName, GetImportVariableRef(module.ModuleRefs[reexport.Source], reexport.ImportName));
-                        break;
-                    case WildcardReexportData wildcardReexport:
-                        AppendNamedExportDefinition(sb, wildcardReexport.ExportName, module.ModuleRefs[wildcardReexport.Source]);
-                        break;
+                    sb.Append(separator).Append(_br)
+                        .Append(' ', IndentSize);
+
+                    switch (export)
+                    {
+                        case NamedExportData namedExport:
+                            AppendNamedExportDefinition(sb, namedExport.ExportName, namedExport.LocalName);
+                            break;
+                        case ReexportData reexport:
+                            AppendNamedExportDefinition(sb, reexport.ExportName, GetImportVariableRef(module.ModuleRefs[reexport.Source], reexport.ImportName));
+                            break;
+                        case WildcardReexportData wildcardReexport:
+                            AppendNamedExportDefinition(sb, wildcardReexport.ExportName, module.ModuleRefs[wildcardReexport.Source]);
+                            break;
+                    }
+
+                    separator = ",";
                 }
-                sb.Append(';').Append(_br);
+                sb.Append(_br).Append('}');
             }
+
+            sb.Append(");").Append(_br);
         }
 
         private void ExpandExports(ExportDictionary exports, ModuleData module, HashSet<ModuleData> visitedModules)
@@ -617,7 +629,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                             exportNamesToRemove.Add(export.ExportName.Value);
                         }
                     }
-                    else if(visitedModules.Add(module))
+                    else if (visitedModules.Add(module))
                         wildcardReexportQueue.Enqueue((wildcardReexport, importSource));
                 }
             }
@@ -641,24 +653,28 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             sb.Append("'use strict';").Append(_br);
 
+            // require imported modules
+
+            AppendImports(sb, module);
+
+            // define module callback
+
+            sb.Append($"return function (").Append(FinalizeId);
+            if (module.RequiresDefine)
+                sb.Append(", ").Append(DefineId);
+            sb.Append(") {").Append(_br);
+
             // polyfills
 
             if (module.UsesImportMeta)
                 AppendPolyfills(sb, module);
 
-            // require modules
-
-            if (module.ModuleRefs.Count > 0)
-                AppendImports(sb, module);
-
             // define exports
 
             ExpandExports(exports, module, visitedModules);
+            AppendExports(sb, module, exports);
 
-            if (exports.Count > 0)
-                AppendExports(sb, module, exports);
-
-            // content
+            // module content
 
             if (_developmentMode)
                 sb.Append(_br);
@@ -672,6 +688,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             foreach ((Range range, StringSegment segment) in substitutions)
                 ReplaceRange(sb, module.Content, offset, range, in segment);
 
+            sb.Append(_br).Append("};");
+
             module.Content = sb.ToString();
 
             return locals;
@@ -679,47 +697,53 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private ModuleBundlingResult BuildResult(ModuleData[] rootModules)
         {
-            var sb = new StringBuilder(
-$@"(function (modules) {{
-    var moduleCache = {{}};
+            var sb = new StringBuilder();
 
-    function {RequireId}(moduleId) {{
-        var module = moduleCache[moduleId];
-        if (!module) {{
-            moduleCache[moduleId] = module = {{
-                id: moduleId,
-                exports: {{}}
-            }};
-            modules[moduleId].call(module.exports, {RequireId}, module.exports);
-        }}
-        return module.exports;
-    }}
-
-    {RequireId}.d = function (exports, name, getter) {{
-        if (!Object.prototype.hasOwnProperty.call(exports, name))
-            Object.defineProperty(exports, name, {{ enumerable: true, get: getter, set: function() {{ throw new TypeError('Assignment to constant variable.'); }} }});
-    }};
-
-");
+            sb
+                .Append("(function (modules) {").Append(_br)
+                .Append("    var moduleCache = {};").Append(_br)
+                .Append(_br)
+                .Append("    function require(moduleId, imports) {").Append(_br)
+                .Append("        var module = moduleCache[moduleId];").Append(_br)
+                .Append("        if (!module) {").Append(_br)
+                .Append("            moduleCache[moduleId] = module = { id: moduleId, e: {}, i: [] };").Append(_br)
+                .Append($"            var {RequireId} = function (id) {{ return require(id, module.i).e; }};").Append(_br)
+                .Append("            var importCallback = modules[moduleId](__es$require);").Append(_br)
+                .Append($"            var {FinalizeId} = function (properties) {{ define(module.e, properties); finalize(module.i); }};").Append(_br)
+                .Append("            imports.push(importCallback.bind(void 0, __es$finalize, define));").Append(_br)
+                .Append("        }").Append(_br)
+                .Append("        return module;").Append(_br)
+                .Append("    }").Append(_br)
+                .Append(_br)
+                .Append("    function define(obj, properties) {").Append(_br)
+                .Append("        for (var name in properties) {").Append(_br)
+                .Append("            if (!Object.prototype.hasOwnProperty.call(obj, name))").Append(_br)
+                .Append("                Object.defineProperty(obj, name, { enumerable: true, get: properties[name], set: function () { throw new TypeError('Assignment to constant variable.'); } });").Append(_br)
+                .Append("        }").Append(_br)
+                .Append("    }").Append(_br)
+                .Append(_br)
+                .Append("    function finalize(imports) {").Append(_br)
+                .Append("        for (var i = 0; i < imports.length; i++)").Append(_br)
+                .Append("            imports[i]();").Append(_br)
+                .Append("        imports.length = 0;").Append(_br)
+                .Append("    }").Append(_br)
+                .Append(_br)
+                .Append("    var imports = [];").Append(_br);
 
             for (int i = 0, n = rootModules.Length; i < n; i++)
             {
                 ModuleData module = rootModules[i];
-                sb.Append(' ', 4).Append($"{RequireId}(\"{module.Resource.IdEscaped}\");").Append(_br);
+                sb.Append(' ', IndentSize).Append($"require(\"{module.Resource.IdEscaped}\", imports);").Append(_br);
             }
 
+            sb.Append(' ', IndentSize).Append($"finalize(imports);").Append(_br);
             sb.Append("})({");
 
-            var isFirstAppend = true;
-
+            var separator = string.Empty;
             foreach (ModuleData module in Modules.Values)
             {
-                if (isFirstAppend)
-                    isFirstAppend = false;
-                else
-                    sb.Append(',');
-
-                sb.Append(_br).Append(' ', 4).Append($"\"{module.Resource.IdEscaped}\": function ({RequireId}, {ExportsId}) {{").Append(_br);
+                sb.Append(separator).Append(_br)
+                    .Append(' ', IndentSize).Append($"\"{module.Resource.IdEscaped}\": function ({RequireId}) {{").Append(_br);
 
                 if (_developmentMode)
                 {
@@ -735,7 +759,9 @@ $@"(function (modules) {{
                 if (_developmentMode)
                     sb.Append('/').Append('*', 78).Append('/').Append(_br);
 
-                sb.Append(' ', 4).Append('}');
+                sb.Append(' ', IndentSize).Append('}');
+
+                separator = ",";
             }
 
             sb.Append(_br).Append("});").Append(_br);

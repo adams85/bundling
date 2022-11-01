@@ -22,6 +22,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public List<ExportData> ExportsRaw { get; set; }
             public Dictionary<string, ImportData> Imports { get; set; }
             public bool UsesImportMeta { get; set; }
+            public bool RequiresDefine => UsesImportMeta;
         }
     }
 }
