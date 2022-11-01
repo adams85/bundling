@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Jint;
 using Karambolo.AspNetCore.Bundling.Test.Helpers;
 using Xunit;
 
@@ -10,6 +12,15 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     public class ModuleBundlerTest
     {
+        private sealed class ConsoleProxy
+        {
+            private readonly Action<object[]> _onLog;
+
+            public ConsoleProxy(Action<object[]> onLog) => _onLog = onLog;
+
+            public void Log(params object[] args) => _onLog(args);
+        }
+
         private static string[] GetNonEmptyLines(string content)
         {
             string line;
@@ -49,18 +60,22 @@ export class MyClass { method() { return myFunc(); } }";
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"myVar1\", function() { return myVar1; });",
-                "__es$require.d(__es$exports, \"myVar2\", function() { return myVar2; });",
-                "__es$require.d(__es$exports, \"MY_CONST\", function() { return MY_CONST; });",
-                "__es$require.d(__es$exports, \"myFunc\", function() { return myFunc; });",
-                "__es$require.d(__es$exports, \"myGeneratorFunc\", function() { return myGeneratorFunc; });",
-                "__es$require.d(__es$exports, \"MyClass\", function() { return MyClass; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    myVar1: function() { return myVar1; },",
+                "    myVar2: function() { return myVar2; },",
+                "    MY_CONST: function() { return MY_CONST; },",
+                "    myFunc: function() { return myFunc; },",
+                "    myGeneratorFunc: function() { return myGeneratorFunc; },",
+                "    MyClass: function() { return MyClass; }",
+                "});",
                 "var myVar1 = '1';",
                 "let myVar2 = 2;",
                 "const MY_CONST = 3.14;",
                 "function myFunc() { return myVar1; }",
                 "function* myGeneratorFunc() { yield myVar2; }",
                 "class MyClass { method() { return myFunc(); } }",
+                "};",
             }, barLines);
         }
 
@@ -93,18 +108,22 @@ export { myVar1, myVar2 as var2, MY_CONST, myFunc, myGeneratorFunc, MyClass as d
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"myVar1\", function() { return myVar1; });",
-                "__es$require.d(__es$exports, \"var2\", function() { return myVar2; });",
-                "__es$require.d(__es$exports, \"MY_CONST\", function() { return MY_CONST; });",
-                "__es$require.d(__es$exports, \"myFunc\", function() { return myFunc; });",
-                "__es$require.d(__es$exports, \"myGeneratorFunc\", function() { return myGeneratorFunc; });",
-                "__es$require.d(__es$exports, \"default\", function() { return MyClass; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    myVar1: function() { return myVar1; },",
+                "    var2: function() { return myVar2; },",
+                "    MY_CONST: function() { return MY_CONST; },",
+                "    myFunc: function() { return myFunc; },",
+                "    myGeneratorFunc: function() { return myGeneratorFunc; },",
+                "    default: function() { return MyClass; }",
+                "});",
                 "var myVar1 = '1';",
                 "let myVar2 = 2;",
                 "const MY_CONST = 3.14;",
                 "function myFunc() { return myVar1; }",
                 "function* myGeneratorFunc() { yield myVar2; }",
                 "class MyClass { method() { return myFunc(); } }",
+                "};",
             }, barLines);
         }
 
@@ -133,10 +152,14 @@ x = 0;";
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return __es$default; }",
+                "});",
                 "let x;",
                 "var __es$default = x = 3 * 7;",
                 "x = 0;",
+                "};",
             }, barLines);
         }
 
@@ -165,8 +188,12 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return __es$default; }",
+                "});",
                 "var __es$default = ( /***/ class { m() { return __es$module_0.x } }  /***/ )",
+                "};",
             }, barLines);
         }
 
@@ -192,8 +219,12 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"default\", function() { return myFunc; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return myFunc; }",
+                "});",
                 "function myFunc() {}",
+                "};",
             }, barLines);
         }
 
@@ -224,23 +255,31 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/baz.js\");",
-                "__es$require.d(__es$exports, \"myVar1\", function() { return __es$module_0.myVar1; });",
-                "__es$require.d(__es$exports, \"myVar2\", function() { return __es$module_0.myVar2; });",
-                "__es$require.d(__es$exports, \"myVar3\", function() { return __es$module_0.myVar3; });",
-                "__es$require.d(__es$exports, \"rest1\", function() { return __es$module_0.rest1; });",
-                "__es$require.d(__es$exports, \"rest2\", function() { return __es$module_0.rest2; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    myVar1: function() { return __es$module_0.myVar1; },",
+                "    myVar2: function() { return __es$module_0.myVar2; },",
+                "    myVar3: function() { return __es$module_0.myVar3; },",
+                "    rest1: function() { return __es$module_0.rest1; },",
+                "    rest2: function() { return __es$module_0.rest2; }",
+                "});",
+                "};",
             }, barLines);
 
             var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/baz.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"myVar1\", function() { return myVar1; });",
-                "__es$require.d(__es$exports, \"myVar2\", function() { return myVar2; });",
-                "__es$require.d(__es$exports, \"myVar3\", function() { return myVar3; });",
-                "__es$require.d(__es$exports, \"rest1\", function() { return rest1; });",
-                "__es$require.d(__es$exports, \"rest2\", function() { return rest2; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    myVar1: function() { return myVar1; },",
+                "    myVar2: function() { return myVar2; },",
+                "    myVar3: function() { return myVar3; },",
+                "    rest1: function() { return rest1; },",
+                "    rest2: function() { return rest2; }",
+                "});",
                 "var [myVar1, { a: myVar2, b: { c: myVar3, ...rest1} }, ...rest2] = [1, { a: 2, b: { c: 3.14 } }];",
+                "};",
             }, bazLines);
         }
 
@@ -268,6 +307,9 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
@@ -275,6 +317,9 @@ export default /***/ ( /***/ class { m() { return x } }  /***/ )";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
+                "};",
             }, barLines);
         }
 
@@ -306,19 +351,27 @@ export { myVar1 as default, rest };";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/baz.js\");",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$module_0.default; });",
-                "__es$require.d(__es$exports, \"defaultAlias\", function() { return __es$module_0.default; });",
-                "__es$require.d(__es$exports, \"rest\", function() { return __es$module_0.rest; });",
-                "__es$require.d(__es$exports, \"restAlias\", function() { return __es$module_0.rest; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return __es$module_0.default; },",
+                "    defaultAlias: function() { return __es$module_0.default; },",
+                "    rest: function() { return __es$module_0.rest; },",
+                "    restAlias: function() { return __es$module_0.rest; }",
+                "});",
+                "};",
             }, barLines);
 
             var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/baz.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"default\", function() { return myVar1; });",
-                "__es$require.d(__es$exports, \"rest\", function() { return rest; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return myVar1; },",
+                "    rest: function() { return rest; }",
+                "});",
                 "var [myVar1, {a: myVar2, b: [myVar3, ...rest]}] = [1, {a: 2, b: [3.14]}];",
+                "};",
             }, bazLines);
         }
 
@@ -347,6 +400,9 @@ alert(myVar1);";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
+                "};",
             }, fooLines);
         }
 
@@ -379,8 +435,11 @@ export default 3.14;";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "console.log(__es$module_0.default);",
                 "function func(myVar1) { console.log(myVar1 + __es$module_0.myVar2); }",
+                "};",
             }, fooLines);
         }
 
@@ -414,9 +473,12 @@ export default 3.14;";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "console.log(__es$module_0.default);",
                 "var myVar1 = __es$module_0.myVar1;",
                 "console.log(myVar1 + __es$module_0.myVar2);",
+                "};",
             }, fooLines);
         }
 
@@ -448,19 +510,27 @@ console.log({fooVar, barVar})";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
-                "__es$require.d(__es$exports, \"fooVar\", function() { return fooVar; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    fooVar: function() { return fooVar; }",
+                "});",
                 "var fooVar = 1;",
                 "console.log({fooVar, barVar: __es$module_0.barVar})",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
-                 "'use strict';",
-                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                 "__es$require.d(__es$exports, \"barVar\", function() { return barVar; });",
-                 "var barVar = 2;",
-                 "console.log({fooVar: __es$module_0.fooVar, barVar})",
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    barVar: function() { return barVar; }",
+                "});",
+                "var barVar = 2;",
+                "console.log({fooVar: __es$module_0.fooVar, barVar})",
+                "};",
             }, barLines);
         }
 
@@ -488,9 +558,13 @@ console.log(y);
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"x\", function() { return x; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    x: function() { return x; }",
+                "});",
                 "var x = 0;",
                 "console.log(__es$module_0.x);",
+                "};",
             }, fooLines);
         }
 
@@ -518,9 +592,13 @@ console.log(x);
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"x\", function() { return x; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    x: function() { return x; }",
+                "});",
                 "var x = 0;",
                 "console.log(x);",
+                "};",
             }, fooLines);
         }
 
@@ -561,11 +639,15 @@ console.log(foo.fooVar + foo.barVar + foo.bazVar)";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
-                "__es$require.d(__es$exports, \"fooVar\", function() { return fooVar; });",
-                "__es$require.d(__es$exports, \"barVar\", function() { return __es$module_0.barVar; });",
-                "__es$require.d(__es$exports, \"bazVar\", function() { return __es$module_0.bazVar; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    fooVar: function() { return fooVar; },",
+                "    barVar: function() { return __es$module_0.barVar; },",
+                "    bazVar: function() { return __es$module_0.bazVar; }",
+                "});",
                 "var fooVar = 1;",
                 "console.log(__es$module_0.fooVar + __es$module_0.barVar + __es$module_0.bazVar)",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
@@ -573,11 +655,15 @@ console.log(foo.fooVar + foo.barVar + foo.bazVar)";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/baz.js\");",
-                "__es$require.d(__es$exports, \"barVar\", function() { return barVar; });",
-                "__es$require.d(__es$exports, \"bazVar\", function() { return __es$module_0.bazVar; });",
-                "__es$require.d(__es$exports, \"fooVar\", function() { return __es$module_0.fooVar; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    barVar: function() { return barVar; },",
+                "    bazVar: function() { return __es$module_0.bazVar; },",
+                "    fooVar: function() { return __es$module_0.fooVar; }",
+                "});",
                 "var barVar = 2;",
                 "console.log(__es$module_0.fooVar + __es$module_0.barVar + __es$module_0.bazVar)",
+                "};",
             }, barLines);
 
             var bazLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/baz.js").Value.Content);
@@ -585,11 +671,15 @@ console.log(foo.fooVar + foo.barVar + foo.bazVar)";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"bazVar\", function() { return bazVar; });",
-                "__es$require.d(__es$exports, \"fooVar\", function() { return __es$module_0.fooVar; });",
-                "__es$require.d(__es$exports, \"barVar\", function() { return __es$module_0.barVar; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    bazVar: function() { return bazVar; },",
+                "    fooVar: function() { return __es$module_0.fooVar; },",
+                "    barVar: function() { return __es$module_0.barVar; }",
+                "});",
                 "var bazVar = 3;",
                 "console.log(__es$module_0.fooVar + __es$module_0.barVar + __es$module_0.bazVar)",
+                "};",
             }, bazLines);
         }
 
@@ -638,7 +728,10 @@ export default 3.14;";
                 "'use strict';",
                  "var __es$module_0 = __es$require(\"/bar.js\");",
                  "var __es$module_1 = __es$require(\"/baz.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                  "console.log(__es$module_1.default(__es$module_0.myVar1, __es$module_0.myVar2));",
+                "};",
             }, foo1Lines);
 
             var foo2Lines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "<root1>").Value.Content);
@@ -647,6 +740,8 @@ export default 3.14;";
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
                 "var __es$module_1 = __es$require(\"/baz.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "class MyClass",
                 "{",
                 "    myMethod(bar) {",
@@ -654,6 +749,7 @@ export default 3.14;";
                 "    }",
                 "}",
                 "new MyClass().myMethod(__es$module_0);",
+                "};",
             }, foo2Lines);
         }
 
@@ -687,27 +783,42 @@ console.log(barUrl1, barUrl2)";
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js?param=1\");",
                 "var __es$module_1 = __es$require(\"/bar.js?param=2\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "console.log(__es$module_0.default, __es$module_1.default)",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js?param=1").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
+                "return function (__es$finalize, __es$define) {",
                 "var __es$importMeta = { };",
-                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js?param=1\"; });",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "__es$define(__es$importMeta, {",
+                "    url: function() { return \"provider-file:MemoryFileProvider/bar.js?param=1\"; }",
+                "});",
+                "__es$finalize({",
+                "    default: function() { return __es$default; }",
+                "});",
                 "var __es$default = __es$importMeta.url;",
+                "};",
             }, barLines);
 
             barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js?param=2").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
+                "return function (__es$finalize, __es$define) {",
                 "var __es$importMeta = { };",
-                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js?param=2\"; });",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "__es$define(__es$importMeta, {",
+                "    url: function() { return \"provider-file:MemoryFileProvider/bar.js?param=2\"; }",
+                "});",
+                "__es$finalize({",
+                "    default: function() { return __es$default; }",
+                "});",
                 "var __es$default = __es$importMeta.url;",
+                "};",
             }, barLines);
         }
 
@@ -740,20 +851,29 @@ console.log(barUrl1, barUrl2)";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js?x=0#y\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "(async () => {",
                 "  const bar = await Promise.resolve(__es$module_0);",
                 "  console.log(bar.importUrl);",
                 "})()",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js?x=0#y").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
+                "return function (__es$finalize, __es$define) {",
                 "var __es$importMeta = { };",
-                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js?x=0#y\"; });",
-                "__es$require.d(__es$exports, \"importUrl\", function() { return importUrl; });",
+                "__es$define(__es$importMeta, {",
+                "    url: function() { return \"provider-file:MemoryFileProvider/bar.js?x=0#y\"; }",
+                "});",
+                "__es$finalize({",
+                "    importUrl: function() { return importUrl; }",
+                "});",
                 "const importUrl = __es$importMeta.url;",
+                "};",
             }, barLines);
         }
 
@@ -801,6 +921,8 @@ class C3 {
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "let o = { someKey: __es$module_0.someKey, [__es$module_0.someKey]: 0 };",
                 "o = { someKey() {}, [__es$module_0.someKey]() {} };",
                 "o = { *someKey() {}, *[__es$module_0.someKey]() {} };",
@@ -821,6 +943,7 @@ class C3 {
                 "  static someKey() {}",
                 "  static [__es$module_0.someKey]() {} ",
                 "}",
+                "};",
             }, fooLines);
         }
 
@@ -862,6 +985,8 @@ export default foo = {key: 'k', value: 'v'};
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "function f1({[__es$module_0.default.key]: a} = {[__es$module_0.default.key]: __es$module_0.default.value}) {",
                 "  { let foo = {key: 'k2', value: 'v2'}; }",
                 "  console.log(a, __es$module_0.default);",
@@ -873,15 +998,20 @@ export default foo = {key: 'k', value: 'v'};
                 "function f3(foo = {key: 'k2', value: 'v2'}, {[foo.key]: a} = {[foo.key]: foo.value}) {",
                 "  console.log(a, foo);",
                 "}",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return __es$default; }",
+                "});",
                 "let foo;",
                 "var __es$default = foo = {key: 'k', value: 'v'};",
+                "};",
             }, barLines);
         }
 
@@ -919,21 +1049,28 @@ export { myAsyncFunc3 }
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "(async () => await __es$module_0.myAsyncFunc3())();",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"myAsyncLambda\", function() { return myAsyncLambda; });",
-                "__es$require.d(__es$exports, \"myAsyncFunc1\", function() { return myAsyncFunc1; });",
-                "__es$require.d(__es$exports, \"myAsyncFunc2\", function() { return myAsyncFunc2; });",
-                "__es$require.d(__es$exports, \"myAsyncFunc3\", function() { return myAsyncFunc3; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    myAsyncLambda: function() { return myAsyncLambda; },",
+                "    myAsyncFunc1: function() { return myAsyncFunc1; },",
+                "    myAsyncFunc2: function() { return myAsyncFunc2; },",
+                "    myAsyncFunc3: function() { return myAsyncFunc3; }",
+                "});",
                 "const myAsyncLambda = async () => await import(url);",
                 "const myAsyncFunc1 = async function() { return await myAsyncLambda(); }",
                 "async function myAsyncFunc2() { return await myAsyncFunc1(); }",
                 "async function myAsyncFunc3() { return await myAsyncFunc2(); }",
+                "};",
             }, barLines);
         }
 
@@ -967,19 +1104,27 @@ export default ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
-                "__es$require.d(__es$exports, \"myVarKey\", function() { return myVarKey; });",
-                "__es$require.d(__es$exports, \"barVar\", function() { return barVar; });",
-                "__es$require.d(__es$exports, \"barFunc\", function() { return barFunc; });",
-                "__es$require.d(__es$exports, \"rest\", function() { return rest; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    myVarKey: function() { return myVarKey; },",
+                "    barVar: function() { return barVar; },",
+                "    barFunc: function() { return barFunc; },",
+                "    rest: function() { return rest; }",
+                "});",
                 "var {myVarKey = __es$module_0.default.myVarKey, [__es$module_0.default.myVarKey]: barVar, myFunc: barFunc, ...rest} = {...__es$module_0.default};",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
-                "__es$require.d(__es$exports, \"default\", function() { return __es$default; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return __es$default; }",
+                "});",
                 "var __es$default = ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });",
+                "};",
             }, barLines);
         }
 
@@ -1013,17 +1158,26 @@ export const importUrl = import/*x*/
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "console.log(__es$module_0.importUrl);",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
+                "return function (__es$finalize, __es$define) {",
                 "var __es$importMeta = { };",
-                "__es$require.d(__es$importMeta, \"url\", function() { return \"provider-file:MemoryFileProvider/bar.js\"; });",
-                "__es$require.d(__es$exports, \"importUrl\", function() { return importUrl; });",
+                "__es$define(__es$importMeta, {",
+                "    url: function() { return \"provider-file:MemoryFileProvider/bar.js\"; }",
+                "});",
+                "__es$finalize({",
+                "    importUrl: function() { return importUrl; }",
+                "});",
                 "const importUrl = __es$importMeta.url;",
+                "};",
             }, barLines);
         }
 
@@ -1048,8 +1202,11 @@ i = 1;
             Assert.Equal(new[]
             {
                 "'use strict';",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
                 "var i, length;",
                 "i = 1;",
+                "};",
             }, fooLines);
         }
 
@@ -1091,7 +1248,11 @@ console.log(foo.a, foo.b);";
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
                 "var __es$module_1 = __es$require(\"/baz.js\");",
-                "__es$require.d(__es$exports, \"b\", function() { return __es$module_0.b; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    b: function() { return __es$module_0.b; }",
+                "});",
+                "};",
             }, fooLines);
         }
 
@@ -1122,17 +1283,25 @@ console.log(a, ns.a);";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
-                "__es$require.d(__es$exports, \"a\", function() { return a; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    a: function() { return a; }",
+                "});",
                 "const a = 1;",
-                "console.log(a, __es$module_0.ns.a);"
+                "console.log(a, __es$module_0.ns.a);",
+                "};",
             }, fooLines);
-            
+
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
             Assert.Equal(new[]
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"ns\", function() { return __es$module_0; });"
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    ns: function() { return __es$module_0; }",
+                "});",
+                "};",
             }, barLines);
         }
 
@@ -1158,13 +1327,18 @@ console.log(a, ns.a);";
             var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
             Assert.Equal(new[]
             {
-                "'use strict';", "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"ns\", function() { return __es$module_0; });",
-                "__es$require.d(__es$exports, \"a\", function() { return a; });", "const a = 1;",
-                "console.log(a, __es$module_0.ns.a);"
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    ns: function() { return __es$module_0; },",
+                "    a: function() { return a; }",
+                "});",
+                 "const a = 1;",
+                "console.log(a, __es$module_0.ns.a);",
+                "};",
             }, fooLines);
         }
-
 
         [Fact]
         public async Task Export_Import_NameLiterals()
@@ -1191,9 +1365,13 @@ console.log(a2, x, em);";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/bar.js\");",
-                "__es$require.d(__es$exports, \"a\", function() { return __es$module_0['a']; });",
-                "__es$require.d(__es$exports, 'x', function() { return __es$module_0['\\u0061']; });",
-                "__es$require.d(__es$exports, '\\u0021', function() { return __es$module_0.a; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    a: function() { return __es$module_0['a']; },",
+                "    'x': function() { return __es$module_0['\\u0061']; },",
+                "    '\\u0021': function() { return __es$module_0.a; }",
+                "});",
+                "};",
             }, fooLines);
 
             var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
@@ -1201,10 +1379,62 @@ console.log(a2, x, em);";
             {
                 "'use strict';",
                 "var __es$module_0 = __es$require(\"/foo.js\");",
-                "__es$require.d(__es$exports, \"a\", function() { return a; });",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    a: function() { return a; }",
+                "});",
                 "const a = 1;",
-                "console.log(__es$module_0['a'], __es$module_0.x, __es$module_0['\\u0021']);"
+                "console.log(__es$module_0['a'], __es$module_0.x, __es$module_0['\\u0021']);",
+                "};",
             }, barLines);
+
+            moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+
+            var log = new List<object[]>();
+            var engine = new Engine();
+            engine.SetValue("console", new ConsoleProxy(args => log.Add(args)));
+            engine.Execute(result.Content);
+
+            Assert.Single(log);
+            Assert.Equal(new object[] { 1.0, 1.0, 1.0 }, log[0]);
+        }
+
+        [Fact]
+        public async Task Webpack_Issue1788()
+        {
+            var mainContent =
+@"import './a';";
+
+            var aContent =
+@"import b from './b';
+export default 'a-default';
+console.log('a');";
+            
+            var bContent =
+@"import a from './a';
+export default 'b-default';
+console.log('b');";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/a.js", aContent);
+            fileProvider.CreateFile("/b.js", bContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/main.js") { Content = mainContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+
+            var log = new List<object[]>();
+            var engine = new Engine();
+            engine.SetValue("console", new ConsoleProxy(args => log.Add(args)));
+            engine.Execute(result.Content);
+
+            Assert.Equal(2, log.Count);
+            Assert.Equal(new object[] { "b" }, log[0]);
+            Assert.Equal(new object[] { "a" }, log[1]);
         }
     }
 }
