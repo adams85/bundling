@@ -376,6 +376,68 @@ export { myVar1 as default, rest };";
         }
 
         [Fact]
+        public async Task Reexport_Manually()
+        {
+            var fooContent =
+    @"export const a = 1;
+import { a as b, f as foo } from './bar.js';
+console.log(b, foo.a);";
+
+            var barContent =
+    @"import { a as b } from './foo.js';
+import * as foo from './foo.js';
+export { b as a, foo as f };";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    a: function() { return a; }",
+                "});",
+                "const a = 1;",
+                "console.log(__es$module_0.a, __es$module_0.f.a);",
+                "};"
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    a: function() { return __es$module_0.a; },",
+                "    f: function() { return __es$module_0; }",
+                "});",
+                "};"
+            }, barLines);
+
+            moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+
+            var log = new List<object[]>();
+            var engine = new Engine();
+            engine.SetValue("console", new ConsoleProxy(args => log.Add(args)));
+            engine.Execute(result.Content);
+
+            Assert.Single(log);
+            Assert.Equal(new object[] { 1.0, 1.0 }, log[0]);
+        }
+
+        [Fact]
         public async Task Import_SideEffects()
         {
             var fooContent =

@@ -585,6 +585,17 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 wildcardReexport = export as WildcardReexportData;
                 if (wildcardReexport == null || wildcardReexport.ExportName.HasValue)
                 {
+                    // Manual re-exports needs special care.
+                    if (export is NamedExportData namedExport && module.Imports.TryGetValue(namedExport.LocalName, out ImportData import))
+                    {
+                        export = import switch
+                        {
+                            NamedImportData namedImport => new ReexportData(import.Source, export.ExportName, namedImport.ImportName),
+                            NamespaceImportData => new WildcardReexportData(import.Source, export.ExportName),
+                            _ => throw new InvalidOperationException()
+                        };
+                    }
+
                     exports[export.ExportName.Value] = (export, false);
                 }
                 else
