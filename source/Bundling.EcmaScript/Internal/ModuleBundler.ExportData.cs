@@ -26,24 +26,24 @@
 
         internal sealed class ReexportData : ExportData
         {
-            public ReexportData(IModuleResource source, ExportName exportName, ExportName importName) : base(exportName)
+            public ReexportData(ModuleResource source, ExportName exportName, ExportName importName) : base(exportName)
             {
                 Source = source;
                 ImportName = importName;
             }
 
-            public IModuleResource Source { get; }
+            public ModuleResource Source { get; }
             public ExportName ImportName { get; }
         }
 
         internal sealed class WildcardReexportData : ExportData
         {
-            public WildcardReexportData(IModuleResource source, ExportName exportName) : base(exportName)
+            public WildcardReexportData(ModuleResource source, ExportName exportName) : base(exportName)
             {
                 Source = source;
             }
 
-            public IModuleResource Source { get; }
+            public ModuleResource Source { get; }
         }
     }
 }

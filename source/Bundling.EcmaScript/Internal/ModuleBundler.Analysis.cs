@@ -25,12 +25,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override VariableScope.GlobalBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
                 throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), importDeclaration.Location.Start, defaultErrorMessage);
 
-            private IModuleResource ResolveImportSource(string url)
-            {
-                return _module.Resource.Resolve(url, this, (analyzer, sourceUrl, reason) =>
-                    throw analyzer._bundler._logger.ResolvingImportSourceFailed(analyzer._module.Resource.Url.ToString(), sourceUrl, reason));
-            }
-
             private Exception InvalidExportImportNameExpression(Expression expression)
             {
                 throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), expression.Location.Start,
@@ -54,7 +48,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void ExtractExports(ExportAllDeclaration exportAllDeclaration)
             {
-                IModuleResource source = ResolveImportSource(exportAllDeclaration.Source.StringValue);
+                ModuleResource source = _bundler.ResolveImport(exportAllDeclaration.Source.StringValue, _module.Resource);
 
                 ExportName exportName = exportAllDeclaration.Exported != null ? GetExportName(exportAllDeclaration.Exported) : ExportName.None;
                 _module.ExportsRaw.Add(new WildcardReexportData(source, exportName));
@@ -101,7 +95,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     // export { default as defaultAlias, a as alias, b } from 'bar.js';
                     else
                     {
-                        IModuleResource source = ResolveImportSource(exportNamedDeclaration.Source.StringValue);
+                        ModuleResource source = _bundler.ResolveImport(exportNamedDeclaration.Source.StringValue, _module.Resource);
 
                         ref readonly NodeList<ExportSpecifier> specifiers = ref exportNamedDeclaration.Specifiers;
                         for (var i = 0; i < specifiers.Count; i++)
@@ -140,7 +134,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void ExtractImports(ImportDeclaration importDeclaration)
             {
-                IModuleResource source = ResolveImportSource(importDeclaration.Source.StringValue);
+                ModuleResource source = _bundler.ResolveImport(importDeclaration.Source.StringValue, _module.Resource);
 
                 ref readonly NodeList<ImportDeclarationSpecifier> specifiers = ref importDeclaration.Specifiers;
                 for (var i = 0; i < specifiers.Count; i++)
@@ -208,7 +202,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 if (IsRewritableDynamicImport(import, out Literal sourceLiteral))
                 {
-                    IModuleResource source = ResolveImportSource(sourceLiteral.StringValue);
+                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
 
                     if (!_module.ModuleRefs.ContainsKey(source))
                         _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);

@@ -251,7 +251,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 if (VariableDeclarationAnalyzer.IsRewritableDynamicImport(import, out Literal sourceLiteral))
                 {
-                    IModuleResource source = _module.Resource.Resolve(sourceLiteral.StringValue, default(object), delegate { throw new InvalidOperationException(); });
+                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
                     var moduleRef = _module.ModuleRefs[source];
                     _substitutions.Add(import.Range, $"Promise.resolve({moduleRef})");
                 }
@@ -490,7 +490,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 sb.Append("var ").Append(ImportMetaId).Append(" = ").Append("{ }").Append(';').Append(_br);
 
-                var escapedResourceUrl = HttpUtility.JavaScriptStringEncode(module.Resource.SecureUrl.ToStringEscaped());
+                var escapedResourceUrl = HttpUtility.JavaScriptStringEncode(module.Resource.DesensitizedUrl.ToStringEscaped());
                 sb.Append(DefineId).Append('(')
                     .Append(ImportMetaId).Append(", {").Append(_br)
                     .Append(' ', IndentSize).Append("url").Append(": ")
@@ -511,7 +511,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         sb.Append("/* Imports */").Append(_br);
                 }
 
-                foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
+                foreach ((ModuleResource resource, string moduleRef) in module.ModuleRefs)
                     sb.Append("var ").Append(moduleRef).Append(" = ").Append(RequireId).Append('(')
                         .Append('"').Append(resource.IdEscaped).Append('"').Append(')').Append(';').Append(_br);
             }
@@ -573,7 +573,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             // * Exports by identifier and exports by string literal are not distinguished.
             //   (But comparison must be performed with unescaped string literal values!)
 
-            Queue<(WildcardReexportData Reexport, IModuleResource ImportSource)> wildcardReexportQueue = null;
+            Queue<(WildcardReexportData Reexport, ModuleResource ImportSource)> wildcardReexportQueue = null;
             WildcardReexportData wildcardReexport;
 
             // 1. Add exports of entry module
@@ -603,7 +603,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     if (visitedModules.Count == 0)
                         visitedModules.Add(module);
 
-                    wildcardReexportQueue ??= new Queue<(WildcardReexportData, IModuleResource)>(capacity: 1);
+                    wildcardReexportQueue ??= new Queue<(WildcardReexportData, ModuleResource)>(capacity: 1);
                     wildcardReexportQueue.Enqueue((wildcardReexport, wildcardReexport.Source));
                 }
             }
@@ -611,13 +611,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             if (wildcardReexportQueue == null)
                 return;
 
-
             HashSet<string> exportNamesToRemove = null;
 
             // 2. Discover exports of wildcard re-exported modules by BFS traversing them
             while (wildcardReexportQueue.Count > 0)
             {
-                IModuleResource importSource;
+                ModuleResource importSource;
                 (wildcardReexport, importSource) = wildcardReexportQueue.Dequeue();
 
                 module = Modules[wildcardReexport.Source];
@@ -670,7 +669,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             // define module callback
 
-            sb.Append($"return function (").Append(FinalizeId);
+            sb.Append("return function (").Append(FinalizeId);
             if (module.RequiresDefine)
                 sb.Append(", ").Append(DefineId);
             sb.Append(") {").Append(_br);
@@ -747,7 +746,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append(' ', IndentSize).Append($"require(\"{module.Resource.IdEscaped}\", imports);").Append(_br);
             }
 
-            sb.Append(' ', IndentSize).Append($"finalize(imports);").Append(_br);
+            sb.Append(' ', IndentSize).Append("finalize(imports);").Append(_br);
             sb.Append("})({");
 
             var separator = string.Empty;
@@ -781,7 +780,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             foreach ((FileModuleResource fileResource, (bool isRoot, _)) in Files)
                 if (!isRoot)
-                    imports.Add(new AbstractionFile(fileResource.FileProvider, fileResource.FilePath, fileResource.CaseSensitiveFilePaths));
+                    imports.Add(fileResource.ModuleFile);
 
             return new ModuleBundlingResult(sb.ToString(), imports);
         }

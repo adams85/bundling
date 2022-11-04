@@ -20,22 +20,53 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
         private readonly ILogger _logger;
         private readonly string _br;
         private readonly bool _developmentMode;
+        private readonly ModuleImportResolver _importResolver;
+        private readonly IModuleResourceFactory _moduleResourceFactory;
         private readonly ParserOptions _parserOptions;
+
+        private readonly Dictionary<IFileProvider, string> _fileProviderPrefixes;
+        private int _fileProviderId;
 
         public ModuleBundler(ILoggerFactory loggerFactory = null, ModuleBundlerOptions options = null)
         {
             _logger = loggerFactory?.CreateLogger<ModuleBundler>() ?? (ILogger)NullLogger.Instance;
             _br = options?.NewLine ?? Environment.NewLine;
             _developmentMode = options?.DevelopmentMode ?? false;
+            if (options?.ImportResolver != null)
+            {
+                _importResolver = options.ImportResolver;
+                _moduleResourceFactory = new ModuleResourceFactory(this);
+            }
 
             _parserOptions = CreateParserOptions();
 
+            _fileProviderPrefixes = new Dictionary<IFileProvider, string>();
+
             Files = new Dictionary<FileModuleResource, (bool, Task<string>)>(new FileModuleResource.AbstractionFileComparer());
-            Modules = new Dictionary<IModuleResource, ModuleData>();
+            Modules = new Dictionary<ModuleResource, ModuleData>();
         }
 
         internal Dictionary<FileModuleResource, (bool IsRoot, Task<string> Content)> Files { get; }
-        internal Dictionary<IModuleResource, ModuleData> Modules { get; }
+        internal Dictionary<ModuleResource, ModuleData> Modules { get; }
+
+        private string GetOrAddFileProviderPrefix(IFileProvider fileProvider)
+        {
+            if (!_fileProviderPrefixes.TryGetValue(fileProvider, out var prefix))
+                _fileProviderPrefixes.Add(fileProvider, "$" + (_fileProviderId++).ToString(CultureInfo.InvariantCulture));
+            return prefix;
+        }
+
+        private ModuleResource ResolveImport(string url, ModuleResource initiator)
+        {
+            ModuleResource module;
+            if (_importResolver != null && (module = _importResolver(url, initiator, _moduleResourceFactory)) != null)
+                return module;
+
+            return
+                initiator.TryResolveModule(url, out string failureReason, out module) ? 
+                module :
+                throw _logger.ResolvingImportSourceFailed(initiator.Url.ToString(), url, failureReason);
+        }
 
         private async Task LoadModuleContentAsync(ModuleData module, CancellationToken token)
         {
@@ -78,7 +109,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 await LoadModuleContentAsync(module, token).ConfigureAwait(false);
 
                 module.Ast = ParseModuleContent(module);
-                module.ModuleRefs = new Dictionary<IModuleResource, string>();
+                module.ModuleRefs = new Dictionary<ModuleResource, string>();
                 module.ExportsRaw = new List<ExportData>();
                 module.Imports = new Dictionary<string, ImportData>();
 
@@ -88,10 +119,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     var modulesToLoad = new List<ModuleData>();
 
-                    var normalizedModuleRefs = new Dictionary<IModuleResource, string>(module.ModuleRefs.Count);
+                    var normalizedModuleRefs = new Dictionary<ModuleResource, string>(module.ModuleRefs.Count);
 
                     lock (Modules)
-                        foreach ((IModuleResource resource, string moduleRef) in module.ModuleRefs)
+                        foreach ((ModuleResource resource, string moduleRef) in module.ModuleRefs)
                         {
                             if (!Modules.TryGetValue(resource, out ModuleData knownModule))
                             {
@@ -121,23 +152,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private ModuleData[] GetRootModules(ModuleFile[] rootFiles, CancellationToken token)
         {
-            var fileProviderPrefixes = new Dictionary<IFileProvider, string>();
-            int fileProviderId = 0;
-
-            for (int i = 0, n = rootFiles.Length; i < n; i++)
-            {
-                ModuleFile moduleFile = rootFiles[i];
-
-                if (moduleFile == null)
-                    throw ErrorHelper.ArrayCannotContainNull(nameof(rootFiles));
-
-                if (moduleFile.FileProvider != null && !fileProviderPrefixes.ContainsKey(moduleFile.FileProvider))
-                    fileProviderPrefixes.Add(moduleFile.FileProvider, "$" + (fileProviderId++).ToString(CultureInfo.InvariantCulture));
-            }
-
-            if (fileProviderPrefixes.Count == 1)
-                fileProviderPrefixes[fileProviderPrefixes.Keys.First()] = string.Empty;
-
             var duplicateRootFiles = false;
             var rootModules = new ModuleData[rootFiles.Length];
 
@@ -146,14 +160,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 ModuleFile moduleFile = rootFiles[i];
 
                 ref ModuleData module = ref rootModules[i];
-                IModuleResource resource;
+                ModuleResource resource;
 
                 if (moduleFile.FileProvider != null && moduleFile.FilePath != null)
                 {
-                    var fileResource = new FileModuleResource(fileProviderPrefixes[moduleFile.FileProvider], moduleFile)
-                    {
-                        Content = moduleFile.Content
-                    };
+                    var fileResource = new FileModuleResource(_fileProviderPrefixes[moduleFile.FileProvider], moduleFile);
 
                     if (Files.ContainsKey(fileResource))
                     {
@@ -166,7 +177,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     resource = fileResource;
                 }
                 else
-                    resource = new TransientModuleResource(i, moduleFile.Content, moduleFile.FileProvider != null ? fileProviderPrefixes[moduleFile.FileProvider] : null, moduleFile);
+                {
+                    resource = new TransientModuleResource($"<root{i.ToString(CultureInfo.InvariantCulture)}>", moduleFile.Content,
+                        moduleFile.FileProvider != null ? _fileProviderPrefixes[moduleFile.FileProvider] : null,
+                        moduleFile.FileProvider, moduleFile.CaseSensitiveFilePaths);
+                }
 
                 module = new ModuleData(resource);
 
@@ -181,6 +196,20 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         internal async Task<ModuleData[]> BundleCoreAsync(ModuleFile[] rootFiles, CancellationToken token)
         {
+            for (int i = 0, n = rootFiles.Length; i < n; i++)
+            {
+                ModuleFile moduleFile = rootFiles[i];
+
+                if (moduleFile == null)
+                    throw ErrorHelper.ArrayCannotContainNull(nameof(rootFiles));
+
+                if (moduleFile.FileProvider != null)
+                    GetOrAddFileProviderPrefix(moduleFile.FileProvider);
+            }
+
+            if (_fileProviderPrefixes.Count == 1)
+                _fileProviderPrefixes[_fileProviderPrefixes.Keys.First()] = string.Empty;
+
             ModuleData[] rootModules = GetRootModules(rootFiles, token);
 
             // analyze

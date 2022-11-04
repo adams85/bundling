@@ -128,7 +128,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 Visit(decorators[i]);
             }
 
-            // Class expression's name is not available the enclosing scope.
+            // Class expression's name is not available in the enclosing scope.
 
             BeginVariableScope(new VariableScope.Class(classExpression, _currentVariableScope), out Snapshot snapshot);
 

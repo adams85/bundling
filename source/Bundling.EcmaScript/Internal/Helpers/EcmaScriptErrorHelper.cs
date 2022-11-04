@@ -7,7 +7,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
     internal static class EcmaScriptErrorHelper
     {
-        internal const string CannotResolveNonRelativePathReason = "Only relative import paths are supported currently.";
+        internal const string CannotResolveNonRelativePathReason = $"Only relative import paths are supported by default. You may specify a custom import resolver via {nameof(ModuleBundlerOptions)}.{nameof(ModuleBundlerOptions.ImportResolver)}.";
         internal const string CannotResolveRelativePathWithoutFileProviderReason = "Relative import paths cannot be resolved without an associated file provider.";
 
         public static BundlingErrorException ResolvingImportSourceFailed(this ILogger logger, string moduleUrl, string sourceUrl, string reason)
