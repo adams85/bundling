@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
     <LangVersion>10.0</LangVersion>
-    <DefaultNetCoreTargetFramework>netcoreapp3.0</DefaultNetCoreTargetFramework>
   </PropertyGroup>
 </Project>

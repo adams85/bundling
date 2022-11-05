@@ -16,14 +16,14 @@ namespace Karambolo.AspNetCore.Bundling.Internal.CacheBusting
     {
         private static string GetHashForFile(IFileInfo fileInfo)
         {
+            byte[] hash;
             using (var sha256 = SHA256.Create())
+            using (Stream readStream = fileInfo.CreateReadStream())
             {
-                using (Stream readStream = fileInfo.CreateReadStream())
-                {
-                    var hash = sha256.ComputeHash(readStream);
-                    return WebEncoders.Base64UrlEncode(hash);
-                }
+                hash = sha256.ComputeHash(readStream);
             }
+
+            return WebEncoders.Base64UrlEncode(hash);
         }
 
         private readonly IMemoryCache _cache;

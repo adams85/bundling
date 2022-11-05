@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetCoreTargetFramework);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0;net5.0</TargetFrameworks>
     <AssemblyName>Karambolo.AspNetCore.Bundling</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling</RootNamespace>
   </PropertyGroup>
@@ -38,7 +38,7 @@
         <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="2.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="2.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="System.Memory" Version="4.5.0" />
       </ItemGroup>
     </When>

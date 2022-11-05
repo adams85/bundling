@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetCoreTargetFramework);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <AssemblyName>Karambolo.AspNetCore.Bundling.WebMarkupMin</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.WebMarkupMin</RootNamespace>
   </PropertyGroup>
@@ -9,7 +9,7 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
-    <PackageReference Include="WebMarkupMin.Core" Version="2.9.0" />
+    <PackageReference Include="WebMarkupMin.Core" Version="2.13.0" />
   </ItemGroup>
 
   <ItemGroup>
