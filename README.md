@@ -16,7 +16,7 @@ This library can be used to bundle and optimize web assets of ASP.NET Core 2+ ap
 - **JavaScript minification and bundling**. Version 2.0 adds support for **rewriting and bundling ES6 (ECMAScript 2015) modules** (built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet)).
 - Straightforward and flexible configuration:
   - Fluent API configuration.
-  - Multi-level configuration system (settings adjustable on general and more detailed levels).
+  - Hierarchical configuration system (settings adjustable on general and more detailed levels).
   - **Compatibility with [bundleconfig.json](https://github.com/madskristensen/BundlerMinifier#bundleconfigjson "bundleconfig.json")**.
 - Full control over server and client-side caching (including cache busting). **Memory** and **file system cache** implementations are included.
 - Replaceable backing storage by leveraging [.NET Core file system abstractions](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/file-providers).
@@ -87,7 +87,7 @@ Finally, if you want to bundle ES6 modules, you need to install an additional pa
 
     dotnet add package Karambolo.AspNetCore.Bundling.EcmaScript
 
-Note: ES6 module bundling is built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet), which supports [language features](https://exploringjs.com/impatient-js/ch_new-javascript-features.html) up to ECMAScript 2020 currently (except for namespace re-exporting). If you want to utilize even newer features, you may use TypeScript and target ES2020. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).) Alternatively, you may use the [module bundling features of the TypeScript compiler](https://blog.tekmi.nl/how-to-bundle-many-typescript-files-using-systemjs) but then you will need a module loader like [SystemJS](https://github.com/systemjs/systemjs) as well.
+Note: ES6 module bundling is built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet), which supports [language features](https://exploringjs.com/impatient-js/ch_new-javascript-features.html) up to ECMAScript 2021 currently. (For more details, refer to [this issue](https://github.com/sebastienros/esprima-dotnet/issues/330).) If you want to utilize even newer features (or you just want to target an older JavaScript version), you may use TypeScript for down-level compilation. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).)
 
  ### Run-time mode
 
@@ -119,7 +119,9 @@ The `Environment` property should return the current hosting environment. You ca
         Environment = environment;
     }
 
-`UseDefaults` adds support for CSS and JavaScript bundles, sets up the default transformations and enables memory caching. When hosting environment is set to *Development*, `UseDefaults`
+`UseDefaults` adds support for CSS and JavaScript bundles, sets up the default transformations and enables memory caching.
+
+When hosting environment is set to *Development*, `UseDefaults`
 * enables change detection (cache invalidation on change of source files) and
 * enables including of source files instead of the actual bundled output (of course, this will apply only to bundles which allow this), 
 
@@ -175,7 +177,7 @@ When specifying includes/excludes, you can use the ordinary globbing patterns [s
 
 #### 3. Configure Razor views
 
-In order to enable the bundling tag helpers you need to include the following in your *_ViewImports.cshtml*:
+In order to enable the bundling tag helpers you need to include the following lines in your *_ViewImports.cshtml*:
 
     @using Karambolo.AspNetCore.Bundling.ViewHelpers
     @addTagHelper *, Karambolo.AspNetCore.Bundling
@@ -217,7 +219,7 @@ Just like in the case of run-time bundling, install the required NuGet packages 
 
 (This package contains some files which are necessary to extend the build process and make the design-time method work.)
 
-Prior to version 3.0 the step above automatically enabled the .NET Core CLI extension `dotnet bundle` by adding the necessary [DotNetCliToolReference](https://docs.microsoft.com/en-us/dotnet/core/tools/extensibility) to your project. However, [*DotNetCliToolReference* is more or less obsolete now](https://github.com/dotnet/sdk/issues/3115), so version 3.0 swithes to [the newer approach introduced in NET Core 2.1](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools). Thus, **from version 3.0 on, you also need to install the .Net Core CLI extension manually**. In return, you have multiple options to choose from:
+Prior to version 3.0 the step above automatically enabled the .NET Core CLI extension `dotnet bundle` by adding the necessary [DotNetCliToolReference](https://docs.microsoft.com/en-us/dotnet/core/tools/extensibility) to your project. However, [*DotNetCliToolReference* is more or less obsolete now](https://github.com/dotnet/sdk/issues/3115), so version 3.0 switches to [the newer approach introduced in NET Core 2.1](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools). Thus, **from version 3.0 on, you also need to install the .Net Core CLI extension manually**. In return, you have multiple options to choose from:
 
 * You can make the tool globally available on your development machine.
 
@@ -303,7 +305,7 @@ To be able to do the latter, the tool has to build your project first. If you do
 
 ##### 2.b. Updating bundles on build
 
-You can easily setup your application to automatically update your bundles when you build it. Just insert these several lines under the root element (*Project*):
+You can easily setup your application to automatically update your bundles when you build it. Just insert these several lines under the root element (*Project*) of your project (csproj) file:
 
     <PropertyGroup>
       <BundleOnBuild>true</BundleOnBuild>
