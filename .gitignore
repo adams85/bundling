@@ -302,3 +302,4 @@ __pycache__/
 
 **/wwwroot/lib/
 **/wwwroot/bundles/
+/samples/TypeScriptDemo/wwwroot/js/

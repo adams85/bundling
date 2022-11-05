@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace QuickStartTemplate;
 
@@ -19,6 +13,19 @@ public class Program
 #else
         false;
 #endif
+
+    public static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        ConfigureServices(builder);
+
+        var app = builder.Build();
+
+        Configure(app);
+
+        app.Run();
+    }
 
     private static void ConfigureServices(WebApplicationBuilder builder)
     {
@@ -62,18 +69,5 @@ public class Program
         app.UseAuthorization();
 
         app.MapRazorPages();
-    }
-
-    public static void Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
-
-        ConfigureServices(builder);
-
-        var app = builder.Build();
-
-        Configure(app);
-
-        app.Run();
     }
 }

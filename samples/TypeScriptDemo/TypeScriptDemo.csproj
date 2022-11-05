@@ -2,27 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <TypeScriptToolsVersion>4.4</TypeScriptToolsVersion>
-    <TypeScriptModuleKind>ES6</TypeScriptModuleKind>
-    <TypeScriptTarget>ES2020</TypeScriptTarget>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Remove="wwwroot\ts\bar.ts" />
-    <Content Remove="wwwroot\ts\foo.ts" />
-    <Content Remove="wwwroot\ts\main.ts" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\source\Bundling.EcmaScript\Bundling.EcmaScript.csproj" />
     <ProjectReference Include="..\..\source\Bundling.NUglify\Bundling.NUglify.csproj" />
     <ProjectReference Include="..\..\source\Bundling\Bundling.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <TypeScriptCompile Include="wwwroot\ts\bar.ts" />
-    <TypeScriptCompile Include="wwwroot\ts\foo.ts" />
-    <TypeScriptCompile Include="wwwroot\ts\main.ts" />
+    <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="4.8.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
   </ItemGroup>
 
 </Project>

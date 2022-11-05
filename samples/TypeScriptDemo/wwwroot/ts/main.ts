@@ -5,19 +5,19 @@ class App {
     private _button: HTMLInputElement;
 
     constructor() {
-        this._textBox = <HTMLInputElement>document.getElementById('textbox');
+        this._textBox = document.getElementById('textbox') as HTMLInputElement;
         this._textBox.value = counter.toString();
 
-        this._button = <HTMLInputElement>document.getElementById('button');
+        this._button = document.getElementById('button') as HTMLInputElement;
         this._button.onclick = () => this.click();
     }
 
-    // you may use post-ES2020 language features,
-    // just make sure that the TypeScript compiler targets ES2020
-    // (see TypeScriptDemo.csproj)
+    // you may use post-ES2021 language features,
+    // just make sure that the TypeScript compiler targets ES2021 or older
+    // (see tsconfig.json)
     async click(): Promise<void> {
         this._textBox.value = 'Thinking hard...';
-        this._button.setAttribute('disabled', null);
+        this._button.setAttribute('disabled', "");
 
         await timeout(1000);
 

@@ -1,0 +1,11 @@
+﻿{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "provider": "jsdelivr",
+      "library": "tslib@2.4.1",
+      "destination": "wwwroot/lib/tslib/"
+    }
+  ]
+}
