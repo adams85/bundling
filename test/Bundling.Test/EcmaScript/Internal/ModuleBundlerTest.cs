@@ -1191,7 +1191,7 @@ export default ({ myVarKey: 'myVar', myVar: 10, myFunc: () => 20 });
         }
 
         [Fact]
-        public async Task Feature_ImportMeta()
+        public async Task Feature_MetaProperty_ImportMeta()
         {
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import.meta#using_import.meta
 
@@ -1241,6 +1241,32 @@ export const importUrl = import/*x*/
                 "const importUrl = __es$importMeta.url;",
                 "};",
             }, barLines);
+        }
+        [Fact]
+        public async Task Feature_MetaProperty_Other()
+        {
+            var fooContent =
+@"export function f() { return new.target.prototype; }";
+
+            var fileProvider = new MemoryFileProvider();
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    f: function() { return f; }",
+                "});",
+                "function f() { return new.target.prototype; }",
+                "};",
+            }, fooLines);
         }
 
         [Fact]

@@ -249,7 +249,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 // TODO: Support for attributes?
 
-                if (VariableDeclarationAnalyzer.IsRewritableDynamicImport(import, out Literal sourceLiteral))
+                if (IsRewritableDynamicImport(import, out Literal sourceLiteral))
                 {
                     ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
                     var moduleRef = _module.ModuleRefs[source];
@@ -314,7 +314,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitMetaProperty(MetaProperty metaProperty)
             {
-                _substitutions.Add(metaProperty.Range, ImportMetaId);
+                if (IsImportMeta(metaProperty))
+                    _substitutions.Add(metaProperty.Range, ImportMetaId);
 
                 return metaProperty;
             }

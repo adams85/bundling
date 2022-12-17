@@ -7,6 +7,23 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal partial class ModuleBundler
     {
+        internal static bool IsRewritableDynamicImport(Import import, out Literal sourceLiteral)
+        {
+            if (import.Source is Literal literal && literal.TokenType == TokenType.StringLiteral && literal.Value != null)
+            {
+                sourceLiteral = literal;
+                return true;
+            }
+
+            sourceLiteral = default;
+            return false;
+        }
+
+        internal static bool IsImportMeta(MetaProperty metaProperty)
+        {
+            return metaProperty.Meta.Name == "import" && metaProperty.Property.Name == "meta";
+        }
+
         private sealed class VariableDeclarationAnalyzer : VariableScopeBuilder
         {
             private readonly ModuleBundler _bundler;
@@ -186,18 +203,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return exportNamedDeclaration;
             }
 
-            internal static bool IsRewritableDynamicImport(Import import, out Literal sourceLiteral)
-            {
-                if (import.Source is Literal literal && literal.TokenType == TokenType.StringLiteral && literal.Value != null)
-                {
-                    sourceLiteral = literal;
-                    return true;
-                }
-
-                sourceLiteral = default;
-                return false;
-            }
-
             protected override object VisitImport(Import import)
             {
                 if (IsRewritableDynamicImport(import, out Literal sourceLiteral))
@@ -224,7 +229,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitMetaProperty(MetaProperty metaProperty)
             {
-                _module.UsesImportMeta = true;
+                if (IsImportMeta(metaProperty))
+                    _module.UsesImportMeta = true;
 
                 return metaProperty;
             }
