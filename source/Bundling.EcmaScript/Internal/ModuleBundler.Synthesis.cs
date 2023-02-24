@@ -93,6 +93,24 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _substitutions.Add(identifier.Range, value);
             }
 
+            protected override object VisitAccessorProperty(AccessorProperty accessorProperty)
+            {
+                ref readonly NodeList<Decorator> decorators = ref accessorProperty.Decorators;
+                for (var i = 0; i < decorators.Count; i++)
+                {
+                    Visit(decorators[i]);
+                }
+
+                VisitPropertyCore(accessorProperty);
+
+                if (accessorProperty.Value is not null)
+                {
+                    Visit(accessorProperty.Value);
+                }
+
+                return accessorProperty;
+            }
+
             protected override object VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
             {
                 VisitFunctionCore(arrowFunctionExpression);

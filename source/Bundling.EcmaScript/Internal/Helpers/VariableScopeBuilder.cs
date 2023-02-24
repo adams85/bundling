@@ -229,12 +229,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
             Visit(importDeclaration.Source);
 
-            ref readonly NodeList<ImportAttribute> assertions = ref importDeclaration.Assertions;
-            for (var i = 0; i < assertions.Count; i++)
-            {
-                Visit(assertions[i]);
-            }
-
             return importDeclaration;
         }
 

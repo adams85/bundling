@@ -665,6 +665,103 @@ console.log(x);
         }
 
         [Fact]
+        public async Task Import_CircularReference_SelfWithNamedExport()
+        {
+            // https://exploringjs.com/impatient-js/ch_modules.html#module-exports
+
+            var fooContent =
+@"import { a as b } from './foo.js';
+export const a = { x: 1 }
+b.x = 2;
+console.log(a)";
+
+            var fileProvider = new MemoryFileProvider();
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    a: function() { return a; }",
+                "});",
+                "const a = { x: 1 }",
+                "__es$module_0.a.x = 2;",
+                "console.log(a)",
+                "};",
+            }, fooLines);
+
+            moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+
+            var log = new List<object[]>();
+            var engine = new Engine();
+            engine.SetValue("console", new ConsoleProxy(args => log.Add(args)));
+            engine.Execute(result.Content);
+
+            Assert.Single(log);
+            Assert.Single(log[0]);
+            Assert.Equal(new Dictionary<string, object> { ["x"] = 2.0 }, (IDictionary<string, object>)log[0][0]);
+        }
+
+        [Fact]
+        public async Task Import_CircularReference_SelfWithDefaultExport()
+        {
+            // https://exploringjs.com/impatient-js/ch_modules.html#module-exports
+
+            var fooContent =
+@"import b from './foo.js';
+const a = { x: 1 };
+export { a as default };
+[b.x] = [2];
+console.log(a)";
+
+            var fileProvider = new MemoryFileProvider();
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    default: function() { return a; }",
+                "});",
+                "const a = { x: 1 };",
+                "[__es$module_0.default.x] = [2];",
+                "console.log(a)",
+                "};",
+            }, fooLines);
+
+            moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+
+            var log = new List<object[]>();
+            var engine = new Engine();
+            engine.SetValue("console", new ConsoleProxy(args => log.Add(args)));
+            engine.Execute(result.Content);
+
+            Assert.Single(log);
+            Assert.Single(log[0]);
+            Assert.Equal(new Dictionary<string, object> { ["x"] = 2.0 }, (IDictionary<string, object>)log[0][0]);
+        }
+
+        [Fact]
         public async Task Import_CircularReference_With_Reexports()
         {
             var fooContent =
@@ -1078,6 +1175,54 @@ export default foo = {key: 'k', value: 'v'};
         }
 
         [Fact]
+        public async Task Feature_Decorators()
+        {
+            // https://github.com/tc39/proposal-decorators
+
+            var fooContent =
+@"import { myDecorator as d } from './bar';
+
+@d('C')
+class C extends HTMLElement {
+  @d('d') static accessor d = false;
+  @d('d') accessor ['d'] = false;
+  @d(d) accessor [d] = d;
+}
+";
+
+            var barContent =
+@"
+export function myDecorator(value) { }
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
+                "@__es$module_0.myDecorator('C')",
+                "class C extends HTMLElement {",
+                "  @__es$module_0.myDecorator('d') static accessor d = false;",
+                "  @__es$module_0.myDecorator('d') accessor ['d'] = false;",
+                "  @__es$module_0.myDecorator(__es$module_0.myDecorator) accessor [__es$module_0.myDecorator] = __es$module_0.myDecorator;",
+                "}",
+                "};",
+            }, fooLines);
+        }
+
+
+        [Fact]
         public async Task Feature_AsyncAwait()
         {
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/async_function
@@ -1242,6 +1387,7 @@ export const importUrl = import/*x*/
                 "};",
             }, barLines);
         }
+
         [Fact]
         public async Task Feature_MetaProperty_Other()
         {
