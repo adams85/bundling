@@ -64,5 +64,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             logger.LogWarning("Non-rewritable dynamic import was found in module '{MODULEURL}' at {POSITION}.", moduleUrl, position);
         }
+
+        public static void IgnoredImportAttributesWarning(this ILogger logger, string moduleUrl, in Position position)
+        {
+            logger.LogWarning("Since not supported currently, import attributes were ignored in module '{MODULEURL}' at {POSITION}.", moduleUrl, position);
+        }
     }
 }

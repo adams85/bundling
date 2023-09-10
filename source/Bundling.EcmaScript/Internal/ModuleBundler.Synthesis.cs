@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -14,8 +13,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
-    using Range = Esprima.Range;
     using ExportDictionary = Dictionary<string, (ModuleBundler.ExportData Export, bool IsExportedViaWildcard)>;
+    using Range = Esprima.Range;
 
     internal partial class ModuleBundler
     {
@@ -59,7 +58,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void SetScannerTo(Node node)
             {
-                _scanner ??= new Scanner(_module.Content, _bundler._parserOptions.ScannerOptions);
+                _scanner ??= new Scanner(_module.Content, _bundler._parserOptions.GetScannerOptions());
 
                 _scanner.Reset(
                     startIndex: node.Range.Start,
@@ -73,7 +72,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private void AddSubstitutionIfImported(Identifier identifier, SubstitutionAdjuster adjust)
             {
                 if (!_module.Imports.TryGetValue(identifier.Name, out ImportData import) ||
-                    !(_currentVariableScope.FindIdentifier(identifier.Name) is VariableScope.GlobalBlock))
+                    !(_currentVariableScope.FindIdentifier(identifier.Name) is VariableScope.TopLevelBlock))
                     return;
 
                 string value;
@@ -82,7 +81,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     case NamedImportData namedImport:
                         value = GetImportVariableRef(_module.ModuleRefs[import.Source], namedImport.ImportName);
                         break;
-                    case NamespaceImportData _:
+                    case NamespaceImportData:
                         value = _module.ModuleRefs[import.Source];
                         break;
                     default:
@@ -263,26 +262,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return identifier;
             }
 
-            protected override object VisitImport(Import import)
-            {
-                // TODO: Support for attributes?
-
-                if (IsRewritableDynamicImport(import, out Literal sourceLiteral))
-                {
-                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
-                    var moduleRef = _module.ModuleRefs[source];
-                    _substitutions.Add(import.Range, $"Promise.resolve({moduleRef})");
-                }
-                else
-                    return base.VisitImport(import);
-
-                return import;
-            }
-
             protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
             {
-                // TODO: Support for assertions?
-
                 _substitutions.Add(importDeclaration.Range, StringSegment.Empty);
 
                 return importDeclaration;
@@ -293,6 +274,20 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
 
                 return importDefaultSpecifier;
+            }
+
+            protected override object VisitImportExpression(ImportExpression importExpression)
+            {
+                if (IsRewritableDynamicImport(importExpression, out Literal sourceLiteral))
+                {
+                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
+                    var moduleRef = _module.ModuleRefs[source];
+                    _substitutions.Add(importExpression.Range, $"Promise.resolve({moduleRef})");
+                }
+                else
+                    return base.VisitImportExpression(importExpression);
+
+                return importExpression;
             }
 
             protected override object VisitImportNamespaceSpecifier(ImportNamespaceSpecifier importNamespaceSpecifier)

@@ -1221,7 +1221,6 @@ export function myDecorator(value) { }
             }, fooLines);
         }
 
-
         [Fact]
         public async Task Feature_AsyncAwait()
         {

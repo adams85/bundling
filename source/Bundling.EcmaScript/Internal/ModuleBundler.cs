@@ -90,7 +90,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         internal static ParserOptions CreateParserOptions()
         {
-            return new ParserOptions { AdaptRegexp = false, Comments = false, Tokens = false, Tolerant = false };
+            return new ParserOptions { RegExpParseMode = RegExpParseMode.Skip, Comments = false, Tokens = false, Tolerant = true };
         }
 
         private Program ParseModuleContent(ModuleData module)

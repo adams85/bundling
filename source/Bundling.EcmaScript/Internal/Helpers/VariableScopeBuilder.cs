@@ -46,12 +46,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             snapshot.Restore(this);
         }
 
-        protected virtual VariableScope.GlobalBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
+        protected virtual VariableScope.TopLevelBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
             throw new InvalidOperationException(defaultErrorMessage);
 
         // Esprima.NET allows import declarations in scopes other than the top level scope (bug?), so we need to ensure this manually.
-        private VariableScope.GlobalBlock EnsureImportDeclarationScope(ImportDeclaration importDeclaration) =>
-            (_currentVariableScope as VariableScope.GlobalBlock) ?? HandleInvalidImportDeclaration(importDeclaration, "Import declarations may only appear at top level of a module.");
+        private VariableScope.TopLevelBlock EnsureImportDeclarationScope(ImportDeclaration importDeclaration) =>
+            (_currentVariableScope as VariableScope.TopLevelBlock) ?? HandleInvalidImportDeclaration(importDeclaration, "Import declarations may only appear at top level of a module.");
 
         protected override object VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
         {
@@ -94,6 +94,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         private void VisitClassCore(IClass @class)
         {
+            ref readonly NodeList<Decorator> decorators = ref @class.Decorators;
+            for (var i = 0; i < decorators.Count; i++)
+            {
+                Visit(decorators[i]);
+            }
+
             if (@class.SuperClass != null)
                 Visit(@class.SuperClass);
 
@@ -102,12 +108,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
         {
-            ref readonly NodeList<Decorator> decorators = ref classDeclaration.Decorators;
-            for (var i = 0; i < decorators.Count; i++)
-            {
-                Visit(decorators[i]);
-            }
-
             if (classDeclaration.Id != null)
                 ((VariableScope.BlockBase)_currentVariableScope).AddClassDeclaration(classDeclaration.Id);
 
@@ -122,12 +122,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitClassExpression(ClassExpression classExpression)
         {
-            ref readonly NodeList<Decorator> decorators = ref classExpression.Decorators;
-            for (var i = 0; i < decorators.Count; i++)
-            {
-                Visit(decorators[i]);
-            }
-
             // Class expression's name is not available in the enclosing scope.
 
             BeginVariableScope(new VariableScope.Class(classExpression, _currentVariableScope), out Snapshot snapshot);
@@ -221,11 +215,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
         {
-            VariableScope.GlobalBlock globalScope = EnsureImportDeclarationScope(importDeclaration);
+            VariableScope.TopLevelBlock topLevelScope = EnsureImportDeclarationScope(importDeclaration);
 
             ref readonly NodeList<ImportDeclarationSpecifier> specifiers = ref importDeclaration.Specifiers;
             for (var i = 0; i < specifiers.Count; i++)
-                globalScope.AddImportDeclaration(specifiers[i].Local);
+                topLevelScope.AddImportDeclaration(specifiers[i].Local);
 
             Visit(importDeclaration.Source);
 
@@ -236,21 +230,21 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             _currentVariableScope = null;
 
-            VariableScope.GlobalBlock globalScope;
+            VariableScope.TopLevelBlock topLevelScope;
 
             switch (program)
             {
                 case Module module:
-                    globalScope = new VariableScope.GlobalBlock(module);
+                    topLevelScope = new VariableScope.TopLevelBlock(module);
                     break;
                 case Script script:
-                    globalScope = new VariableScope.GlobalBlock(script);
+                    topLevelScope = new VariableScope.TopLevelBlock(script);
                     break;
                 default:
                     throw UnknownNodeError(program);
             }
 
-            BeginVariableScope(globalScope, out Snapshot snapshot);
+            BeginVariableScope(topLevelScope, out Snapshot snapshot);
 
             base.VisitProgram(program);
 

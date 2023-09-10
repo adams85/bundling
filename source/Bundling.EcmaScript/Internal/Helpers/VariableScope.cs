@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Esprima.Ast;
-using Esprima.Utils;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
@@ -251,11 +249,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             }
         }
 
-        public sealed class GlobalBlock : BlockBase
+        public sealed class TopLevelBlock : BlockBase
         {
-            public GlobalBlock(Script script) : base(script, script.Strict) { }
+            public TopLevelBlock(Script script) : base(script, script.Strict) { }
 
-            public GlobalBlock(Module module) : base(module, isStrict: true) { }
+            public TopLevelBlock(Module module) : base(module, isStrict: true) { }
 
             public override VariableScope FunctionScope => this;
 
