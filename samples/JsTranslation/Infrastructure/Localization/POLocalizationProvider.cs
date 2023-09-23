@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Karambolo.Common;
 using Karambolo.PO;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace JsTranslation.Infrastructure.Localization
@@ -71,7 +70,7 @@ namespace JsTranslation.Infrastructure.Localization
 
                     return p;
                 },
-                Noop<POParser>.Action);
+                CachedDelegates.Noop<POParser>.Action);
 
             TextCatalogs = textCatalogs
                 .GroupBy(it => it.Culture, it => (it.FileName, it.Catalog))
