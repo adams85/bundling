@@ -253,6 +253,23 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             return program;
         }
 
+        protected override object VisitSwitchStatement(SwitchStatement switchStatement)
+        {
+            Visit(switchStatement.Discriminant);
+
+            BeginVariableScope(new VariableScope.Block(switchStatement, _currentVariableScope), out Snapshot snapshot);
+
+            ref readonly NodeList<SwitchCase> cases = ref switchStatement.Cases;
+            for (var i = 0; i < cases.Count; i++)
+            {
+                Visit(cases[i]);
+            }
+
+            EndVariableScope(in snapshot);
+
+            return switchStatement;
+        }
+
         protected override object VisitStaticBlock(StaticBlock staticBlock)
         {
             BeginVariableScope(new VariableScope.ClassStaticBlock(staticBlock, _currentVariableScope), out Snapshot snapshot);

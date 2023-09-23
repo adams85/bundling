@@ -9,7 +9,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
     public class VariableScopeBuilderTest
     {
         [Fact]
-        public void FindIdentifer_GlobalScope()
+        public void FindIdentifer_TopLevelScope()
         {
             var moduleContent =
 @"import defaultImport, * as namespaceImport from './foo.js';
@@ -138,7 +138,7 @@ function globalFunc3() { }
             Assert.Same(classScope, methodFunctionScope.ParentScope);
 
             BlockStatement blockStatement = functionExpression.Body.As<BlockStatement>();
-            
+
             VariableScope methodBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(methodBlockScope);
             Assert.Same(methodFunctionScope, methodBlockScope.ParentScope);
@@ -477,6 +477,74 @@ function globalFunc3() { }
             Assert.Same(wrapperFunctionBlockScope, forOfScope.FindIdentifier("b"));
 
             Assert.False(scopes.ContainsKey(forOfStatement.Body));
+        }
+
+        [Fact]
+        public void FindIdentifer_SwitchBlockScope()
+        {
+            var moduleContent =
+@"let a = 'tl_a';
+(() => {
+  let b = 'fn_b';
+
+  switch (true) {
+    case false: let a = 'sw_a'
+    case true: const c = 'sw_c'
+    default: var d = 'sw_d'
+  } 
+})()
+";
+
+            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+
+            var scopes = new Dictionary<Node, VariableScope>();
+
+            var scopeBuilder = new VariableScopeBuilder(scopes.Add);
+            scopeBuilder.Visit(moduleAst);
+
+            VariableScope topLevelScope = scopes[moduleAst];
+            Assert.IsType<VariableScope.TopLevelBlock>(topLevelScope);
+
+            Assert.Same(topLevelScope, topLevelScope.FindIdentifier("a"));
+            Assert.Null(topLevelScope.FindIdentifier("b"));
+            Assert.Null(topLevelScope.FindIdentifier("c"));
+            Assert.Null(topLevelScope.FindIdentifier("d"));
+
+            ArrowFunctionExpression functionExpression = moduleAst.Body[1]
+                .As<ExpressionStatement>().Expression
+                .As<CallExpression>().Callee
+                .As<ArrowFunctionExpression>();
+
+            VariableScope wrapperFunctionScope = scopes[functionExpression];
+            Assert.IsType<VariableScope.Function>(wrapperFunctionScope);
+            Assert.Same(topLevelScope, wrapperFunctionScope.ParentScope);
+
+            Assert.Same(topLevelScope, wrapperFunctionScope.FindIdentifier("a"));
+            Assert.Null(wrapperFunctionScope.FindIdentifier("b"));
+            Assert.Null(wrapperFunctionScope.FindIdentifier("c"));
+            Assert.Null(wrapperFunctionScope.FindIdentifier("d"));
+
+            BlockStatement wrapperFunctionBlockStatement = functionExpression.Body.As<BlockStatement>();
+
+            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBlockStatement];
+            Assert.IsType<VariableScope.Block>(wrapperFunctionBlockScope);
+            Assert.Same(wrapperFunctionScope, wrapperFunctionBlockScope.ParentScope);
+
+            Assert.Same(topLevelScope, wrapperFunctionBlockScope.FindIdentifier("a"));
+            Assert.Same(wrapperFunctionBlockScope, wrapperFunctionBlockScope.FindIdentifier("b"));
+            Assert.Null(wrapperFunctionBlockScope.FindIdentifier("c"));
+            Assert.Same(wrapperFunctionBlockScope, wrapperFunctionBlockScope.FindIdentifier("d"));
+
+            SwitchStatement switchStatement = wrapperFunctionBlockStatement.Body[1].As<SwitchStatement>();
+
+            VariableScope switchStatementBlockScope = scopes[switchStatement];
+            Assert.IsType<VariableScope.Block>(switchStatementBlockScope);
+            Assert.Same(wrapperFunctionBlockScope, switchStatementBlockScope.ParentScope);
+
+            Assert.Same(switchStatementBlockScope, switchStatementBlockScope.FindIdentifier("a"));
+            Assert.Same(wrapperFunctionBlockScope, switchStatementBlockScope.FindIdentifier("b"));
+            Assert.Same(switchStatementBlockScope, switchStatementBlockScope.FindIdentifier("c"));
+            Assert.Same(wrapperFunctionBlockScope, switchStatementBlockScope.FindIdentifier("d"));
         }
 
         [Fact]

@@ -275,6 +275,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             {
                 FunctionScope = parentScope.FunctionScope;
             }
+            
+            public Block(SwitchStatement switchStatement, VariableScope parentScope) : base(switchStatement, parentScope)
+            {
+                FunctionScope = parentScope.FunctionScope;
+            }
 
             public override VariableScope FunctionScope { get; }
         }
