@@ -87,7 +87,7 @@ Finally, if you want to bundle ES6 modules, you need to install an additional pa
 
     dotnet add package Karambolo.AspNetCore.Bundling.EcmaScript
 
-Note: ES6 module bundling is built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet), which supports [language features](https://exploringjs.com/impatient-js/ch_new-javascript-features.html) up to ECMAScript 2021 currently. (For more details, refer to [this issue](https://github.com/sebastienros/esprima-dotnet/issues/330).) If you want to utilize even newer features (or you just want to target an older JavaScript version), you may use TypeScript for down-level compilation. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).)
+Note: ES6 module bundling is built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet), which supports [language features](https://exploringjs.com/impatient-js/ch_new-javascript-features.html) up to ECMAScript 2022 currently. If you want to utilize even newer features (or you just want to target an older JavaScript version), you may use TypeScript for down-level compilation. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).)
 
  ### Run-time mode
 
