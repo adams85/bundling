@@ -6,6 +6,7 @@
     <RootNamespace>Karambolo.AspNetCore.Bundling.Tools</RootNamespace>
     <OutputType>Exe</OutputType>
     <PackAsTool>true</PackAsTool>
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />
