@@ -548,6 +548,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     sb.Append("/* Exports */").Append(_br);
             }
 
+            if (_synthesizeAsyncLoader)
+            {
+                sb.Append("await ");
+            }
             sb.Append(FinalizeId).Append("(");
 
             if (exports.Count > 0)
@@ -683,7 +687,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             // define module callback
 
-            sb.Append("return function (").Append(FinalizeId);
+            sb.Append("return ");
+            if (_synthesizeAsyncLoader)
+            {
+                sb.Append("async ");
+            }
+            sb.Append("function (").Append(FinalizeId);
             if (module.RequiresDefine)
                 sb.Append(", ").Append(DefineId);
             sb.Append(") {").Append(_br);
@@ -721,6 +730,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private ModuleBundlingResult BuildResult(ModuleData[] rootModules)
         {
+            (string async, string await) = _synthesizeAsyncLoader ? ("async ", "await ") : (string.Empty, string.Empty);
+
             var sb = new StringBuilder();
 
             sb
@@ -733,7 +744,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 .Append("            moduleCache[moduleId] = module = { id: moduleId, e: {}, i: [] };").Append(_br)
                 .Append($"            var {RequireId} = function (id) {{ return require(id, module.i).e; }};").Append(_br)
                 .Append("            var importCallback = modules[moduleId](__es$require);").Append(_br)
-                .Append($"            var {FinalizeId} = function (properties) {{ define(module.e, properties); finalize(module.i); }};").Append(_br)
+                .Append($"            var {FinalizeId} = function (properties) {{ define(module.e, properties); return finalize(module.i); }};").Append(_br)
                 .Append("            imports.push(importCallback.bind(void 0, __es$finalize, define));").Append(_br)
                 .Append("        }").Append(_br)
                 .Append("        return module;").Append(_br)
@@ -746,9 +757,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 .Append("        }").Append(_br)
                 .Append("    }").Append(_br)
                 .Append(_br)
-                .Append("    function finalize(imports) {").Append(_br)
+                .Append($"    {async}function finalize(imports) {{").Append(_br)
                 .Append("        for (var i = 0; i < imports.length; i++)").Append(_br)
-                .Append("            imports[i]();").Append(_br)
+                .Append($"            {await}imports[i]();").Append(_br)
                 .Append("        imports.length = 0;").Append(_br)
                 .Append("    }").Append(_br)
                 .Append(_br)

@@ -176,6 +176,18 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
             }
 
+            protected override object VisitAwaitExpression(AwaitExpression awaitExpression)
+            {
+                if (CurrentVariableScope.FunctionScope is VariableScope.TopLevelBlock)
+                {
+                    _bundler._synthesizeAsyncLoader = true;
+                }
+
+                Visit(awaitExpression.Argument);
+
+                return awaitExpression;
+            }
+
             protected override object VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
             {
                 base.VisitExportAllDeclaration(exportAllDeclaration);

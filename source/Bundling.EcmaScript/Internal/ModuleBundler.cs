@@ -26,6 +26,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         private readonly Dictionary<IFileProvider, string> _fileProviderPrefixes;
         private int _fileProviderId;
+        private volatile bool _synthesizeAsyncLoader;
 
         public ModuleBundler(ILoggerFactory loggerFactory = null, ModuleBundlerOptions options = null)
         {
@@ -213,6 +214,8 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             ModuleData[] rootModules = GetRootModules(rootFiles, token);
 
             // analyze
+
+            _synthesizeAsyncLoader = false;
 
             using (var errorCts = new CancellationTokenSource())
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(errorCts.Token, token))

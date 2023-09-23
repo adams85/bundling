@@ -1635,6 +1635,171 @@ console.log(a2, x, em);";
         }
 
         [Fact]
+        public async Task Feature_TopLevelAwait_Basic()
+        {
+            var fooContent =
+@"import { asyncFunc } from './bar.js';
+let x = 1, y = await asyncFunc();
+export { x, y }
+console.log(`${x},${y}`)";
+
+            var barContent =
+@"import { x } from './foo.js';
+export const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(x * 2), 1000));";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return async function (__es$finalize) {",
+                "await __es$finalize({",
+                "    x: function() { return x; },",
+                "    y: function() { return y; }",
+                "});",
+                "let x = 1, y = await __es$module_0.asyncFunc();",
+                "console.log(`${x},${y}`)",
+                "};",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return async function (__es$finalize) {",
+                "await __es$finalize({",
+                "    asyncFunc: function() { return asyncFunc; }",
+                "});",
+                "const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(__es$module_0.x * 2), 1000));",
+                "};",
+            }, barLines);
+        }
+
+        [Fact]
+        public async Task Feature_TopLevelAwait_AwaitInNestedBlock()
+        {
+            var fooContent =
+@"import { asyncFunc } from './bar.js';
+let x = 1, y;
+{ y = await asyncFunc(); }
+export { x, y }
+console.log(`${x},${y}`)";
+
+            var barContent =
+@"import { x } from './foo.js';
+export const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(x * 2), 1000));";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return async function (__es$finalize) {",
+                "await __es$finalize({",
+                "    x: function() { return x; },",
+                "    y: function() { return y; }",
+                "});",
+                "let x = 1, y;",
+                "{ y = await __es$module_0.asyncFunc(); }",
+                "console.log(`${x},${y}`)",
+                "};",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return async function (__es$finalize) {",
+                "await __es$finalize({",
+                "    asyncFunc: function() { return asyncFunc; }",
+                "});",
+                "const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(__es$module_0.x * 2), 1000));",
+                "};",
+            }, barLines);
+
+            // TODO
+            moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task Feature_TopLevelAwait_AwaitInFunction()
+        {
+            var fooContent =
+@"import { asyncFunc } from './bar.js';
+let x = 1, y = async () => await asyncFunc();
+export { x, y }
+console.log(`${x},${y}`)";
+
+            var barContent =
+@"import { x } from './foo.js';
+export const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(x * 2), 1000));";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    x: function() { return x; },",
+                "    y: function() { return y; }",
+                "});",
+                "let x = 1, y = async () => await __es$module_0.asyncFunc();",
+                "console.log(`${x},${y}`)",
+                "};",
+            }, fooLines);
+
+            var barLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/bar.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/foo.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize({",
+                "    asyncFunc: function() { return asyncFunc; }",
+                "});",
+                "const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(__es$module_0.x * 2), 1000));",
+                "};",
+            }, barLines);
+
+            // TODO
+            moduleBundler = new ModuleBundler();
+
+            ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
+        }
+
+        [Fact]
         public async Task Webpack_Issue1788()
         {
             var mainContent =
