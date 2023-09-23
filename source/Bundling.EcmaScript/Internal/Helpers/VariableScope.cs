@@ -303,7 +303,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 case VariableDeclarationKind.Var: return VariableDeclarationType.Var;
                 case VariableDeclarationKind.Let: return VariableDeclarationType.Let;
                 case VariableDeclarationKind.Const: return VariableDeclarationType.Const;
-                default: throw new ArgumentOutOfRangeException(nameof(declarationKind));
+                default: throw new ArgumentOutOfRangeException(nameof(declarationKind), declarationKind, null);
             }
         }
 

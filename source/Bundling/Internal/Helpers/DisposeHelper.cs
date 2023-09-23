@@ -19,7 +19,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
         public void Dispose() { }
     }
 
-    internal readonly struct CompositeDisposable : IDisposable
+    internal sealed class CompositeDisposable : IDisposable
     {
         private readonly IDisposable _disposable1;
         private readonly IDisposable _disposable2;

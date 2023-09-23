@@ -9,6 +9,10 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Karambolo.AspNetCore.Bundling.Test" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="WebMarkupMin.Core" Version="2.14.0" />
   </ItemGroup>
 

@@ -29,7 +29,6 @@ namespace Karambolo.AspNetCore.Bundling.Internal
 
     public class BundleManager : IBundleManager
     {
-        private static readonly object s_httpContextItemKey = new object();
         private readonly CancellationToken _shutdownToken;
         private readonly IEnumerable<IBundleModelFactory> _modelFactories;
         private readonly IBundleCache _cache;
@@ -257,16 +256,25 @@ namespace Karambolo.AspNetCore.Bundling.Internal
             }
 
             // passing file info to GetFileInfo(), which is called later in the request (see BundlingMiddleware and BundleFileProvider)
-            httpContext.Items.Add(s_httpContextItemKey, cacheItem.FileInfo);
+            httpContext.Features.Set(new BundleFileFeature(cacheItem.FileInfo));
             return true;
         }
 
         public IFileInfo GetFileInfo(HttpContext httpContext)
         {
             return
-                httpContext.Items.TryGetValue(s_httpContextItemKey, out object fileInfo) ?
-                (IFileInfo)fileInfo :
+                httpContext.Features.Get<BundleFileFeature>()?.FileInfo ??
                 throw ErrorHelper.BundleInfoNotAvailable(httpContext.Request.Path, httpContext.Request.QueryString);
+        }
+
+        private sealed class BundleFileFeature
+        {
+            public BundleFileFeature(IFileInfo fileInfo)
+            {
+                FileInfo = fileInfo;
+            }
+
+            public IFileInfo FileInfo { get; }
         }
     }
 }

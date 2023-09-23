@@ -9,6 +9,10 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Karambolo.AspNetCore.Bundling.Test" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="dotless.Core" Version="1.6.7" />
   </ItemGroup>
 

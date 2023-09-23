@@ -9,6 +9,15 @@
   <Import Project="Properties\AssemblyInfo.props" />
 
   <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).EcmaScript" />
+    <InternalsVisibleTo Include="$(AssemblyName).Less" />
+    <InternalsVisibleTo Include="$(AssemblyName).NUglify" />
+    <InternalsVisibleTo Include="$(AssemblyName).Sass" />
+    <InternalsVisibleTo Include="$(AssemblyName).WebMarkupMin" />
+    <InternalsVisibleTo Include="$(AssemblyName).Test" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Build\Karambolo.AspNetCore.Bundling.targets" />
   </ItemGroup>
 

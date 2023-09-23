@@ -16,7 +16,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
             public int Status;
         }
 
-        private struct Releaser : IDisposable
+        private sealed class Releaser : IDisposable
         {
             private AsyncKeyedLock<TKey> _owner;
             private readonly TKey _key;

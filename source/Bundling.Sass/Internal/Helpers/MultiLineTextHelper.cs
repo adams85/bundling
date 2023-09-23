@@ -43,7 +43,7 @@ namespace Karambolo.AspNetCore.Bundling.Sass.Internal.Helpers
                 return (0, 0);
 
             if (index < 0 || Text == null || index > Text.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
+                throw new ArgumentOutOfRangeException(nameof(index), index, null);
 
             int lineNumber = _lineIndices.BinarySearch(index);
             if (lineNumber >= 0)

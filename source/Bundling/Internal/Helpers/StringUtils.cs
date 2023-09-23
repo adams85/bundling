@@ -36,11 +36,11 @@ namespace Karambolo.AspNetCore.Bundling.Internal.Helpers
 
             var length = @stringBuilder.Length;
             if (startIndex < 0 || length < startIndex)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, null);
 
             var endIndex = startIndex + count;
             if (count < 0 || length < endIndex)
-                throw new ArgumentOutOfRangeException(nameof(count));
+                throw new ArgumentOutOfRangeException(nameof(count), count, null);
 
             var difference = count - segment.Length;
             if (difference > 0)
