@@ -4,6 +4,8 @@
     <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <AssemblyName>Karambolo.AspNetCore.Bundling.EcmaScript</AssemblyName>
     <RootNamespace>Karambolo.AspNetCore.Bundling.EcmaScript</RootNamespace>
+    <!-- this can be removed after dropping support for netcoreapp3.0 -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
   <Import Project="Properties\AssemblyInfo.props" />
@@ -13,11 +15,11 @@
   </ItemGroup>
   
   <ItemGroup>
+    <PackageReference Include="Acornima" Version="0.9.0" />
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Esprima" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>

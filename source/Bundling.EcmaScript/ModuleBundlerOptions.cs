@@ -6,6 +6,7 @@
     {
         public string NewLine { get; set; }
         public bool DevelopmentMode { get; set; }
+        public bool ExperimentalESFeatures { get; set; }
         public ModuleImportResolver ImportResolver { get; set; }
     }
 }

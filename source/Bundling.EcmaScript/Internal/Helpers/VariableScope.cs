@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Esprima.Ast;
+using Acornima.Ast;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
@@ -10,13 +10,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         public sealed class Function : VariableScope
         {
             public Function(ArrowFunctionExpression arrowFunctionExpression, VariableScope parentScope)
-                : base(arrowFunctionExpression, parentScope, parentScope.IsStrict || arrowFunctionExpression.Strict) { }
+                : base(arrowFunctionExpression, parentScope, parentScope.IsStrict || arrowFunctionExpression.Body is FunctionBody { Strict: true }) { }
 
             public Function(FunctionDeclaration functionDeclaration, VariableScope parentScope)
-                : base(functionDeclaration, parentScope, parentScope.IsStrict || functionDeclaration.Strict) { }
+                : base(functionDeclaration, parentScope, parentScope.IsStrict || functionDeclaration.Body.Strict) { }
 
             public Function(FunctionExpression functionExpression, VariableScope parentScope)
-                : base(functionExpression, parentScope, parentScope.IsStrict || functionExpression.Strict) { }
+                : base(functionExpression, parentScope, parentScope.IsStrict || functionExpression.Body.Strict) { }
 
             public override VariableScope FunctionScope => this;
 
@@ -81,7 +81,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public sealed class CatchClause : VariableScope
         {
-            public CatchClause(Esprima.Ast.CatchClause catchClause, VariableScope parentScope) : base(catchClause, parentScope, parentScope.IsStrict)
+            public CatchClause(Acornima.Ast.CatchClause catchClause, VariableScope parentScope) : base(catchClause, parentScope, parentScope.IsStrict)
             {
                 FunctionScope = parentScope.FunctionScope;
             }
@@ -116,7 +116,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             private void HoistVariable(Identifier identifier)
             {
                 // Declaring function-scoped variables with a name identical to some block-scoped variable declared in an enclosing block is prohibited (results in error).
-                // TODO: It'd be nice to track down and report these errors to the consumer but the logic behind the redeclarations detection seems pretty complex and messy...
+                // But we don't have to deal with that as the parser (Acornima) should detect such errors.
 
                 VariableScope scope;
                 for (scope = this; scope.ParentScope != FunctionScope; scope = scope.ParentScope) { }

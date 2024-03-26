@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Esprima;
-using Esprima.Ast;
+using Acornima;
+using Acornima.Ast;
 using Xunit;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
@@ -42,12 +42,12 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopeBuilder = new VariableScopeBuilder();
             scopeBuilder.Visit(moduleAst);
 
-            var topLevelScope = (VariableScope)moduleAst.AssociatedData;
+            var topLevelScope = (VariableScope)moduleAst.UserData;
             Assert.IsType<VariableScope.TopLevelBlock>(topLevelScope);
 
             Assert.Same(topLevelScope, topLevelScope.FindIdentifier("defaultImport"));
@@ -112,7 +112,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -137,9 +137,9 @@ function globalFunc3() { }
             Assert.IsType<VariableScope.Function>(methodFunctionScope);
             Assert.Same(classScope, methodFunctionScope.ParentScope);
 
-            BlockStatement blockStatement = functionExpression.Body.As<BlockStatement>();
+            FunctionBody functionBody = functionExpression.Body;
 
-            VariableScope methodBlockScope = scopes[blockStatement];
+            VariableScope methodBlockScope = scopes[functionBody];
             Assert.IsType<VariableScope.Block>(methodBlockScope);
             Assert.Same(methodFunctionScope, methodBlockScope.ParentScope);
 
@@ -206,7 +206,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -293,7 +293,7 @@ function globalFunc2() { }
 function globalFunc3() { }
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -310,9 +310,9 @@ function globalFunc3() { }
             Assert.IsType<VariableScope.Function>(functionScope);
             Assert.Same(topLevelScope, functionScope.ParentScope);
 
-            BlockStatement blockStatement = functionDeclaration.Body.As<BlockStatement>();
+            FunctionBody functionBody = functionDeclaration.Body;
 
-            VariableScope functionBlockScope = scopes[blockStatement];
+            VariableScope functionBlockScope = scopes[functionBody];
             Assert.IsType<VariableScope.Block>(functionBlockScope);
             Assert.Same(functionScope, functionBlockScope.ParentScope);
 
@@ -367,7 +367,7 @@ function globalFunc3() { }
 })()
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -378,7 +378,7 @@ function globalFunc3() { }
             Assert.IsType<VariableScope.TopLevelBlock>(topLevelScope);
 
             ArrowFunctionExpression functionExpression = moduleAst.Body.Single()
-                .As<ExpressionStatement>().Expression
+                .As<NonSpecialExpressionStatement>().Expression
                 .As<CallExpression>().Callee
                 .As<ArrowFunctionExpression>();
 
@@ -386,9 +386,9 @@ function globalFunc3() { }
             Assert.IsType<VariableScope.Function>(wrapperFunctionScope);
             Assert.Same(topLevelScope, wrapperFunctionScope.ParentScope);
 
-            BlockStatement wrapperFunctionBlockStatement = functionExpression.Body.As<BlockStatement>();
+            FunctionBody wrapperFunctionBody = functionExpression.Body.As<FunctionBody>();
 
-            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBlockStatement];
+            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBody];
             Assert.IsType<VariableScope.Block>(wrapperFunctionBlockScope);
             Assert.Same(wrapperFunctionScope, wrapperFunctionBlockScope.ParentScope);
 
@@ -402,7 +402,7 @@ function globalFunc3() { }
 
             // for
 
-            ForStatement forStatement = wrapperFunctionBlockStatement.Body.OfType<ForStatement>().Single();
+            ForStatement forStatement = wrapperFunctionBody.Body.OfType<ForStatement>().Single();
 
             VariableScope forScope = scopes[forStatement];
             Assert.IsType<VariableScope.VariableDeclaratorStatement>(forScope);
@@ -416,7 +416,7 @@ function globalFunc3() { }
             Assert.Same(wrapperFunctionBlockScope, forScope.FindIdentifier("a"));
             Assert.Same(wrapperFunctionBlockScope, forScope.FindIdentifier("b"));
 
-            BlockStatement blockStatement = forStatement.Body.As<BlockStatement>();
+            NestedBlockStatement blockStatement = forStatement.Body.As<NestedBlockStatement>();
 
             VariableScope forBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(forBlockScope);
@@ -432,7 +432,7 @@ function globalFunc3() { }
 
             // for in
 
-            ForInStatement forInStatement = wrapperFunctionBlockStatement.Body.OfType<ForInStatement>().Single();
+            ForInStatement forInStatement = wrapperFunctionBody.Body.OfType<ForInStatement>().Single();
 
             VariableScope forInScope = scopes[forInStatement];
             Assert.IsType<VariableScope.VariableDeclaratorStatement>(forInScope);
@@ -446,7 +446,7 @@ function globalFunc3() { }
             Assert.Same(wrapperFunctionBlockScope, forInScope.FindIdentifier("a"));
             Assert.Same(wrapperFunctionBlockScope, forInScope.FindIdentifier("b"));
 
-            blockStatement = forInStatement.Body.As<BlockStatement>();
+            blockStatement = forInStatement.Body.As<NestedBlockStatement>();
 
             VariableScope forInBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(forInBlockScope);
@@ -462,7 +462,7 @@ function globalFunc3() { }
 
             // for of
 
-            ForOfStatement forOfStatement = wrapperFunctionBlockStatement.Body.OfType<ForOfStatement>().Single();
+            ForOfStatement forOfStatement = wrapperFunctionBody.Body.OfType<ForOfStatement>().Single();
 
             VariableScope forOfScope = scopes[forOfStatement];
             Assert.IsType<VariableScope.VariableDeclaratorStatement>(forOfScope);
@@ -495,7 +495,7 @@ function globalFunc3() { }
 })()
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -511,7 +511,7 @@ function globalFunc3() { }
             Assert.Null(topLevelScope.FindIdentifier("d"));
 
             ArrowFunctionExpression functionExpression = moduleAst.Body[1]
-                .As<ExpressionStatement>().Expression
+                .As<NonSpecialExpressionStatement>().Expression
                 .As<CallExpression>().Callee
                 .As<ArrowFunctionExpression>();
 
@@ -524,9 +524,9 @@ function globalFunc3() { }
             Assert.Null(wrapperFunctionScope.FindIdentifier("c"));
             Assert.Null(wrapperFunctionScope.FindIdentifier("d"));
 
-            BlockStatement wrapperFunctionBlockStatement = functionExpression.Body.As<BlockStatement>();
+            FunctionBody wrapperFunctionBody = functionExpression.Body.As<FunctionBody>();
 
-            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBlockStatement];
+            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBody];
             Assert.IsType<VariableScope.Block>(wrapperFunctionBlockScope);
             Assert.Same(wrapperFunctionScope, wrapperFunctionBlockScope.ParentScope);
 
@@ -535,7 +535,7 @@ function globalFunc3() { }
             Assert.Null(wrapperFunctionBlockScope.FindIdentifier("c"));
             Assert.Same(wrapperFunctionBlockScope, wrapperFunctionBlockScope.FindIdentifier("d"));
 
-            SwitchStatement switchStatement = wrapperFunctionBlockStatement.Body[1].As<SwitchStatement>();
+            SwitchStatement switchStatement = wrapperFunctionBody.Body[1].As<SwitchStatement>();
 
             VariableScope switchStatementBlockScope = scopes[switchStatement];
             Assert.IsType<VariableScope.Block>(switchStatementBlockScope);
@@ -567,7 +567,7 @@ function globalFunc3() { }
 })()
 ";
 
-            Module moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
+            Module moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseModule(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -578,7 +578,7 @@ function globalFunc3() { }
             Assert.IsType<VariableScope.TopLevelBlock>(topLevelScope);
 
             ArrowFunctionExpression functionExpression = moduleAst.Body.Single()
-                .As<ExpressionStatement>().Expression
+                .As<NonSpecialExpressionStatement>().Expression
                 .As<CallExpression>().Callee
                 .As<ArrowFunctionExpression>();
 
@@ -586,9 +586,9 @@ function globalFunc3() { }
             Assert.IsType<VariableScope.Function>(wrapperFunctionScope);
             Assert.Same(topLevelScope, wrapperFunctionScope.ParentScope);
 
-            BlockStatement wrapperFunctionBlockStatement = functionExpression.Body.As<BlockStatement>();
+            FunctionBody wrapperFunctionBody = functionExpression.Body.As<FunctionBody>();
 
-            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBlockStatement];
+            VariableScope wrapperFunctionBlockScope = scopes[wrapperFunctionBody];
             Assert.IsType<VariableScope.Block>(wrapperFunctionBlockScope);
             Assert.Same(wrapperFunctionScope, wrapperFunctionBlockScope.ParentScope);
 
@@ -597,7 +597,7 @@ function globalFunc3() { }
 
             // catch clause #1
 
-            CatchClause catchClause = wrapperFunctionBlockStatement.Body.OfType<TryStatement>().ElementAt(0).Handler;
+            CatchClause catchClause = wrapperFunctionBody.Body.OfType<TryStatement>().ElementAt(0).Handler;
 
             VariableScope catchClauseScope = scopes[catchClause];
             Assert.IsType<VariableScope.CatchClause>(catchClauseScope);
@@ -615,7 +615,7 @@ function globalFunc3() { }
 
             // catch clause #2
 
-            catchClause = wrapperFunctionBlockStatement.Body.OfType<TryStatement>().ElementAt(1).Handler;
+            catchClause = wrapperFunctionBody.Body.OfType<TryStatement>().ElementAt(1).Handler;
 
             catchClauseScope = scopes[catchClause];
             Assert.IsType<VariableScope.CatchClause>(catchClauseScope);
@@ -664,7 +664,7 @@ function f4(a = foo) {
 }
 ";
 
-            Script moduleAst = new JavaScriptParser(ModuleBundler.CreateParserOptions()).ParseScript(moduleContent);
+            Script moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseScript(moduleContent);
 
             var scopes = new Dictionary<Node, VariableScope>();
 
@@ -687,15 +687,15 @@ function f4(a = foo) {
 
             Assert.Same(topLevelScope, functionScope.FindIdentifier("foo"));
 
-            BlockStatement blockStatement = functionDeclaration.Body.As<BlockStatement>();
+            FunctionBody functionBody = functionDeclaration.Body;
 
-            VariableScope functionBlockScope = scopes[blockStatement];
+            VariableScope functionBlockScope = scopes[functionBody];
             Assert.IsType<VariableScope.Block>(functionBlockScope);
             Assert.Same(functionScope, functionBlockScope.ParentScope);
 
             Assert.Same(functionBlockScope, functionBlockScope.FindIdentifier("foo"));
 
-            blockStatement = blockStatement.Body.OfType<BlockStatement>().Single();
+            NestedBlockStatement blockStatement = functionBody.Body.OfType<NestedBlockStatement>().Single();
 
             VariableScope nestedBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(nestedBlockScope);
@@ -714,15 +714,15 @@ function f4(a = foo) {
 
             Assert.Same(topLevelScope, functionScope.FindIdentifier("foo"));
 
-            blockStatement = functionDeclaration.Body.As<BlockStatement>();
+            functionBody = functionDeclaration.Body;
 
-            functionBlockScope = scopes[blockStatement];
+            functionBlockScope = scopes[functionBody];
             Assert.IsType<VariableScope.Block>(functionBlockScope);
             Assert.Same(functionScope, functionBlockScope.ParentScope);
 
             Assert.Same(functionBlockScope, functionBlockScope.FindIdentifier("foo"));
 
-            blockStatement = blockStatement.Body.OfType<BlockStatement>().Single();
+            blockStatement = functionBody.Body.OfType<NestedBlockStatement>().Single();
 
             nestedBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(nestedBlockScope);
@@ -741,15 +741,15 @@ function f4(a = foo) {
 
             Assert.Same(topLevelScope, functionScope.FindIdentifier("foo"));
 
-            blockStatement = functionDeclaration.Body.As<BlockStatement>();
+            functionBody = functionDeclaration.Body;
 
-            functionBlockScope = scopes[blockStatement];
+            functionBlockScope = scopes[functionBody];
             Assert.IsType<VariableScope.Block>(functionBlockScope);
             Assert.Same(functionScope, functionBlockScope.ParentScope);
 
             Assert.Same(topLevelScope, functionBlockScope.FindIdentifier("foo"));
 
-            blockStatement = blockStatement.Body.OfType<BlockStatement>().Single();
+            blockStatement = functionBody.Body.OfType<NestedBlockStatement>().Single();
 
             nestedBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(nestedBlockScope);
@@ -768,15 +768,15 @@ function f4(a = foo) {
 
             Assert.Same(topLevelScope, functionScope.FindIdentifier("foo"));
 
-            blockStatement = functionDeclaration.Body.As<BlockStatement>();
+            functionBody = functionDeclaration.Body;
 
-            functionBlockScope = scopes[blockStatement];
+            functionBlockScope = scopes[functionBody];
             Assert.IsType<VariableScope.Block>(functionBlockScope);
             Assert.Same(functionScope, functionBlockScope.ParentScope);
 
             Assert.Same(topLevelScope, functionBlockScope.FindIdentifier("foo"));
 
-            blockStatement = blockStatement.Body.OfType<BlockStatement>().Single();
+            blockStatement = functionBody.Body.OfType<NestedBlockStatement>().Single();
 
             nestedBlockScope = scopes[blockStatement];
             Assert.IsType<VariableScope.Block>(nestedBlockScope);

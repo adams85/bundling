@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using Esprima;
-using Esprima.Ast;
-using Esprima.Utils;
+using Acornima;
+using Acornima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
@@ -14,7 +13,7 @@ using Microsoft.Extensions.Primitives;
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     using ExportDictionary = Dictionary<string, (ModuleBundler.ExportData Export, bool IsExportedViaWildcard)>;
-    using Range = Esprima.Range;
+    using Range = Acornima.Range;
 
     internal partial class ModuleBundler
     {
@@ -29,7 +28,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private readonly SortedDictionary<Range, StringSegment> _substitutions;
 
             private VariableScope _currentVariableScope;
-            private Scanner _scanner;
+            private Tokenizer _tokenizer;
 
             public SubstitutionCollector(ModuleBundler bundler, ModuleData module, SortedDictionary<Range, StringSegment> substitutions)
             {
@@ -46,7 +45,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public override object Visit(Node node)
             {
                 VariableScope previousVariableScope = _currentVariableScope;
-                if (node.AssociatedData is VariableScope variableScope)
+                if (node.UserData is VariableScope variableScope)
                     _currentVariableScope = variableScope;
 
                 var result = base.Visit(node);
@@ -56,14 +55,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return result;
             }
 
-            private void SetScannerTo(Node node)
+            private void SetTokenizerTo(Node node)
             {
-                _scanner ??= new Scanner(_module.Content, _bundler._parserOptions.GetScannerOptions());
-
-                _scanner.Reset(
-                    startIndex: node.Range.Start,
-                    lineNumber: node.Location.Start.Line,
-                    lineStartIndex: node.Range.Start - node.Location.Start.Column);
+                var start = node.Range.Start;
+                if (_tokenizer == null)
+                    _tokenizer = new Tokenizer(_module.Content, start, _module.Content.Length - start, SourceType.Module, sourceFile: null, _bundler._parserOptions.GetTokenizerOptions());
+                else
+                    _tokenizer.Reset(_module.Content, start, SourceType.Module);
             }
 
             private VariableDeclarationVisitor<SubstitutionCollector> CreateVariableDeclarationVisitor() =>
@@ -92,51 +90,51 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _substitutions.Add(identifier.Range, value);
             }
 
-            protected override object VisitAccessorProperty(AccessorProperty accessorProperty)
+            protected override object VisitAccessorProperty(AccessorProperty node)
             {
-                ref readonly NodeList<Decorator> decorators = ref accessorProperty.Decorators;
+                ref readonly NodeList<Decorator> decorators = ref node.Decorators;
                 for (var i = 0; i < decorators.Count; i++)
                 {
                     Visit(decorators[i]);
                 }
 
-                VisitPropertyCore(accessorProperty);
+                VisitPropertyCore(node);
 
-                if (accessorProperty.Value is not null)
+                if (node.Value is not null)
                 {
-                    Visit(accessorProperty.Value);
+                    Visit(node.Value);
                 }
 
-                return accessorProperty;
+                return node;
             }
 
-            protected override object VisitArrowFunctionExpression(ArrowFunctionExpression arrowFunctionExpression)
+            protected override object VisitArrowFunctionExpression(ArrowFunctionExpression node)
             {
-                VisitFunctionCore(arrowFunctionExpression);
+                VisitFunctionCore(node);
 
-                return arrowFunctionExpression;
+                return node;
             }
 
-            protected override object VisitBreakStatement(BreakStatement breakStatement)
+            protected override object VisitBreakStatement(BreakStatement node)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
 
-                return breakStatement;
+                return node;
             }
 
-            protected override object VisitCatchClause(CatchClause catchClause)
+            protected override object VisitCatchClause(CatchClause node)
             {
                 // Catch clause error parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitCatchClauseParam(catchClause);
+                CreateVariableDeclarationVisitor().VisitCatchClauseParam(node);
 
-                Visit(catchClause.Body);
+                Visit(node.Body);
 
-                return catchClause;
+                return node;
             }
 
-            private void VisitClassCore(IClass @class)
+            private void VisitClassCore(IClass node)
             {
-                ref readonly NodeList<Decorator> decorators = ref @class.Decorators;
+                ref readonly NodeList<Decorator> decorators = ref node.Decorators;
                 for (var i = 0; i < decorators.Count; i++)
                 {
                     Visit(decorators[i]);
@@ -144,259 +142,255 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 // Class name identifier is not subject to rewriting, thus, skipped.
 
-                if (@class.SuperClass != null)
-                    Visit(@class.SuperClass);
+                if (node.SuperClass != null)
+                    Visit(node.SuperClass);
 
-                Visit(@class.Body);
+                Visit(node.Body);
             }
 
-            protected override object VisitClassDeclaration(ClassDeclaration classDeclaration)
+            protected override object VisitClassDeclaration(ClassDeclaration node)
             {
-                VisitClassCore(classDeclaration);
+                VisitClassCore(node);
 
-                return classDeclaration;
+                return node;
             }
 
-            protected override object VisitClassExpression(ClassExpression classExpression)
+            protected override object VisitClassExpression(ClassExpression node)
             {
-                VisitClassCore(classExpression);
+                VisitClassCore(node);
 
-                return classExpression;
+                return node;
             }
 
-            protected override object VisitContinueStatement(ContinueStatement continueStatement)
+            protected override object VisitContinueStatement(ContinueStatement node)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
 
-                return continueStatement;
+                return node;
             }
 
-            protected override object VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
+            protected override object VisitExportAllDeclaration(ExportAllDeclaration node)
             {
-                _substitutions.Add(exportAllDeclaration.Range, StringSegment.Empty);
+                _substitutions.Add(node.Range, StringSegment.Empty);
 
-                return exportAllDeclaration;
+                return node;
             }
 
-            protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
+            protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration node)
             {
-                switch (exportDefaultDeclaration.Declaration)
+                switch (node.Declaration)
                 {
                     case FunctionDeclaration functionDeclaration when functionDeclaration.Id != null:
                     case ClassDeclaration classDeclaration when classDeclaration.Id != null:
-                        _substitutions.Add(Range.From(exportDefaultDeclaration.Range.Start, FindActualDeclarationStart(exportDefaultDeclaration)), StringSegment.Empty);
+                        _substitutions.Add(Range.From(node.Range.Start, FindActualDeclarationStart(node)), StringSegment.Empty);
                         break;
                     default:
-                        _substitutions.Add(Range.From(exportDefaultDeclaration.Range.Start, FindActualDeclarationStart(exportDefaultDeclaration)), string.Concat("var ", DefaultExportId, " = "));
+                        _substitutions.Add(Range.From(node.Range.Start, FindActualDeclarationStart(node)), string.Concat("var ", DefaultExportId, " = "));
                         break;
                 }
 
-                Visit(exportDefaultDeclaration.Declaration);
+                Visit(node.Declaration);
 
-                return exportDefaultDeclaration;
+                return node;
 
                 // exportDefaultDeclaration.Declaration.Range doesn't include preceding comments or parentheses,
                 // so we need to do some gymnastics to determine the actual start of the declaration/expression.
                 int FindActualDeclarationStart(ExportDefaultDeclaration declaration)
                 {
-                    SetScannerTo(declaration);
-
-                    _scanner.Lex(); // skip export keyword
-                    _scanner.ScanComments(); // skip possible comments/whitespace
-                    _scanner.Lex(); // skip default keyword
-                    _scanner.ScanComments(); // skip possible comments/whitespace
-
-                    return _scanner.Index;
+                    SetTokenizerTo(declaration);
+                    _tokenizer.Next(); // skip export keyword
+                    _tokenizer.Next(); // skip default keyword
+                    return _tokenizer.GetToken().Start;
                 }
             }
 
-            protected override object VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
+            protected override object VisitExportNamedDeclaration(ExportNamedDeclaration node)
             {
-                if (exportNamedDeclaration.Declaration != null)
+                if (node.Declaration != null)
                 {
-                    _substitutions.Add(Range.From(exportNamedDeclaration.Range.Start, exportNamedDeclaration.Declaration.Range.Start), StringSegment.Empty);
+                    _substitutions.Add(Range.From(node.Range.Start, node.Declaration.Range.Start), StringSegment.Empty);
 
-                    Visit(exportNamedDeclaration.Declaration);
+                    Visit(node.Declaration);
                 }
                 else
-                    _substitutions.Add(exportNamedDeclaration.Range, StringSegment.Empty);
+                    _substitutions.Add(node.Range, StringSegment.Empty);
 
-                return exportNamedDeclaration;
+                return node;
             }
 
-            protected override object VisitExportSpecifier(ExportSpecifier exportSpecifier)
+            protected override object VisitExportSpecifier(ExportSpecifier node)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
 
-                return exportSpecifier;
+                return node;
             }
 
-            private void VisitFunctionCore(IFunction function)
+            private void VisitFunctionCore(IFunction node)
             {
                 // Function name identifier is not subject to rewriting, thus, skipped.
 
                 // Function parameter identifier(s) are not subject to rewriting, thus, skipped.
-                CreateVariableDeclarationVisitor().VisitFunctionParams(function);
+                CreateVariableDeclarationVisitor().VisitFunctionParams(node);
 
-                Visit(function.Body);
+                Visit(node.Body);
             }
 
-            protected override object VisitFunctionDeclaration(FunctionDeclaration functionDeclaration)
+            protected override object VisitFunctionDeclaration(FunctionDeclaration node)
             {
-                VisitFunctionCore(functionDeclaration);
+                VisitFunctionCore(node);
 
-                return functionDeclaration;
+                return node;
             }
 
-            protected override object VisitFunctionExpression(FunctionExpression functionExpression)
+            protected override object VisitFunctionExpression(FunctionExpression node)
             {
-                VisitFunctionCore(functionExpression);
+                VisitFunctionCore(node);
 
-                return functionExpression;
+                return node;
             }
 
-            protected override object VisitIdentifier(Identifier identifier)
+            protected override object VisitIdentifier(Identifier node)
             {
-                AddSubstitutionIfImported(identifier, delegate { });
+                AddSubstitutionIfImported(node, delegate { });
 
-                return identifier;
+                return node;
             }
 
-            protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
+            protected override object VisitImportDeclaration(ImportDeclaration node)
             {
-                _substitutions.Add(importDeclaration.Range, StringSegment.Empty);
+                _substitutions.Add(node.Range, StringSegment.Empty);
 
-                return importDeclaration;
+                return node;
             }
 
-            protected override object VisitImportDefaultSpecifier(ImportDefaultSpecifier importDefaultSpecifier)
+            protected override object VisitImportDefaultSpecifier(ImportDefaultSpecifier node)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
 
-                return importDefaultSpecifier;
+                return node;
             }
 
-            protected override object VisitImportExpression(ImportExpression importExpression)
+            protected override object VisitImportExpression(ImportExpression node)
             {
-                if (IsRewritableDynamicImport(importExpression, out Literal sourceLiteral))
+                if (IsRewritableDynamicImport(node, out StringLiteral sourceLiteral))
                 {
-                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
+                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.Value, _module.Resource);
                     var moduleRef = _module.ModuleRefs[source];
-                    _substitutions.Add(importExpression.Range, $"Promise.resolve({moduleRef})");
+                    _substitutions.Add(node.Range, $"Promise.resolve({moduleRef})");
                 }
                 else
-                    return base.VisitImportExpression(importExpression);
+                    return base.VisitImportExpression(node);
 
-                return importExpression;
+                return node;
             }
 
-            protected override object VisitImportNamespaceSpecifier(ImportNamespaceSpecifier importNamespaceSpecifier)
+            protected override object VisitImportNamespaceSpecifier(ImportNamespaceSpecifier node)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
 
-                return importNamespaceSpecifier;
+                return node;
             }
 
-            protected override object VisitImportSpecifier(ImportSpecifier importSpecifier)
+            protected override object VisitImportSpecifier(ImportSpecifier node)
             {
                 // Specifier identifiers are not subject to rewriting, thus, skipped.
 
-                return importSpecifier;
+                return node;
             }
 
-            protected override object VisitLabeledStatement(LabeledStatement labeledStatement)
+            protected override object VisitLabeledStatement(LabeledStatement node)
             {
                 // Label identifier is not subject to rewriting, thus, skipped.
 
-                Visit(labeledStatement.Body);
+                Visit(node.Body);
 
-                return labeledStatement;
+                return node;
             }
 
-            protected override object VisitMemberExpression(MemberExpression memberExpression)
+            protected override object VisitMemberExpression(MemberExpression node)
             {
-                Visit(memberExpression.Object);
+                Visit(node.Object);
 
                 // Property name identifier is not subject to rewriting, thus, skipped.
                 // Computed properties (array-like access) needs to be visited though.
-                if (memberExpression.Computed)
-                    Visit(memberExpression.Property);
+                if (node.Computed)
+                    Visit(node.Property);
 
-                return memberExpression;
+                return node;
             }
 
-            protected override object VisitMetaProperty(MetaProperty metaProperty)
+            protected override object VisitMetaProperty(MetaProperty node)
             {
-                if (IsImportMeta(metaProperty))
-                    _substitutions.Add(metaProperty.Range, ImportMetaId);
+                if (IsImportMeta(node))
+                    _substitutions.Add(node.Range, ImportMetaId);
 
-                return metaProperty;
+                return node;
             }
 
-            protected override object VisitMethodDefinition(MethodDefinition methodDefinition)
+            protected override object VisitMethodDefinition(MethodDefinition node)
             {
-                ref readonly NodeList<Decorator> decorators = ref methodDefinition.Decorators;
+                ref readonly NodeList<Decorator> decorators = ref node.Decorators;
                 for (var i = 0; i < decorators.Count; i++)
                 {
                     Visit(decorators[i]);
                 }
 
-                VisitPropertyCore(methodDefinition);
+                VisitPropertyCore(node);
 
-                Visit(methodDefinition.Value);
+                Visit(node.Value);
 
-                return methodDefinition;
+                return node;
             }
 
-            private void VisitPropertyCore(IProperty property)
+            private void VisitPropertyCore(IProperty node)
             {
                 // Property name identifier is not subject to rewriting, thus, skipped.
                 // Computed keys needs to be visited though.
-                if (property.Computed)
-                    Visit(property.Key);
+                if (node.Computed)
+                    Visit(node.Key);
             }
 
-            protected override object VisitProperty(Property property)
+            protected override object VisitProperty(Property node)
             {
                 // Shorthand properties need special care.
-                if (property.Shorthand)
+                if (node.Shorthand)
                 {
-                    var identifier = (Identifier)property.Value;
+                    var identifier = (Identifier)node.Value;
                     AddSubstitutionIfImported(identifier, delegate (Identifier id, ref string value) { value = id.Name + ": " + value; });
                 }
                 else
                 {
-                    VisitPropertyCore(property);
+                    VisitPropertyCore(node);
 
-                    Visit(property.Value);
+                    Visit(node.Value);
                 }
 
-                return property;
+                return node;
             }
 
-            protected override object VisitPropertyDefinition(PropertyDefinition propertyDefinition)
+            protected override object VisitPropertyDefinition(PropertyDefinition node)
             {
-                ref readonly NodeList<Decorator> decorators = ref propertyDefinition.Decorators;
+                ref readonly NodeList<Decorator> decorators = ref node.Decorators;
                 for (var i = 0; i < decorators.Count; i++)
                 {
                     Visit(decorators[i]);
                 }
 
-                VisitPropertyCore(propertyDefinition);
+                VisitPropertyCore(node);
 
-                if (propertyDefinition.Value != null)
+                if (node.Value != null)
                 {
-                    Visit(propertyDefinition.Value);
+                    Visit(node.Value);
                 }
 
-                return propertyDefinition;
+                return node;
             }
 
-            protected override object VisitVariableDeclaration(VariableDeclaration variableDeclaration)
+            protected override object VisitVariableDeclaration(VariableDeclaration node)
             {
                 VariableDeclarationVisitor<SubstitutionCollector> variableDeclarationVisitor = CreateVariableDeclarationVisitor();
 
-                ref readonly NodeList<VariableDeclarator> declarations = ref variableDeclaration.Declarations;
+                ref readonly NodeList<VariableDeclarator> declarations = ref node.Declarations;
                 for (var i = 0; i < declarations.Count; i++)
                 {
                     VariableDeclarator variableDeclarator = declarations[i];
@@ -411,12 +405,11 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return variableDeclarationVisitor;
             }
 
-            protected override object VisitWithStatement(WithStatement withStatement)
-            {
-                // Modules are always in strict mode, which doesn't allow with statements.
-                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), withStatement.Location.Start,
-                    "With statements are not supported in ES6 modules.");
-            }
+            // Modules are always in strict mode, which doesn't allow with statements.
+            //protected override object VisitWithStatement(WithStatement node)
+            //{
+            //    return base.VisitWithStatement(node);
+            //}
         }
 
         private sealed class DescendingRangeComparer : IComparer<Range>
@@ -490,14 +483,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 moduleRef + "[" + importName.RawValue + "]";
         }
 
-        private void AppendPolyfills(StringBuilder sb, ModuleData module)
+        private void AppendShims(StringBuilder sb, ModuleData module)
         {
             if (_developmentMode)
             {
                 sb.Append(_br);
 
                 if (_developmentMode)
-                    sb.Append("/* Polyfills */").Append(_br);
+                    sb.Append("/* Shims */").Append(_br);
             }
 
             if (module.UsesImportMeta)
@@ -697,10 +690,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append(", ").Append(DefineId);
             sb.Append(") {").Append(_br);
 
-            // polyfills
+            // shims
 
             if (module.UsesImportMeta)
-                AppendPolyfills(sb, module);
+                AppendShims(sb, module);
 
             // define exports
 

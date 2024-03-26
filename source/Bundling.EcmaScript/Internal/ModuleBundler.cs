@@ -5,8 +5,8 @@ using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Esprima;
-using Esprima.Ast;
+using Acornima;
+using Acornima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 using Karambolo.AspNetCore.Bundling.Internal.Helpers;
 using Microsoft.Extensions.FileProviders;
@@ -39,7 +39,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _moduleResourceFactory = new ModuleResourceFactory(this);
             }
 
-            _parserOptions = CreateParserOptions();
+            _parserOptions = CreateParserOptions(options == null || !options.ExperimentalESFeatures ? EcmaVersion.Latest : EcmaVersion.Experimental);
 
             _fileProviderPrefixes = new Dictionary<IFileProvider, string>();
 
@@ -89,14 +89,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             catch (Exception ex) { throw _logger.LoadingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
 
-        internal static ParserOptions CreateParserOptions()
+        internal static ParserOptions CreateParserOptions(EcmaVersion ecmaVersion = EcmaVersion.Latest)
         {
-            return new ParserOptions { RegExpParseMode = RegExpParseMode.Skip, Comments = false, Tokens = false, Tolerant = true };
+            return new ParserOptions { EcmaVersion = ecmaVersion };
         }
 
         private Program ParseModuleContent(ModuleData module)
         {
-            var parser = new JavaScriptParser(_parserOptions);
+            var parser = new Parser(_parserOptions);
             try { return parser.ParseModule(module.Content); }
             catch (Exception ex) { throw _logger.ParsingModuleFailed(module.Resource.Url.ToString(), ex); }
         }

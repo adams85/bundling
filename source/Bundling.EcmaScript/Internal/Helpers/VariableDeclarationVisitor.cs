@@ -1,5 +1,5 @@
 ﻿using System;
-using Esprima.Ast;
+using Acornima.Ast;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
@@ -62,7 +62,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             for (var i = 0; i < properties.Count; i++)
                 switch (properties[i])
                 {
-                    case Property property:
+                    case AssignmentProperty property:
                         if (property.Computed)
                             _visitRewritableExpression(_state, property.Key);
 

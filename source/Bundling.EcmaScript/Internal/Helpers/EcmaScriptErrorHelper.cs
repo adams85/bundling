@@ -1,5 +1,5 @@
 ﻿using System;
-using Esprima;
+using Acornima;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Microsoft.Extensions.Logging;
 
@@ -30,10 +30,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public static BundlingErrorException ParsingModuleFailed(this ILogger logger, string moduleUrl, Exception ex)
         {
-            if (ex is ParserException parserException && parserException.Error != null && parserException.Error.IsPositionDefined)
+            if (ex is ParseErrorException parseErrorException && parseErrorException.Error.IsPositionDefined)
             {
-                Position position = parserException.Error.Position;
-                string reason = parserException.Error.Description;
+                Position position = parseErrorException.Error.Position;
+                string reason = parseErrorException.Error.Description;
 
                 string messageFormat = "Failed to parse module '{0}'." + Environment.NewLine + "Error at {1}: {2}";
 

@@ -1200,7 +1200,7 @@ export function myDecorator(value) { }
 
             var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
 
-            var moduleBundler = new ModuleBundler();
+            var moduleBundler = new ModuleBundler(options: new ModuleBundlerOptions { ExperimentalESFeatures = true });
 
             await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
 
@@ -1737,9 +1737,6 @@ export const asyncFunc = async () => new Promise(resolve => setTimeout(() => res
                 "};",
             }, barLines);
 
-            // TODO
-            moduleBundler = new ModuleBundler();
-
             ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
         }
 
@@ -1792,9 +1789,6 @@ export const asyncFunc = async () => new Promise(resolve => setTimeout(() => res
                 "const asyncFunc = async () => new Promise(resolve => setTimeout(() => resolve(__es$module_0.x * 2), 1000));",
                 "};",
             }, barLines);
-
-            // TODO
-            moduleBundler = new ModuleBundler();
 
             ModuleBundlingResult result = await moduleBundler.BundleAsync(new[] { fooFile }, CancellationToken.None);
         }

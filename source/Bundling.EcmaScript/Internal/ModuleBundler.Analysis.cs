@@ -1,15 +1,14 @@
 ﻿using System;
-using Esprima;
-using Esprima.Ast;
+using Acornima.Ast;
 using Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     internal partial class ModuleBundler
     {
-        internal static bool IsRewritableDynamicImport(ImportExpression importExpression, out Literal sourceLiteral)
+        internal static bool IsRewritableDynamicImport(ImportExpression importExpression, out StringLiteral sourceLiteral)
         {
-            if (importExpression.Source is Literal literal && literal.TokenType == TokenType.StringLiteral && literal.Value != null)
+            if (importExpression.Source is StringLiteral literal && literal.Value != null)
             {
                 sourceLiteral = literal;
                 return true;
@@ -39,9 +38,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             public void Analyze() => Visit(_module.Ast);
 
-            protected override VariableScope.TopLevelBlock HandleInvalidImportDeclaration(ImportDeclaration importDeclaration, string defaultErrorMessage) =>
-                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), importDeclaration.Location.Start, defaultErrorMessage);
-
             private Exception InvalidExportImportNameExpression(Expression expression)
             {
                 throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), expression.Location.Start,
@@ -52,7 +48,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 return
                     expression is Identifier identifier ? new ExportName(identifier.Name) :
-                    expression is Literal { TokenType: TokenType.StringLiteral } literal ? new ExportName((string)literal.Value, literal.Raw) :
+                    expression is StringLiteral literal ? new ExportName(literal.Value, literal.Raw) :
                     throw InvalidExportImportNameExpression(expression);
             }
 
@@ -65,7 +61,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void ExtractExports(ExportAllDeclaration exportAllDeclaration)
             {
-                ModuleResource source = _bundler.ResolveImport(exportAllDeclaration.Source.StringValue, _module.Resource);
+                ModuleResource source = _bundler.ResolveImport(exportAllDeclaration.Source.Value, _module.Resource);
 
                 ExportName exportName = exportAllDeclaration.Exported != null ? GetExportName(exportAllDeclaration.Exported) : ExportName.None;
                 _module.ExportsRaw.Add(new WildcardReexportData(source, exportName));
@@ -112,7 +108,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     // export { default as defaultAlias, a as alias, b } from 'bar.js';
                     else
                     {
-                        ModuleResource source = _bundler.ResolveImport(exportNamedDeclaration.Source.StringValue, _module.Resource);
+                        ModuleResource source = _bundler.ResolveImport(exportNamedDeclaration.Source.Value, _module.Resource);
 
                         ref readonly NodeList<ExportSpecifier> specifiers = ref exportNamedDeclaration.Specifiers;
                         for (var i = 0; i < specifiers.Count; i++)
@@ -151,7 +147,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void ExtractImports(ImportDeclaration importDeclaration)
             {
-                ModuleResource source = _bundler.ResolveImport(importDeclaration.Source.StringValue, _module.Resource);
+                ModuleResource source = _bundler.ResolveImport(importDeclaration.Source.Value, _module.Resource);
 
                 ref readonly NodeList<ImportDeclarationSpecifier> specifiers = ref importDeclaration.Specifiers;
                 for (var i = 0; i < specifiers.Count; i++)
@@ -176,95 +172,95 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                     _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
             }
 
-            protected override object VisitAwaitExpression(AwaitExpression awaitExpression)
+            protected override object VisitAwaitExpression(AwaitExpression node)
             {
                 if (CurrentVariableScope.FunctionScope is VariableScope.TopLevelBlock)
                 {
                     _bundler._synthesizeAsyncLoader = true;
                 }
 
-                Visit(awaitExpression.Argument);
+                Visit(node.Argument);
 
-                return awaitExpression;
+                return node;
             }
 
-            protected override object VisitExportAllDeclaration(ExportAllDeclaration exportAllDeclaration)
+            protected override object VisitExportAllDeclaration(ExportAllDeclaration node)
             {
-                base.VisitExportAllDeclaration(exportAllDeclaration);
+                base.VisitExportAllDeclaration(node);
 
-                if (exportAllDeclaration.Attributes.Count > 0)
+                if (node.Attributes.Count > 0)
                 {
-                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), exportAllDeclaration.Location.Start);
+                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
                 }
 
-                ExtractExports(exportAllDeclaration);
+                ExtractExports(node);
 
-                return exportAllDeclaration;
+                return node;
             }
 
-            protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration exportDefaultDeclaration)
+            protected override object VisitExportDefaultDeclaration(ExportDefaultDeclaration node)
             {
-                base.VisitExportDefaultDeclaration(exportDefaultDeclaration);
+                base.VisitExportDefaultDeclaration(node);
 
-                ExtractExports(exportDefaultDeclaration);
+                ExtractExports(node);
 
-                return exportDefaultDeclaration;
+                return node;
             }
 
-            protected override object VisitExportNamedDeclaration(ExportNamedDeclaration exportNamedDeclaration)
+            protected override object VisitExportNamedDeclaration(ExportNamedDeclaration node)
             {
-                base.VisitExportNamedDeclaration(exportNamedDeclaration);
+                base.VisitExportNamedDeclaration(node);
 
-                if (exportNamedDeclaration.Attributes.Count > 0)
+                if (node.Attributes.Count > 0)
                 {
-                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), exportNamedDeclaration.Location.Start);
+                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
                 }
 
-                ExtractExports(exportNamedDeclaration);
+                ExtractExports(node);
 
-                return exportNamedDeclaration;
+                return node;
             }
 
-            protected override object VisitImportDeclaration(ImportDeclaration importDeclaration)
+            protected override object VisitImportDeclaration(ImportDeclaration node)
             {
-                base.VisitImportDeclaration(importDeclaration);
+                base.VisitImportDeclaration(node);
 
-                if (importDeclaration.Attributes.Count > 0)
+                if (node.Attributes.Count > 0)
                 {
-                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), importDeclaration.Location.Start);
+                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
                 }
 
-                ExtractImports(importDeclaration);
+                ExtractImports(node);
 
-                return importDeclaration;
+                return node;
             }
 
-            protected override object VisitImportExpression(ImportExpression importExpression)
+            protected override object VisitImportExpression(ImportExpression node)
             {
-                if (IsRewritableDynamicImport(importExpression, out Literal sourceLiteral))
+                if (IsRewritableDynamicImport(node, out StringLiteral sourceLiteral))
                 {
-                    if (importExpression.Options != null)
+                    if (node.Options != null)
                     {
-                        _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), importExpression.Location.Start);
+                        _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
                     }
 
-                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.StringValue, _module.Resource);
+                    ModuleResource source = _bundler.ResolveImport(sourceLiteral.Value, _module.Resource);
 
                     if (!_module.ModuleRefs.ContainsKey(source))
                         _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
                 }
                 else
-                    _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), importExpression.Location.Start);
+                    _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), node.Location.Start);
 
-                return importExpression;
+                return node;
             }
 
-            protected override object VisitMetaProperty(MetaProperty metaProperty)
+            protected override object VisitMetaProperty(MetaProperty node)
             {
-                if (IsImportMeta(metaProperty))
+                if (IsImportMeta(node))
                     _module.UsesImportMeta = true;
 
-                return metaProperty;
+                return node;
             }
         }
 

@@ -62,7 +62,7 @@ namespace Karambolo.AspNetCore.Bundling.Internal.DesignTime
 
         // DefaultBundleModelFactory schedules disposal of the bundle models for application shutdown;
         // we fake app shutdown using the cancellation token we get from the CLI tools
-        // TODO: roll out a less ugly solution like introducing a dedicated interface?
+        // TODO: come up with a less ugly solution like introducing a dedicated interface?
         private sealed class Lifetime : IHostApplicationLifetime, IDisposable
         {
             private readonly CancellationTokenSource _lifetimeCts;

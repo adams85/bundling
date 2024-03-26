@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using Esprima;
-using Esprima.Ast;
+using Acornima.Ast;
 
 namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
