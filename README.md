@@ -13,7 +13,7 @@ This library can be used to bundle and optimize web assets of ASP.NET Core 2+ ap
 - **CSS minification and bundling** including support for CSS pre-processors:
   - **LESS compilation** (powered by [dotLess](https://github.com/dotless/dotless)).
   - **SASS/SCSS compilation** (powered by [LibSassHost](https://github.com/Taritsyn/LibSassHost)).
-- **JavaScript minification and bundling**. Version 2.0 adds support for **rewriting and bundling ES6 (ECMAScript 2015) modules** (built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet)).
+- **JavaScript minification and bundling**. Version 2.0 adds support for **rewriting and bundling ES6 (ECMAScript 2015) modules** (built on [Acornima](https://github.com/adams85/acornima)).
 - Straightforward and flexible configuration:
   - Fluent API configuration.
   - Hierarchical configuration system (settings adjustable on general and more detailed levels).
@@ -87,7 +87,7 @@ Finally, if you want to bundle ES6 modules, you need to install an additional pa
 
     dotnet add package Karambolo.AspNetCore.Bundling.EcmaScript
 
-Note: ES6 module bundling is built on [Esprima.NET](https://github.com/sebastienros/esprima-dotnet), which supports [language features](https://exploringjs.com/impatient-js/ch_new-javascript-features.html) up to ECMAScript 2022 currently. If you want to utilize even newer features (or you just want to target an older JavaScript version), you may use TypeScript for down-level compilation. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).)
+Note: ES6 module bundling is built on [Acornima](https://github.com/adams85/acornima), which supports [language features](https://exploringjs.com/impatient-js/ch_new-javascript-features.html) up to ECMAScript 2023 currently. If you want to utilize even newer features (or you just want to target an older JavaScript version), you may use TypeScript for down-level compilation. (See the [TypeScriptDemo sample](https://github.com/adams85/bundling/tree/master/samples/TypeScriptDemo).)
 
  ### Run-time mode
 
