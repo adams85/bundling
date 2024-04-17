@@ -271,11 +271,16 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public sealed class Block : BlockBase
         {
-            public Block(BlockStatement blockStatement, VariableScope parentScope) : base(blockStatement, parentScope)
+            public Block(FunctionBody functionBody, VariableScope parentScope) : base(functionBody, parentScope)
             {
                 FunctionScope = parentScope.FunctionScope;
             }
-            
+
+            public Block(NestedBlockStatement blockStatement, VariableScope parentScope) : base(blockStatement, parentScope)
+            {
+                FunctionScope = parentScope.FunctionScope;
+            }
+
             public Block(SwitchStatement switchStatement, VariableScope parentScope) : base(switchStatement, parentScope)
             {
                 FunctionScope = parentScope.FunctionScope;

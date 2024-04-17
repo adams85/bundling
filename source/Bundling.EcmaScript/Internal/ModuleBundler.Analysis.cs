@@ -40,7 +40,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private Exception InvalidExportImportNameExpression(Expression expression)
             {
-                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), expression.Location.Start,
+                throw _bundler._logger.RewritingModuleFailed(_module.Resource.Url.ToString(), expression.LocationRef.Start,
                     $"Expression of type {expression.Type} is not a valid export/import name expression.");
             }
 
@@ -190,7 +190,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 if (node.Attributes.Count > 0)
                 {
-                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
+                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.LocationRef.Start);
                 }
 
                 ExtractExports(node);
@@ -213,7 +213,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 if (node.Attributes.Count > 0)
                 {
-                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
+                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.LocationRef.Start);
                 }
 
                 ExtractExports(node);
@@ -227,7 +227,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 if (node.Attributes.Count > 0)
                 {
-                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
+                    _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.LocationRef.Start);
                 }
 
                 ExtractImports(node);
@@ -241,7 +241,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     if (node.Options != null)
                     {
-                        _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.Location.Start);
+                        _bundler._logger.IgnoredImportAttributesWarning(_module.Resource.Url.ToString(), node.LocationRef.Start);
                     }
 
                     ModuleResource source = _bundler.ResolveImport(sourceLiteral.Value, _module.Resource);
@@ -250,7 +250,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                         _module.ModuleRefs[source] = GetModuleRef(_moduleIndex++);
                 }
                 else
-                    _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), node.Location.Start);
+                    _bundler._logger.NonRewritableDynamicImportWarning(_module.Resource.Url.ToString(), node.LocationRef.Start);
 
                 return node;
             }

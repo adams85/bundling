@@ -57,7 +57,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             private void SetTokenizerTo(Node node)
             {
-                var start = node.Range.Start;
+                var start = node.RangeRef.Start;
                 if (_tokenizer == null)
                     _tokenizer = new Tokenizer(_module.Content, start, _module.Content.Length - start, SourceType.Module, sourceFile: null, _bundler._parserOptions.GetTokenizerOptions());
                 else
@@ -87,7 +87,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 }
 
                 adjust(identifier, ref value);
-                _substitutions.Add(identifier.Range, value);
+                _substitutions.Add(identifier.RangeRef, value);
             }
 
             protected override object VisitAccessorProperty(AccessorProperty node)
@@ -111,6 +111,32 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override object VisitArrowFunctionExpression(ArrowFunctionExpression node)
             {
                 VisitFunctionCore(node);
+
+                return node;
+            }
+
+            protected override object VisitAssignmentProperty(AssignmentProperty node)
+            {
+                // Shorthand properties need special care.
+                if (node.Shorthand)
+                {
+                    if (node.Value is AssignmentPattern assignmentPattern)
+                    {
+                        AddSubstitutionIfImported((Identifier)assignmentPattern.Left, (Identifier id, ref string value) => { value = id.Name + ": " + value; });
+
+                        Visit(assignmentPattern.Right);
+                    }
+                    else
+                    {
+                        AddSubstitutionIfImported((Identifier)node.Value, (Identifier id, ref string value) => { value = id.Name + ": " + value; });
+                    }
+                }
+                else
+                {
+                    VisitPropertyCore(node);
+
+                    Visit(node.Value);
+                }
 
                 return node;
             }
@@ -171,7 +197,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitExportAllDeclaration(ExportAllDeclaration node)
             {
-                _substitutions.Add(node.Range, StringSegment.Empty);
+                _substitutions.Add(node.RangeRef, StringSegment.Empty);
 
                 return node;
             }
@@ -182,10 +208,10 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     case FunctionDeclaration functionDeclaration when functionDeclaration.Id != null:
                     case ClassDeclaration classDeclaration when classDeclaration.Id != null:
-                        _substitutions.Add(Range.From(node.Range.Start, FindActualDeclarationStart(node)), StringSegment.Empty);
+                        _substitutions.Add(Range.From(node.RangeRef.Start, FindActualDeclarationStart(node)), StringSegment.Empty);
                         break;
                     default:
-                        _substitutions.Add(Range.From(node.Range.Start, FindActualDeclarationStart(node)), string.Concat("var ", DefaultExportId, " = "));
+                        _substitutions.Add(Range.From(node.RangeRef.Start, FindActualDeclarationStart(node)), string.Concat("var ", DefaultExportId, " = "));
                         break;
                 }
 
@@ -208,12 +234,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             {
                 if (node.Declaration != null)
                 {
-                    _substitutions.Add(Range.From(node.Range.Start, node.Declaration.Range.Start), StringSegment.Empty);
+                    _substitutions.Add(Range.From(node.RangeRef.Start, node.Declaration.RangeRef.Start), StringSegment.Empty);
 
                     Visit(node.Declaration);
                 }
                 else
-                    _substitutions.Add(node.Range, StringSegment.Empty);
+                    _substitutions.Add(node.RangeRef, StringSegment.Empty);
 
                 return node;
             }
@@ -258,7 +284,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitImportDeclaration(ImportDeclaration node)
             {
-                _substitutions.Add(node.Range, StringSegment.Empty);
+                _substitutions.Add(node.RangeRef, StringSegment.Empty);
 
                 return node;
             }
@@ -276,7 +302,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 {
                     ModuleResource source = _bundler.ResolveImport(sourceLiteral.Value, _module.Resource);
                     var moduleRef = _module.ModuleRefs[source];
-                    _substitutions.Add(node.Range, $"Promise.resolve({moduleRef})");
+                    _substitutions.Add(node.RangeRef, $"Promise.resolve({moduleRef})");
                 }
                 else
                     return base.VisitImportExpression(node);
@@ -322,7 +348,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             protected override object VisitMetaProperty(MetaProperty node)
             {
                 if (IsImportMeta(node))
-                    _substitutions.Add(node.Range, ImportMetaId);
+                    _substitutions.Add(node.RangeRef, ImportMetaId);
 
                 return node;
             }
@@ -342,21 +368,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return node;
             }
 
-            private void VisitPropertyCore(IProperty node)
-            {
-                // Property name identifier is not subject to rewriting, thus, skipped.
-                // Computed keys needs to be visited though.
-                if (node.Computed)
-                    Visit(node.Key);
-            }
-
-            protected override object VisitProperty(Property node)
+            protected override object VisitObjectProperty(ObjectProperty node)
             {
                 // Shorthand properties need special care.
                 if (node.Shorthand)
                 {
                     var identifier = (Identifier)node.Value;
-                    AddSubstitutionIfImported(identifier, delegate (Identifier id, ref string value) { value = id.Name + ": " + value; });
+                    AddSubstitutionIfImported(identifier, (Identifier id, ref string value) => { value = id.Name + ": " + value; });
                 }
                 else
                 {
@@ -366,6 +384,14 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 }
 
                 return node;
+            }
+
+            private void VisitPropertyCore(IProperty node)
+            {
+                // Property name identifier is not subject to rewriting, thus, skipped.
+                // Computed keys needs to be visited though.
+                if (node.Computed)
+                    Visit(node.Key);
             }
 
             protected override object VisitPropertyDefinition(PropertyDefinition node)

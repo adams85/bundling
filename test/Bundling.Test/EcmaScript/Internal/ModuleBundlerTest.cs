@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Acornima;
 using Jint;
+using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Test.Helpers;
 using Xunit;
 
@@ -1281,6 +1283,141 @@ export { myAsyncFunc3 }
         }
 
         [Fact]
+        public async Task Feature_DeconstructionPatterns_Assignment()
+        {
+            // Re-assigning an import variable is error but not a syntax error.
+            var fooContent =
+@"import { arr, obj } from './bar';
+[arr] = arr;
+[arr = arr] = arr;
+[a = arr] = arr;
+[...arr] = arr;
+({ obj } = obj);
+({ obj = obj } = obj);
+({ obj: o } = obj);
+({ obj: o = obj } = obj);
+({ a: obj } = obj);
+({ a: obj = obj } = obj);
+({ ...obj } = obj);
+";
+
+            var barContent =
+@"
+export const arr = [0, 1]
+export const obj = { a: 2, b: 3 }
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
+                "[__es$module_0.arr] = __es$module_0.arr;",
+                "[__es$module_0.arr = __es$module_0.arr] = __es$module_0.arr;",
+                "[a = __es$module_0.arr] = __es$module_0.arr;",
+                "[...__es$module_0.arr] = __es$module_0.arr;",
+                "({ obj: __es$module_0.obj } = __es$module_0.obj);",
+                "({ obj: __es$module_0.obj = __es$module_0.obj } = __es$module_0.obj);",
+                "({ obj: o } = __es$module_0.obj);",
+                "({ obj: o = __es$module_0.obj } = __es$module_0.obj);",
+                "({ a: __es$module_0.obj } = __es$module_0.obj);",
+                "({ a: __es$module_0.obj = __es$module_0.obj } = __es$module_0.obj);",
+                "({ ...__es$module_0.obj } = __es$module_0.obj);",
+                "};",
+            }, fooLines);
+        }
+
+        [Fact]
+        public async Task Feature_DeconstructionPatterns_Binding()
+        {
+            // Rebinding an import variable is error but not a syntax error.
+            var fooContent =
+@"import { arr, obj } from './bar';
+var [a = arr] = arr;
+var { o = obj } = obj;
+var { obj: o } = obj;
+var { obj: o = obj } = obj;
+var { a: o = obj } = obj;
+";
+
+            var barContent =
+@"
+export const arr = [0, 1]
+export const obj = { a: 2, b: 3 }
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None);
+
+            var fooLines = GetNonEmptyLines(moduleBundler.Modules.Single(kvp => kvp.Key.Id == "/foo.js").Value.Content);
+            Assert.Equal(new[]
+            {
+                "'use strict';",
+                "var __es$module_0 = __es$require(\"/bar.js\");",
+                "return function (__es$finalize) {",
+                "__es$finalize();",
+                "var [a = __es$module_0.arr] = __es$module_0.arr;",
+                "var { o = __es$module_0.obj } = __es$module_0.obj;",
+                "var { obj: o } = __es$module_0.obj;",
+                "var { obj: o = __es$module_0.obj } = __es$module_0.obj;",
+                "var { a: o = __es$module_0.obj } = __es$module_0.obj;",
+                "};",
+            }, fooLines);
+        }
+
+        [Theory]
+        [InlineData("var [arr] = arr;")]
+        [InlineData("var [arr = arr] = arr;")]
+        [InlineData("var [...arr] = arr;")]
+        [InlineData("var { obj } = obj;")]
+        [InlineData("var { obj = obj } = obj;")]
+        [InlineData("var { a: obj } = obj;")]
+        [InlineData("var { a: obj = obj } = obj;")]
+        [InlineData("var { ...obj } = obj;")]
+        public async Task Feature_DeconstructionPatterns_Rebinding_Error(string varBinding)
+        {
+            // Rebinding an import variable is a syntax error.
+            var fooContent =
+$@"import {{ arr, obj }} from './bar';
+{varBinding}
+";
+
+            var barContent =
+@"
+export const arr = [0, 1]
+export const obj = { a: 2, b: 3 }
+";
+
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/bar.js", barContent);
+
+            var fooFile = new ModuleFile(fileProvider, "/foo.js") { Content = fooContent };
+
+            var moduleBundler = new ModuleBundler();
+
+            BundlingErrorException ex = await Assert.ThrowsAsync<BundlingErrorException>(async () => await moduleBundler.BundleCoreAsync(new[] { fooFile }, CancellationToken.None));
+            SyntaxErrorException syntaxErrorEx = Assert.IsType<SyntaxErrorException>(ex.InnerException);
+            Assert.Equal("VarRedeclaration", syntaxErrorEx.Error.Code);
+        }
+
+        [Fact]
         public async Task Feature_Object_Rest_And_Spread_Properties()
         {
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#spread_in_object_literals
@@ -1803,7 +1940,7 @@ export const asyncFunc = async () => new Promise(resolve => setTimeout(() => res
 @"import b from './b';
 export default 'a-default';
 console.log('a');";
-            
+
             var bContent =
 @"import a from './a';
 export default 'b-default';

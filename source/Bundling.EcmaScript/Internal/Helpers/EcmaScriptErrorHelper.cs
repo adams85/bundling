@@ -32,14 +32,15 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
         {
             if (ex is ParseErrorException parseErrorException && parseErrorException.Error.IsPositionDefined)
             {
-                Position position = parseErrorException.Error.Position;
+                Position adjustedPosition = parseErrorException.Error.Position;
+                adjustedPosition = Position.From(adjustedPosition.Line, adjustedPosition.Column + 1);
                 string reason = parseErrorException.Error.Description;
 
                 string messageFormat = "Failed to parse module '{0}'." + Environment.NewLine + "Error at {1}: {2}";
 
-                logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, position, reason);
+                logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, adjustedPosition, reason);
 
-                return new BundlingErrorException(string.Format(messageFormat, moduleUrl, position, reason));
+                return new BundlingErrorException(string.Format(messageFormat, moduleUrl, adjustedPosition, reason), ex);
             }
             else
             {
@@ -53,11 +54,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         public static BundlingErrorException RewritingModuleFailed(this ILogger logger, string moduleUrl, in Position position, string reason)
         {
+            var adjustedPosition = Position.From(position.Line, position.Column + 1);
+
             string messageFormat = "Failed to rewrite module '{0}'." + Environment.NewLine + "Error at {1}: {2}";
 
-            logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, position, reason);
+            logger.LogError(string.Format(messageFormat, "{MODULEURL}", "{POSITION}", "{REASON}"), moduleUrl, adjustedPosition, reason);
 
-            return new BundlingErrorException(string.Format(messageFormat, moduleUrl, position, reason));
+            return new BundlingErrorException(string.Format(messageFormat, moduleUrl, adjustedPosition, reason));
         }
 
         public static void NonRewritableDynamicImportWarning(this ILogger logger, string moduleUrl, in Position position)

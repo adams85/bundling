@@ -39,7 +39,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 _moduleResourceFactory = new ModuleResourceFactory(this);
             }
 
-            _parserOptions = CreateParserOptions(options == null || !options.ExperimentalESFeatures ? EcmaVersion.Latest : EcmaVersion.Experimental);
+            _parserOptions = CreateParserOptions(experimentalESFeatures: options == null || !options.ExperimentalESFeatures ?
+                ExperimentalESFeatures.None :
+                ExperimentalESFeatures.Decorators | ExperimentalESFeatures.ImportAttributes | ExperimentalESFeatures.RegExpDuplicateNamedCapturingGroups);
 
             _fileProviderPrefixes = new Dictionary<IFileProvider, string>();
 
@@ -89,9 +91,9 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             catch (Exception ex) { throw _logger.LoadingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
 
-        internal static ParserOptions CreateParserOptions(EcmaVersion ecmaVersion = EcmaVersion.Latest)
+        internal static ParserOptions CreateParserOptions(EcmaVersion ecmaVersion = EcmaVersion.ES2023, ExperimentalESFeatures experimentalESFeatures = ExperimentalESFeatures.None)
         {
-            return new ParserOptions { EcmaVersion = ecmaVersion };
+            return new ParserOptions { EcmaVersion = ecmaVersion, ExperimentalESFeatures = experimentalESFeatures };
         }
 
         private Program ParseModuleContent(ModuleData module)

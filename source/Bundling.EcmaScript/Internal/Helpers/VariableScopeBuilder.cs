@@ -59,7 +59,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 
         protected override object VisitBlockStatement(BlockStatement node)
         {
-            BeginVariableScope(new VariableScope.Block(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope(new VariableScope.Block((NestedBlockStatement)node, _currentVariableScope), out Snapshot snapshot);
 
             base.VisitBlockStatement(node);
 
@@ -177,6 +177,17 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
             variableDeclarationVisitor.VisitFunctionParams(node);
 
             Visit(node.Body);
+        }
+
+        protected override object VisitFunctionBody(FunctionBody node)
+        {
+            BeginVariableScope(new VariableScope.Block(node, _currentVariableScope), out Snapshot snapshot);
+
+            base.VisitFunctionBody(node);
+
+            EndVariableScope(in snapshot);
+
+            return node;
         }
 
         protected override object VisitFunctionDeclaration(FunctionDeclaration node)
