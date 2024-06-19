@@ -15,7 +15,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Acornima" Version="1.0.0" />
+    <PackageReference Include="Acornima" Version="0.1.0-dev-20240619-2107" />
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

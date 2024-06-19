@@ -27,7 +27,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             // ranges must not overlap!
             private readonly SortedDictionary<Range, StringSegment> _substitutions;
 
-            private VariableScope _currentVariableScope;
             private Tokenizer _tokenizer;
 
             public SubstitutionCollector(ModuleBundler bundler, ModuleData module, SortedDictionary<Range, StringSegment> substitutions)
@@ -40,19 +39,6 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             public void Collect()
             {
                 Visit(_module.Ast);
-            }
-
-            public override object Visit(Node node)
-            {
-                VariableScope previousVariableScope = _currentVariableScope;
-                if (node.UserData is VariableScope variableScope)
-                    _currentVariableScope = variableScope;
-
-                var result = base.Visit(node);
-
-                _currentVariableScope = previousVariableScope;
-
-                return result;
             }
 
             private void SetTokenizerTo(Node node)
@@ -70,7 +56,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             private void AddSubstitutionIfImported(Identifier identifier, SubstitutionAdjuster adjust)
             {
                 if (!_module.Imports.TryGetValue(identifier.Name, out ImportData import) ||
-                    !(_currentVariableScope.FindIdentifier(identifier.Name) is VariableScope.TopLevelBlock))
+                    ((VariableScope)identifier.UserData).FindIdentifier(identifier.Name).OriginatorNode.Type != NodeType.Program)
                     return;
 
                 string value;
@@ -100,7 +86,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
                 VisitPropertyCore(node);
 
-                if (node.Value is not null)
+                if (node.Value != null)
                 {
                     Visit(node.Value);
                 }

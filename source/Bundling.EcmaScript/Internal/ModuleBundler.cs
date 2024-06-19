@@ -66,7 +66,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return module;
 
             return
-                initiator.TryResolveModule(url, out string failureReason, out module) ? 
+                initiator.TryResolveModule(url, out string failureReason, out module) ?
                 module :
                 throw _logger.ResolvingImportSourceFailed(initiator.Url.ToString(), url, failureReason);
         }
@@ -93,7 +93,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
         internal static ParserOptions CreateParserOptions(EcmaVersion ecmaVersion = EcmaVersion.ES2023, ExperimentalESFeatures experimentalESFeatures = ExperimentalESFeatures.None)
         {
-            return new ParserOptions { EcmaVersion = ecmaVersion, ExperimentalESFeatures = experimentalESFeatures };
+            return new ParserOptions
+            {
+                EcmaVersion = ecmaVersion,
+                ExperimentalESFeatures = experimentalESFeatures,
+                OnNode = VariableScopeBuilder.OnNodeHandler,
+            };
         }
 
         private Program ParseModuleContent(ModuleData module)
