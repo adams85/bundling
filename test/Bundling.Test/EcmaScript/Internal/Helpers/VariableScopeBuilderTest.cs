@@ -737,5 +737,70 @@ function f4(a = foo) {
 
             Assert.Same(nestedBlockScope, nestedBlockScope.FindIdentifier("foo"));
         }
+
+        [Fact]
+        public void FindIdentifer_Hoisting_CatchClause()
+        {
+            var moduleContent =
+@"function f1() {
+  try { throw [0] }
+  catch ([e]) { 
+    { function e() { } } 
+  }
+  console.log(e)
+}
+
+function f2() {
+  try { throw 0 }
+  catch (e) { 
+    { function e() { } } 
+  }
+  console.log(e)
+}
+";
+
+            Script moduleAst = new Parser(ModuleBundler.CreateParserOptions()).ParseScript(moduleContent);
+
+            var scopeBuilder = new VariableScopeBuilder();
+            scopeBuilder.Visit(moduleAst);
+
+            VariableScope topLevelScope = GetScope(moduleAst);
+
+            Assert.Null(topLevelScope.FindIdentifier("e"));
+
+            // f1
+
+            FunctionDeclaration functionDeclaration = moduleAst.Body
+                .OfType<FunctionDeclaration>().Single(d => d.Id?.Name == "f1");
+
+            VariableScope functionScope = GetScope(functionDeclaration);
+            Assert.Same(topLevelScope, functionScope.ParentScope);
+
+            Assert.Null(functionScope.FindIdentifier("e"));
+
+            FunctionBody functionBody = functionDeclaration.Body;
+
+            VariableScope functionBlockScope = GetScope(functionBody);
+            Assert.Same(functionScope, functionBlockScope.ParentScope);
+
+            Assert.Null(functionBlockScope.FindIdentifier("e"));
+
+            // f2
+
+            functionDeclaration = moduleAst.Body
+                .OfType<FunctionDeclaration>().Single(d => d.Id?.Name == "f2");
+
+            functionScope = GetScope(functionDeclaration);
+            Assert.Same(topLevelScope, functionScope.ParentScope);
+
+            Assert.Null(functionScope.FindIdentifier("e"));
+
+            functionBody = functionDeclaration.Body;
+
+            functionBlockScope = GetScope(functionBody);
+            Assert.Same(functionScope, functionBlockScope.ParentScope);
+
+            Assert.Same(functionBlockScope, functionBlockScope.FindIdentifier("e"));
+        }
     }
 }
