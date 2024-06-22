@@ -21,6 +21,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                     NestedBlockStatement body = node.As<CatchClause>().Body;
                     body.UserData = new VariableScope(body, varVariables, lexicalVariables.Slice(context.Scope.LexicalParamCount), functions);
                     lexicalVariables = lexicalVariables.Slice(0, context.Scope.LexicalParamCount);
+                    functions = default;
                     break;
 
                 case NodeType.ArrowFunctionExpression:
