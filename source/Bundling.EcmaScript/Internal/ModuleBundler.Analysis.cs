@@ -174,7 +174,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             protected override object VisitAwaitExpression(AwaitExpression node)
             {
-                if (CurrentVariableScope.FunctionScope is VariableScope.TopLevelBlock)
+                if (CurrentVariableScope.FunctionScope.OriginatorNode.Type == NodeType.Program)
                 {
                     _bundler._synthesizeAsyncLoader = true;
                 }
@@ -217,6 +217,13 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 }
 
                 ExtractExports(node);
+
+                return node;
+            }
+
+            protected override object VisitIdentifier(Identifier node)
+            {
+                node.UserData = CurrentVariableScope; // save variable scope for SubstitutionCollector 
 
                 return node;
             }

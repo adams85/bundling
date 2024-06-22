@@ -6,263 +6,200 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
     internal class VariableScopeBuilder : AstVisitor
     {
-        protected readonly struct Snapshot
+        public static readonly OnNodeHandler OnNodeHandler = (node, context) =>
         {
-            private readonly VariableScope _currentVariableScope;
+            if (!context.HasScope)
+                return;
 
-            public Snapshot(VariableScopeBuilder builder)
+            ReadOnlySpan<Identifier> varVariables = context.Scope.VarVariables;
+            ReadOnlySpan<Identifier> lexicalVariables = context.Scope.LexicalVariables;
+            ReadOnlySpan<Identifier> functions = context.Scope.Functions;
+
+            switch (node.Type)
             {
-                _currentVariableScope = builder._currentVariableScope;
+                case NodeType.CatchClause:
+                    NestedBlockStatement body = node.As<CatchClause>().Body;
+                    body.UserData = new VariableScope(body, varVariables, lexicalVariables.Slice(context.Scope.LexicalParamCount), functions);
+                    lexicalVariables = lexicalVariables.Slice(0, context.Scope.LexicalParamCount);
+                    break;
+
+                case NodeType.ArrowFunctionExpression:
+                case NodeType.FunctionDeclaration:
+                case NodeType.FunctionExpression:
+                    if (node.As<IFunction>().Body is FunctionBody functionBody)
+                    {
+                        functionBody.UserData = new VariableScope(functionBody, varVariables.Slice(context.Scope.VarParamCount), lexicalVariables, functions);
+                    }
+                    varVariables = varVariables.Slice(0, context.Scope.VarParamCount);
+                    lexicalVariables = functions = default;
+                    break;
             }
 
-            public void Restore(VariableScopeBuilder builder)
-            {
-                builder._currentVariableScope = _currentVariableScope;
-            }
-        }
+            node.UserData = new VariableScope(node, varVariables, lexicalVariables, functions);
+        };
 
-        private readonly Action<Node, VariableScope> _recordVariableScope;
         private VariableScope _currentVariableScope;
-
-        public VariableScopeBuilder() : this((node, scope) => node.UserData = scope) { }
-
-        public VariableScopeBuilder(Action<Node, VariableScope> recordVariableScope)
-        {
-            _recordVariableScope = recordVariableScope ?? throw new ArgumentNullException(nameof(recordVariableScope));
-        }
-
         protected VariableScope CurrentVariableScope => _currentVariableScope;
 
-        protected void BeginVariableScope(VariableScope variableScope, out Snapshot snapshot)
+        protected override void Reset()
         {
-            snapshot = new Snapshot(this);
+            _currentVariableScope = null;
+        }
+
+        protected void BeginVariableScope(VariableScope variableScope, bool isFunctionScope = false)
+        {
+            variableScope.Initialize(_currentVariableScope, isFunctionScope);
             _currentVariableScope = variableScope;
         }
 
-        protected void EndVariableScope(in Snapshot snapshot)
+        protected void EndVariableScope(Action<VariableScope> finalizer)
         {
-            _currentVariableScope.FinalizeScope();
-            _recordVariableScope(_currentVariableScope.OriginatorNode, _currentVariableScope);
-            snapshot.Restore(this);
+            VariableScope variableScope = _currentVariableScope;
+            _currentVariableScope = _currentVariableScope.ParentScope;
+            variableScope.Finalize(finalizer);
         }
 
         protected override object VisitArrowFunctionExpression(ArrowFunctionExpression node)
         {
-            BeginVariableScope(new VariableScope.Function(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData, isFunctionScope: true);
 
-            VisitFunctionCore(node);
+            base.VisitArrowFunctionExpression(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.FunctionScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitBlockStatement(BlockStatement node)
         {
-            BeginVariableScope(new VariableScope.Block((NestedBlockStatement)node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
             base.VisitBlockStatement(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.NestedBlockScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitCatchClause(CatchClause node)
         {
-            BeginVariableScope(new VariableScope.CatchClause(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
-            var variableDeclarationVisitor = new VariableDeclarationVisitor<VariableScopeBuilder>(this,
-                visitVariableIdentifier: (b, identifier) => ((VariableScope.CatchClause)b._currentVariableScope).AddParamDeclaration(identifier),
-                visitRewritableExpression: (b, expression) => b.Visit(expression));
+            base.VisitCatchClause(node);
 
-            variableDeclarationVisitor.VisitCatchClauseParam(node);
-
-            Visit(node.Body);
-
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.CatchClauseScopeFinalizer);
 
             return node;
         }
 
-        private void VisitClassCore(IClass node)
-        {
-            ref readonly NodeList<Decorator> decorators = ref node.Decorators;
-            for (var i = 0; i < decorators.Count; i++)
-            {
-                Visit(decorators[i]);
-            }
-
-            if (node.SuperClass != null)
-                Visit(node.SuperClass);
-
-            Visit(node.Body);
-        }
-
         protected override object VisitClassDeclaration(ClassDeclaration node)
         {
-            if (node.Id != null)
-                ((VariableScope.BlockBase)_currentVariableScope).AddClassDeclaration(node.Id);
+            BeginVariableScope((VariableScope)node.UserData);
 
-            BeginVariableScope(new VariableScope.Class(node, _currentVariableScope), out Snapshot snapshot);
+            base.VisitClassDeclaration(node);
 
-            VisitClassCore(node);
-
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.ClassScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitClassExpression(ClassExpression node)
         {
-            // Class expression's name is not available in the enclosing scope.
+            BeginVariableScope((VariableScope)node.UserData);
 
-            BeginVariableScope(new VariableScope.Class(node, _currentVariableScope), out Snapshot snapshot);
+            base.VisitClassExpression(node);
 
-            VisitClassCore(node);
-
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.ClassScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitForInStatement(ForInStatement node)
         {
-            if (!(node.Left is VariableDeclaration))
-                return base.VisitForInStatement(node);
-
-            BeginVariableScope(new VariableScope.VariableDeclaratorStatement(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
             base.VisitForInStatement(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.ForStatementScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitForOfStatement(ForOfStatement node)
         {
-            if (!(node.Left is VariableDeclaration))
-                return base.VisitForOfStatement(node);
-
-            BeginVariableScope(new VariableScope.VariableDeclaratorStatement(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
             base.VisitForOfStatement(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.ForStatementScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitForStatement(ForStatement node)
         {
-            if (!(node.Init is VariableDeclaration))
-                return base.VisitForStatement(node);
-
-            BeginVariableScope(new VariableScope.VariableDeclaratorStatement(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
             base.VisitForStatement(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.ForStatementScopeFinalizer);
 
             return node;
         }
 
-        private void VisitFunctionCore(IFunction node)
-        {
-            var variableDeclarationVisitor = new VariableDeclarationVisitor<VariableScopeBuilder>(this,
-                visitVariableIdentifier: (b, identifier) => ((VariableScope.Function)b._currentVariableScope).AddParamDeclaration(identifier),
-                visitRewritableExpression: (b, expression) => b.Visit(expression));
-
-            variableDeclarationVisitor.VisitFunctionParams(node);
-
-            Visit(node.Body);
-        }
-
         protected override object VisitFunctionBody(FunctionBody node)
         {
-            BeginVariableScope(new VariableScope.Block(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
             base.VisitFunctionBody(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.FunctionBodyScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitFunctionDeclaration(FunctionDeclaration node)
         {
-            if (node.Id != null)
-                ((VariableScope.BlockBase)_currentVariableScope).AddFunctionDeclaration(node.Id);
+            BeginVariableScope((VariableScope)node.UserData, isFunctionScope: true);
 
-            BeginVariableScope(new VariableScope.Function(node, _currentVariableScope), out Snapshot snapshot);
+            base.VisitFunctionDeclaration(node);
 
-            VisitFunctionCore(node);
-
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.FunctionScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitFunctionExpression(FunctionExpression node)
         {
-            // Function expression's name is not available in the enclosing scope.
+            BeginVariableScope((VariableScope)node.UserData, isFunctionScope: true);
 
-            BeginVariableScope(new VariableScope.Function(node, _currentVariableScope), out Snapshot snapshot);
+            base.VisitFunctionExpression(node);
 
-            VisitFunctionCore(node);
-
-            EndVariableScope(in snapshot);
-
-            return node;
-        }
-
-        protected override object VisitImportDeclaration(ImportDeclaration node)
-        {
-            // The parser (Acornima) makes sure that import declarations occur only at the top level.
-            var topLevelScope = (VariableScope.TopLevelBlock)_currentVariableScope;
-
-            ref readonly NodeList<ImportDeclarationSpecifier> specifiers = ref node.Specifiers;
-            for (var i = 0; i < specifiers.Count; i++)
-                topLevelScope.AddImportDeclaration(specifiers[i].Local);
-
-            Visit(node.Source);
+            EndVariableScope(VariableScope.FunctionScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitProgram(Program node)
         {
-            _currentVariableScope = null;
+            Reset();
 
-            VariableScope.TopLevelBlock topLevelScope;
-
-            switch (node)
-            {
-                case Module module:
-                    topLevelScope = new VariableScope.TopLevelBlock(module);
-                    break;
-                case Script script:
-                    topLevelScope = new VariableScope.TopLevelBlock(script);
-                    break;
-                default:
-                    throw UnknownNodeError(node);
-            }
-
-            BeginVariableScope(topLevelScope, out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData, isFunctionScope: true);
 
             base.VisitProgram(node);
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.TopLevelScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitSwitchStatement(SwitchStatement node)
         {
+            // The discriminant expression must be visited outside the scope assigned to the switch statement
+            // as the variables declared in the statement body must not be visible from the discriminator.
             Visit(node.Discriminant);
 
-            BeginVariableScope(new VariableScope.Block(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData);
 
             ref readonly NodeList<SwitchCase> cases = ref node.Cases;
             for (var i = 0; i < cases.Count; i++)
@@ -270,38 +207,18 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
                 Visit(cases[i]);
             }
 
-            EndVariableScope(in snapshot);
+            EndVariableScope(VariableScope.NestedBlockScopeFinalizer);
 
             return node;
         }
 
         protected override object VisitStaticBlock(StaticBlock node)
         {
-            BeginVariableScope(new VariableScope.ClassStaticBlock(node, _currentVariableScope), out Snapshot snapshot);
+            BeginVariableScope((VariableScope)node.UserData, isFunctionScope: true);
 
             base.VisitStaticBlock(node);
 
-            EndVariableScope(in snapshot);
-
-            return node;
-        }
-
-        protected override object VisitVariableDeclaration(VariableDeclaration node)
-        {
-            var variableDeclarationVisitor = new VariableDeclarationVisitor<(VariableScopeBuilder Builder, VariableDeclaration Declaration)>((this, node),
-                visitVariableIdentifier: (s, identifier) => ((VariableScope.VariableDeclaratorBase)s.Builder._currentVariableScope).AddVariableDeclaration(identifier, s.Declaration.Kind),
-                visitRewritableExpression: (s, expression) => s.Builder.Visit(expression));
-
-            ref readonly NodeList<VariableDeclarator> declarations = ref node.Declarations;
-            for (var i = 0; i < declarations.Count; i++)
-            {
-                VariableDeclarator variableDeclarator = declarations[i];
-
-                variableDeclarationVisitor.VisitVariableDeclaratorId(variableDeclarator);
-
-                if (variableDeclarator.Init != null)
-                    Visit(variableDeclarator.Init);
-            }
+            EndVariableScope(VariableScope.ClassStaticBlockScopeFinalizer);
 
             return node;
         }
