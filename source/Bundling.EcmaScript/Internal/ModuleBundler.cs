@@ -41,7 +41,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 
             _parserOptions = CreateParserOptions(experimentalESFeatures: options == null || !options.ExperimentalESFeatures ?
                 ExperimentalESFeatures.None :
-                ExperimentalESFeatures.Decorators | ExperimentalESFeatures.ImportAttributes | ExperimentalESFeatures.RegExpDuplicateNamedCapturingGroups);
+                ExperimentalESFeatures.Decorators);
 
             _fileProviderPrefixes = new Dictionary<IFileProvider, string>();
 
@@ -91,7 +91,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
             catch (Exception ex) { throw _logger.LoadingModuleFailed(module.Resource.Url.ToString(), ex); }
         }
 
-        internal static ParserOptions CreateParserOptions(EcmaVersion ecmaVersion = EcmaVersion.ES2023, ExperimentalESFeatures experimentalESFeatures = ExperimentalESFeatures.None)
+        internal static ParserOptions CreateParserOptions(EcmaVersion ecmaVersion = EcmaVersion.ES2026, ExperimentalESFeatures experimentalESFeatures = ExperimentalESFeatures.None)
         {
             return new ParserOptions
             {

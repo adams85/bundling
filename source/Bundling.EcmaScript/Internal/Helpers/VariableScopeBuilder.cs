@@ -6,7 +6,7 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal.Helpers
 {
     internal class VariableScopeBuilder : AstVisitor
     {
-        public static readonly OnNodeHandler OnNodeHandler = (node, context) =>
+        public static readonly OnNodeHandler OnNodeHandler = (Node node, in OnNodeContext context) =>
         {
             if (!context.HasScope)
                 return;
