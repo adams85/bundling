@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ScopedCssEnabled>false</ScopedCssEnabled>
     <DisableScopedCssBundling>true</DisableScopedCssBundling>
@@ -23,12 +23,11 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.*" />
-    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
-    <PackageReference Include="Karambolo.AspNetCore.Bundling" Version="3.*" />
-    <PackageReference Include="Karambolo.AspNetCore.Bundling.Sass" Version="3.*" />
-    <PackageReference Include="Karambolo.AspNetCore.Bundling.NUglify" Version="3.*" />
-    <PackageReference Include="Karambolo.AspNetCore.Bundling.EcmaScript" Version="3.* " />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="3.0.114" />
+    <PackageReference Include="Karambolo.AspNetCore.Bundling.Sass" Version="3.10.0" />
+    <PackageReference Include="Karambolo.AspNetCore.Bundling.NUglify" Version="3.10.0" />
+    <PackageReference Include="Karambolo.AspNetCore.Bundling.EcmaScript" Version="3.10.0" />
     <PackageReference Include="LibSassHost.Native.linux-x64" Version="1.5.0" />
     <PackageReference Include="LibSassHost.Native.win-x64" Version="1.5.0" />
   </ItemGroup>

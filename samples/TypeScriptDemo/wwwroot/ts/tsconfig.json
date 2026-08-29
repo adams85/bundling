@@ -2,16 +2,18 @@
   "compileOnSave": true,
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
-    "baseUrl": "../lib/",
-    "lib": [ "ES2015", "DOM" ],
-    "module": "ES6",
     "importHelpers": false,
     "isolatedModules": true,
+    "lib": [ "ES2015", "DOM" ],
+    "module": "ES6",
+    "moduleResolution": "bundler",
     "noEmitHelpers": true,
     "noEmitOnError": true,
     "noImplicitAny": true,
     "outDir": "../js",
-    "moduleResolution": "Node",
+    "paths": {
+      "*": [ "../lib/*" ]
+    },
     "removeComments": false,
     "rootDir": ".",
     "sourceMap": true,

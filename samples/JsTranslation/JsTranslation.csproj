@@ -1,17 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Karambolo.PO" Version="1.10.0" />
+    <PackageReference Include="Karambolo.Common" Version="3.4.1" />
+    <PackageReference Include="Karambolo.PO" Version="1.13.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\source\Bundling.Less\Bundling.Less.csproj" />
     <ProjectReference Include="..\..\source\Bundling.WebMarkupMin\Bundling.WebMarkupMin.csproj" />
-    <ProjectReference Include="..\..\source\Bundling\Bundling.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Referenced transitively by dotless.Core. Pin version to fix https://github.com/advisories/GHSA-rxg9-xrhp-64gj -->
+    <PackageReference Include="System.Drawing.Common" Version="4.7.2" />
   </ItemGroup>
 
   <ItemGroup>

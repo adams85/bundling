@@ -12,8 +12,8 @@ class App {
         this._button.onclick = () => this.click();
     }
 
-    // you may use post-ES2021 language features,
-    // just make sure that the TypeScript compiler targets ES2021 or older
+    // you may use post-ES2026 language features,
+    // just make sure that the TypeScript compiler targets ES2026 or older
     // (see tsconfig.json)
     async click(): Promise<void> {
         this._textBox.value = 'Thinking hard...';

@@ -116,10 +116,5 @@ namespace JsTranslation.Infrastructure.Localization
         {
             return new POStringLocalizer(culture, _getCatalogForCulture, _logger);
         }
-
-        IStringLocalizer IStringLocalizer.WithCulture(CultureInfo culture)
-        {
-            return WithCulture(culture);
-        }
     }
 }

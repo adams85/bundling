@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-using System.Linq;
-using JsTranslation.Infrastructure.Bundling;
+﻿using JsTranslation.Infrastructure.Bundling;
 using JsTranslation.Infrastructure.Localization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -64,7 +62,7 @@ namespace JsTranslation
 
                 // we define a separate bundle for each of the available cultures
                 // (translations are loaded from {ContentRoot}/App_Data/Localization/ by POLocalizationProvider)
-                var currentStringLocalizer = stringLocalizerFactory.Create(typeof(Program));
+                var currentStringLocalizer = (IExtendedStringLocalizer)stringLocalizerFactory.Create(typeof(Program));
                 foreach (var culture in localizationProvider.AvailableCultures)
                 {
                     var stringLocalizer = currentStringLocalizer.WithCulture(culture);
