@@ -213,11 +213,7 @@ Bundles can be referenced by tag helpers and static helper methods as well:
 
 Starting with version 2.0, it's possible to pre-build bundles at design-time. This is similar to how *webpack* or Mads Kristensen's [BundlerMinifer](https://github.com/madskristensen/BundlerMinifier) works.
 
-Just like in the case of run-time bundling, install the required NuGet packages first. On top of that you need to **make sure that the core library is referenced** as well:
-
-    dotnet add package Karambolo.AspNetCore.Bundling
-
-(This package contains some files which are necessary to extend the build process and make the design-time method work.)
+Just like in the case of run-time bundling, [install the required NuGet packages](#installation) first.
 
 Prior to version 3.0 the step above automatically enabled the .NET Core CLI extension `dotnet bundle` by adding the necessary [DotNetCliToolReference](https://docs.microsoft.com/en-us/dotnet/core/tools/extensibility) to your project. However, [*DotNetCliToolReference* is more or less obsolete now](https://github.com/dotnet/sdk/issues/3115), so version 3.0 switches to [the newer approach introduced in NET Core 2.1](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools). Thus, **from version 3.0 on, you also need to install the .Net Core CLI extension manually**. In return, you have multiple options to choose from:
 

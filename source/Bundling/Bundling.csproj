@@ -18,13 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Build\Karambolo.AspNetCore.Bundling.targets" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Build\Karambolo.AspNetCore.Bundling.targets">
+    <Content Include="build*\**">
       <Pack>true</Pack>
-      <PackagePath>\build\</PackagePath>
+      <PackagePath>/</PackagePath>
     </Content>
   </ItemGroup>
 

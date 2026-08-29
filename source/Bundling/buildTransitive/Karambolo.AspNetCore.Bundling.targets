@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Ensure projects transitively referencing Karambolo.AspNetCore.Bundling receive this build logic.
+    We still need both the "build" and "buildTransitive" directories since the latter is only supported starting with NuGet 5.0.
+    See also: https://learn.microsoft.com/en-us/nuget/concepts/msbuild-props-and-targets
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Karambolo.AspNetCore.Bundling.targets" />
+</Project>
