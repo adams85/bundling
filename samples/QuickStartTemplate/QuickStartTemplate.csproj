@@ -23,7 +23,7 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.13" />
     <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="3.0.114" />
     <PackageReference Include="Karambolo.AspNetCore.Bundling.Sass" Version="3.10.0" />
     <PackageReference Include="Karambolo.AspNetCore.Bundling.NUglify" Version="3.10.0" />
