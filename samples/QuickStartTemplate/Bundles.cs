@@ -10,12 +10,18 @@ namespace QuickStartTemplate;
 
 public class Bundles : DesignTimeBundlingConfiguration
 {
+    private static CodeSettings CreateNuglifyJsSettings() => new()
+    {
+        // ignore "run-time error JS1292: Strict-mode does not allow duplicate property names: ..." in bootstrap.bundle.js
+        IgnoreErrorCollection = { "JS1292" }
+    };
+
     // setup for run-time mode bundling
     public static void ConfigureServices(IServiceCollection services, IWebHostEnvironment environment)
     {
         services.AddBundling()
             .UseDefaults(environment)
-            .UseNUglify()
+            .UseNUglify(jsSettings: CreateNuglifyJsSettings())
             .AddSass()
             .AddEcmaScript();
     }
@@ -25,11 +31,7 @@ public class Bundles : DesignTimeBundlingConfiguration
     // setup for design-time mode bundling
     public override IEnumerable<IBundlingModule> Modules => base.Modules.Concat(new IBundlingModule[]
     {
-        new NUglifyBundlingModule(jsSettings: new CodeSettings 
-        {
-            // ignore "run-time error JS1292: Strict-mode does not allow duplicate property names: ..." in bootstrap.bundle.js
-            IgnoreErrorCollection = { "JS1292" } 
-        }),
+        new NUglifyBundlingModule(jsSettings: CreateNuglifyJsSettings()),
         new SassBundlingModule(),
         new EcmaScriptBundlingModule()
     });

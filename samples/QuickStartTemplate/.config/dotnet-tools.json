@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "dotnet-bundlingtools": {
-      "version": "3.10.0",
+      "version": "3.10.1",
       "commands": [
         "dotnet-bundle"
       ]
