@@ -134,6 +134,29 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 return node;
             }
 
+            private void VisitCallable(Expression expression)
+            {
+                if (expression is Identifier identifier)
+                    AddSubstitutionIfImported(identifier, (Identifier id, ref string value) => { value = "(0, " + value + ")"; });
+                else
+                    Visit(expression);
+            }
+
+            protected override object VisitCallExpression(CallExpression node)
+            {
+                VisitCallable(node.Callee);
+                for (var i = 0; i < node.Arguments.Count; i++)
+                    Visit(node.Arguments[i]);
+                return node;
+            }
+
+            protected override object VisitTaggedTemplateExpression(TaggedTemplateExpression node)
+            {
+                VisitCallable(node.Tag);
+                Visit(node.Quasi);
+                return node;
+            }
+
             protected override object VisitCatchClause(CatchClause node)
             {
                 // Catch clause error parameter identifier(s) are not subject to rewriting, thus, skipped.
