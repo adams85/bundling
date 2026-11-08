@@ -14,6 +14,31 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     public class ModuleBundlerTest
     {
+        [Theory]
+        [InlineData("receiver()", true)]
+        [InlineData("(receiver)()", true)]
+        [InlineData("receiver?.()", true)]
+        [InlineData("receiver`label`", true)]
+        [InlineData("namespace.receiver()", false)]
+        [InlineData("receiver.call({})", false)]
+        [InlineData("({ receiver }).receiver()", false)]
+        [InlineData("(() => { const receiver = function () { return this === undefined; }; return receiver(); })()", true)]
+        public async Task Import_Calls_Preserve_Receiver(string expression, bool expected)
+        {
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/helper.js", "export function receiver() { return this === undefined; }");
+            var entry = new ModuleFile(fileProvider, "/entry.js")
+            {
+                Content = "import { receiver } from './helper.js'; import * as namespace from './helper.js'; console.log(" + expression + ");"
+            };
+            var result = await new ModuleBundler().BundleAsync(new[] { entry });
+            var log = new List<object[]>();
+            var engine = new Engine();
+            engine.SetValue("console", new ConsoleProxy(args => log.Add(args)));
+            engine.Execute(result.Content);
+            Assert.Equal(expected, Assert.Single(Assert.Single(log)));
+        }
+
         private sealed class ConsoleProxy
         {
             private readonly Action<object[]> _onLog;
@@ -891,7 +916,7 @@ export default 3.14;";
                  "var __es$module_1 = __es$require(\"/baz.js\");",
                 "return function (__es$finalize) {",
                 "__es$finalize();",
-                 "console.log(__es$module_1.default(__es$module_0.myVar1, __es$module_0.myVar2));",
+                 "console.log((0, __es$module_1.default)(__es$module_0.myVar1, __es$module_0.myVar2));",
                 "};",
             }, foo1Lines);
 
@@ -906,7 +931,7 @@ export default 3.14;";
                 "class MyClass",
                 "{",
                 "    myMethod(bar) {",
-                "        console.log(__es$module_1.default(bar.myVar1, bar.myVar2));",
+                "        console.log((0, __es$module_1.default)(bar.myVar1, bar.myVar2));",
                 "    }",
                 "}",
                 "new MyClass().myMethod(__es$module_0);",
@@ -1213,11 +1238,11 @@ export function myDecorator(value) { }
                 "var __es$module_0 = __es$require(\"/bar.js\");",
                 "return function (__es$finalize) {",
                 "__es$finalize();",
-                "@__es$module_0.myDecorator('C')",
+                "@(0, __es$module_0.myDecorator)('C')",
                 "class C extends HTMLElement {",
-                "  @__es$module_0.myDecorator('d') static accessor d = false;",
-                "  @__es$module_0.myDecorator('d') accessor ['d'] = false;",
-                "  @__es$module_0.myDecorator(__es$module_0.myDecorator) accessor [__es$module_0.myDecorator] = __es$module_0.myDecorator;",
+                "  @(0, __es$module_0.myDecorator)('d') static accessor d = false;",
+                "  @(0, __es$module_0.myDecorator)('d') accessor ['d'] = false;",
+                "  @(0, __es$module_0.myDecorator)(__es$module_0.myDecorator) accessor [__es$module_0.myDecorator] = __es$module_0.myDecorator;",
                 "}",
                 "};",
             }, fooLines);
@@ -1803,7 +1828,7 @@ export const asyncFunc = async () => new Promise(resolve => setTimeout(() => res
                 "    x: function() { return x; },",
                 "    y: function() { return y; }",
                 "});",
-                "let x = 1, y = await __es$module_0.asyncFunc();",
+                "let x = 1, y = await (0, __es$module_0.asyncFunc)();",
                 "console.log(`${x},${y}`)",
                 "};",
             }, fooLines);
@@ -1856,7 +1881,7 @@ export const asyncFunc = async () => new Promise(resolve => setTimeout(() => res
                 "    y: function() { return y; }",
                 "});",
                 "let x = 1, y;",
-                "{ y = await __es$module_0.asyncFunc(); }",
+                "{ y = await (0, __es$module_0.asyncFunc)(); }",
                 "console.log(`${x},${y}`)",
                 "};",
             }, fooLines);
@@ -1909,7 +1934,7 @@ export const asyncFunc = async () => new Promise(resolve => setTimeout(() => res
                 "    x: function() { return x; },",
                 "    y: function() { return y; }",
                 "});",
-                "let x = 1, y = async () => await __es$module_0.asyncFunc();",
+                "let x = 1, y = async () => await (0, __es$module_0.asyncFunc)();",
                 "console.log(`${x},${y}`)",
                 "};",
             }, fooLines);
