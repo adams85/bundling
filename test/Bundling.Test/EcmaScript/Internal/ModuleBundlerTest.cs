@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Acornima;
 using Jint;
+using Jint.Native;
 using Karambolo.AspNetCore.Bundling.Internal;
 using Karambolo.AspNetCore.Bundling.Test.Helpers;
 using Xunit;
@@ -14,6 +15,41 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
 {
     public class ModuleBundlerTest
     {
+        [Theory]
+        [InlineData(false, "await Promise.resolve();", null)]
+        [InlineData(true, "await Promise.resolve();", null)]
+        [InlineData(false, "await Promise.reject(new Error('initialization failed'));", "initialization failed")]
+        [InlineData(true, "await Promise.reject(new Error('initialization failed'));", "initialization failed")]
+        [InlineData(false, "await Promise.resolve(); throw new Error('initialization failed');", "initialization failed")]
+        [InlineData(true, "await Promise.resolve(); throw new Error('initialization failed');", "initialization failed")]
+        public async Task Bundle_Completion_Tracks_Async_Module_Initialization(bool inDependency, string source, string expectedError)
+        {
+            var fileProvider = new MemoryFileProvider();
+            fileProvider.CreateFile("/dependency.js", source);
+            var entry = new ModuleFile(fileProvider, "/entry.js")
+            {
+                Content = (inDependency ? "import './dependency.js';" : source) + " globalThis.initialized = true;"
+            };
+            var bundle = await new ModuleBundler().BundleAsync(new[] { entry });
+            var engine = new Engine();
+            var completion = engine.Evaluate(bundle.Content);
+            engine.SetValue("completion", completion);
+            Assert.True(engine.Evaluate("completion instanceof Promise").AsBoolean());
+
+            var error = Record.Exception(() => completion.UnwrapIfPromise(TimeSpan.FromSeconds(2)));
+            if (expectedError == null)
+            {
+                Assert.Null(error);
+                Assert.True(engine.Evaluate("globalThis.initialized === true").AsBoolean());
+            }
+            else
+            {
+                Assert.NotNull(error);
+                Assert.Contains(expectedError, error.Message);
+                Assert.True(engine.Evaluate("globalThis.initialized === undefined").AsBoolean());
+            }
+        }
+
         [Theory]
         [InlineData("receiver()", true)]
         [InlineData("(receiver)()", true)]
