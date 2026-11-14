@@ -806,7 +806,12 @@ namespace Karambolo.AspNetCore.Bundling.EcmaScript.Internal
                 sb.Append(' ', IndentSize).Append($"require(\"{module.Resource.IdEscaped}\", imports);").Append(_br);
             }
 
-            sb.Append(' ', IndentSize).Append(_synthesizeAsyncLoader ? "return finalize(imports);" : "finalize(imports);").Append(_br);
+            sb.Append(' ', IndentSize);
+            if (_synthesizeAsyncLoader)
+            {
+                sb.Append("return ");
+            }
+            sb.Append("finalize(imports);").Append(_br);
             sb.Append("})({");
 
             var separator = string.Empty;
